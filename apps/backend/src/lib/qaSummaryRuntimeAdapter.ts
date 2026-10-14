@@ -6,6 +6,7 @@ import {
   type QaSummaryModelOutputV2,
 } from '@arsnova/shared-types';
 import {
+  countIncludedQaQuestionSources,
   createQaSummaryFallback,
   type PreparedModerationSummaryContext,
 } from './moderationSummaryContext';
@@ -47,11 +48,26 @@ function legacyFailureReason(modelVersion: string | undefined): QaSummaryFallbac
   return 'unavailable';
 }
 
+function packedAnalyzedQuestionCount(prepared: PreparedModerationSummaryContext): number {
+  const questions = prepared.request.promptContext.context.questions;
+  return questions.state === 'available' ? questions.corpus.analyzed : 0;
+}
+
 export async function runPreparedQaSummary(
   prepared: PreparedModerationSummaryContext,
   options: { readonly signal?: AbortSignal } = {},
 ): Promise<QaSummaryPreparedRun> {
   if (prepared.plan.selectedMode === 'full-context') {
+    // Belt-and-suspenders: never call the runtime when the pack has no Q&A evidence.
+    if (
+      packedAnalyzedQuestionCount(prepared) > 0 &&
+      countIncludedQaQuestionSources(prepared.request.promptContext) === 0
+    ) {
+      return extractiveRun(prepared, {
+        attemptedMode: 'full-context',
+        reason: 'no_packed_sources',
+      });
+    }
     const result = await runOpenWeightLlmSummaryV2(prepared.request, options);
     if (result.status === 'completed' && result.output.output.status !== 'failed') {
       return {

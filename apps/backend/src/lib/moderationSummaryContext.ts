@@ -251,29 +251,157 @@ function qaTextBaselineAnalysis(
   });
 }
 
-function packWithBoundedBaseline(input: {
+/** Included Q&A source texts in a packed prompt (model-visible evidence). */
+export function countIncludedQaQuestionSources(promptContext: ModerationPromptContextV1): number {
+  return promptContext.context.sources.filter(
+    (source) => source.kind === 'qa-question' && source.content.state === 'included',
+  ).length;
+}
+
+function analyzedQuestionCount(analysis: ModerationAnalysisContextV1): number {
+  return analysis.context.questions.state === 'available'
+    ? analysis.context.questions.corpus.analyzed
+    : 0;
+}
+
+function packedAnalyzedQuestionCount(promptContext: ModerationPromptContextV1): number {
+  return promptContext.context.questions.state === 'available'
+    ? promptContext.context.questions.corpus.analyzed
+    : 0;
+}
+
+/** Progressive UTF-8 byte caps for the minimum-coverage retry (not model tokens). */
+const MIN_QA_COVERAGE_TEXT_BYTES = [480, 240, 120, 72] as const;
+
+function truncateUtf8ToMaxBytes(text: string, maxBytes: number): string {
+  if (Buffer.byteLength(text, 'utf8') <= maxBytes) return text;
+  let end = Math.min(text.length, maxBytes);
+  while (end > 0 && Buffer.byteLength(text.slice(0, end), 'utf8') > maxBytes) {
+    end -= 1;
+  }
+  return text.slice(0, end);
+}
+
+function withTruncatedIncludedQaTexts(
+  analysis: ModerationAnalysisContextV1,
+  maxTextBytes: number,
+): ModerationAnalysisContextV1 {
+  return ModerationAnalysisContextV1Schema.parse({
+    ...analysis,
+    context: {
+      ...analysis.context,
+      sources: analysis.context.sources.map((source) => {
+        if (source.kind !== 'qa-question' || source.content.state !== 'included') {
+          return source;
+        }
+        const text = truncateUtf8ToMaxBytes(source.content.text, maxTextBytes);
+        return {
+          ...source,
+          content: {
+            state: 'included' as const,
+            text,
+            truncated: text !== source.content.text || source.content.truncated,
+          },
+        };
+      }),
+    },
+  });
+}
+
+function packOnce(input: {
   readonly analysis: ModerationAnalysisContextV1;
   readonly packedAt?: Date;
 }): ModerationPromptContextV1 {
-  try {
-    return packModerationPromptContext({
-      analysis: input.analysis,
-      profile: QA_SUMMARY_MODERATION_PACKING_PROFILE,
-      packedAt: input.packedAt,
-    });
-  } catch (error) {
-    if (
-      !(error instanceof Error) ||
-      error.message !== 'Moderation prompt base metadata exceeds the configured context budget.'
-    ) {
-      throw error;
-    }
-    return packModerationPromptContext({
-      analysis: qaTextBaselineAnalysis(input.analysis),
-      profile: QA_SUMMARY_MODERATION_PACKING_PROFILE,
-      packedAt: input.packedAt,
-    });
+  return packModerationPromptContext({
+    analysis: input.analysis,
+    profile: QA_SUMMARY_MODERATION_PACKING_PROFILE,
+    packedAt: input.packedAt,
+  });
+}
+
+/**
+ * When `initialPack` has analyzed Q&A questions but zero included source texts,
+ * retries with the Q&A text baseline and progressively shorter texts.
+ */
+export function ensureMinimumQaQuestionCoverage(input: {
+  readonly analysis: ModerationAnalysisContextV1;
+  readonly packedAt?: Date;
+  readonly initialPack: ModerationPromptContextV1;
+}): ModerationPromptContextV1 {
+  if (
+    analyzedQuestionCount(input.analysis) === 0 ||
+    countIncludedQaQuestionSources(input.initialPack) > 0
+  ) {
+    return input.initialPack;
   }
+
+  const baseline = qaTextBaselineAnalysis(input.analysis);
+  let packed = packOnce({ analysis: baseline, packedAt: input.packedAt });
+  if (countIncludedQaQuestionSources(packed) > 0) return packed;
+
+  for (const maxBytes of MIN_QA_COVERAGE_TEXT_BYTES) {
+    packed = packOnce({
+      analysis: withTruncatedIncludedQaTexts(baseline, maxBytes),
+      packedAt: input.packedAt,
+    });
+    if (countIncludedQaQuestionSources(packed) > 0) return packed;
+  }
+  return packed;
+}
+
+/**
+ * Summary-V2 packing with baseline fallback and a minimum Q&A-coverage retry.
+ * When the greedy pack would leave analyzed questions with zero included source
+ * texts, retries so full-context mode is not empty of evidence.
+ */
+export function packSummaryModerationPromptContext(input: {
+  readonly analysis: ModerationAnalysisContextV1;
+  readonly packedAt?: Date;
+}): ModerationPromptContextV1 {
+  const packWithBaselineFallback = (
+    analysis: ModerationAnalysisContextV1,
+  ): ModerationPromptContextV1 => {
+    try {
+      return packOnce({ analysis, packedAt: input.packedAt });
+    } catch (error) {
+      if (
+        !(error instanceof Error) ||
+        error.message !== 'Moderation prompt base metadata exceeds the configured context budget.'
+      ) {
+        throw error;
+      }
+      return packOnce({
+        analysis: qaTextBaselineAnalysis(analysis),
+        packedAt: input.packedAt,
+      });
+    }
+  };
+
+  return ensureMinimumQaQuestionCoverage({
+    analysis: input.analysis,
+    packedAt: input.packedAt,
+    initialPack: packWithBaselineFallback(input.analysis),
+  });
+}
+
+function planForPackedSummaryContext(
+  plan: QaSummaryAdapterPlan,
+  promptContext: ModerationPromptContextV1,
+): QaSummaryAdapterPlan {
+  if (
+    plan.selectedMode !== 'full-context' ||
+    packedAnalyzedQuestionCount(promptContext) === 0 ||
+    countIncludedQaQuestionSources(promptContext) > 0
+  ) {
+    return plan;
+  }
+  // Honest preview/runtime: do not advertise full-context when the pack has no
+  // model-visible Q&A evidence.
+  return {
+    ...plan,
+    selectedMode: null,
+    fallback: createQaSummaryFallback('extractive', 'no_packed_sources'),
+  };
 }
 
 export function assemblePreparedModerationSummaryContext(input: {
@@ -281,7 +409,10 @@ export function assemblePreparedModerationSummaryContext(input: {
   readonly cache: QaSummaryContextPreviewDTO['cache'];
   readonly plan?: QaSummaryAdapterPlan;
 }): PreparedModerationSummaryContext {
-  const plan = input.plan ?? resolveQaSummaryAdapterPlan();
+  const plan = planForPackedSummaryContext(
+    input.plan ?? resolveQaSummaryAdapterPlan(),
+    input.promptContext,
+  );
   const request = QaSummaryInferenceRequestV2Schema.parse({
     schemaVersion: QA_SUMMARY_V2_SCHEMA_VERSION,
     taskType: 'qa_summary',
@@ -323,7 +454,7 @@ export function prepareModerationSummaryContextFromAnalysis(input: {
   readonly plan?: QaSummaryAdapterPlan;
   readonly packedAt?: Date;
 }): PreparedModerationSummaryContext {
-  const promptContext = packWithBoundedBaseline(input);
+  const promptContext = packSummaryModerationPromptContext(input);
   return assemblePreparedModerationSummaryContext({
     promptContext,
     cache: 'miss',
@@ -343,28 +474,14 @@ export async function prepareFreshModerationSummaryContext(input: {
     locale: input.locale,
     access: input.access,
   });
-  let packed;
-  try {
-    packed = packFreshlyAuthorizedModerationPromptContext({
-      sessionId: input.sessionId,
-      analysis,
-      profile: QA_SUMMARY_MODERATION_PACKING_PROFILE,
-      packedAt: input.packedAt,
-    });
-  } catch (error) {
-    if (
-      !(error instanceof Error) ||
-      error.message !== 'Moderation prompt base metadata exceeds the configured context budget.'
-    ) {
-      throw error;
-    }
-    packed = packFreshlyAuthorizedModerationPromptContext({
-      sessionId: input.sessionId,
-      analysis: qaTextBaselineAnalysis(analysis),
-      profile: QA_SUMMARY_MODERATION_PACKING_PROFILE,
-      packedAt: input.packedAt,
-    });
-  }
+  const packed = packFreshlyAuthorizedModerationPromptContext({
+    sessionId: input.sessionId,
+    analysis,
+    profile: QA_SUMMARY_MODERATION_PACKING_PROFILE,
+    packedAt: input.packedAt,
+    pack: ({ analysis: packAnalysis, packedAt }) =>
+      packSummaryModerationPromptContext({ analysis: packAnalysis, packedAt }),
+  });
   return assemblePreparedModerationSummaryContext({
     promptContext: packed.promptContext,
     cache: packed.cache,

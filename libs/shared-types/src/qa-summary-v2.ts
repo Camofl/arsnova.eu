@@ -189,6 +189,7 @@ export type QaSummaryAdapterCapabilities = z.infer<typeof QaSummaryAdapterCapabi
 export const QA_SUMMARY_FALLBACK_REASONS = [
   'adapter_incompatible',
   'context_unavailable',
+  'no_packed_sources',
   'disabled',
   'busy',
   'aborted',

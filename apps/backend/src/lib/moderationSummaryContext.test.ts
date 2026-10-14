@@ -11,11 +11,53 @@ import {
   QA_SUMMARY_MODERATION_PACKING_PROFILE,
   QA_SUMMARY_TECHNICAL_DEFINITION_TEXT,
   QA_SUMMARY_TECHNICAL_INSTRUCTION_TEXT,
+  assemblePreparedModerationSummaryContext,
+  countIncludedQaQuestionSources,
+  ensureMinimumQaQuestionCoverage,
   prepareModerationSummaryContextFromAnalysis,
   qaSummaryTechnicalHandoffTokenCounts,
   resolveQaSummaryAdapterPlan,
 } from './moderationSummaryContext';
+import {
+  canonicalModerationPromptJson,
+  estimateModerationPromptUtf8Tokens,
+} from './moderationPromptContextPacking';
 import { createExtractiveQaSummaryOutput } from './qaSummaryExtractive';
+import { runPreparedQaSummary } from './qaSummaryRuntimeAdapter';
+
+function withEmptyQaEvidence(
+  promptContext: ReturnType<
+    typeof prepareModerationSummaryContextFromAnalysis
+  >['request']['promptContext'],
+): typeof promptContext {
+  const emptyPack = structuredClone(promptContext);
+  if (emptyPack.context.questions.state !== 'available') {
+    throw new Error('Erwartete verfügbare Fragen im Pack.');
+  }
+  emptyPack.context.questions = {
+    ...emptyPack.context.questions,
+    corpus: {
+      total: 21,
+      eligible: 21,
+      analyzed: 21,
+      deduplicated: 21,
+      represented: 0,
+    },
+    items: [],
+  };
+  emptyPack.context.sources = [];
+  emptyPack.budget.truncations = [
+    { section: 'questions', omittedItems: 21, reason: 'token-budget' },
+  ];
+  emptyPack.budget.dataTokens = estimateModerationPromptUtf8Tokens(
+    canonicalModerationPromptJson(emptyPack.context),
+  );
+  emptyPack.budget.packedInputTokens =
+    emptyPack.budget.instructionTokens +
+    emptyPack.budget.definitionTokens +
+    emptyPack.budget.dataTokens;
+  return emptyPack;
+}
 
 function analysisFixture(
   fixture:
@@ -73,6 +115,58 @@ describe('moderationSummaryContext', () => {
     expect(prepared.request.promptContext.budget.truncations).toContainEqual(
       expect.objectContaining({ section: 'questions', reason: 'token-budget' }),
     );
+  });
+
+  it('stellt Mindest-Q&A-Coverage her wenn der erste Pack keine included Sources liefert', () => {
+    const analysis = analysisFixture(MODERATION_PROMPT_CONTEXT_MINIMAL_FIXTURE_V1);
+    const prepared = prepareModerationSummaryContextFromAnalysis({ analysis, plan });
+    const emptyFirstPack = withEmptyQaEvidence(prepared.request.promptContext);
+
+    expect(countIncludedQaQuestionSources(emptyFirstPack)).toBe(0);
+    const recovered = ensureMinimumQaQuestionCoverage({
+      analysis,
+      initialPack: emptyFirstPack,
+    });
+    expect(countIncludedQaQuestionSources(recovered)).toBeGreaterThan(0);
+  });
+
+  it('stuft Full-context auf extractive herab wenn analysierte Fragen ohne included Sources bleiben', () => {
+    const base = prepareModerationSummaryContextFromAnalysis({
+      analysis: analysisFixture(MODERATION_PROMPT_CONTEXT_MINIMAL_FIXTURE_V1),
+      plan,
+    });
+    const prepared = assemblePreparedModerationSummaryContext({
+      promptContext: withEmptyQaEvidence(base.request.promptContext),
+      cache: 'miss',
+      plan,
+    });
+    expect(prepared.plan.selectedMode).toBeNull();
+    expect(prepared.plan.fallback).toMatchObject({
+      mode: 'extractive',
+      reason: 'no_packed_sources',
+    });
+    expect(prepared.preview.selectedMode).toBeNull();
+    expect(prepared.preview.fallback).toMatchObject({ reason: 'no_packed_sources' });
+  });
+
+  it('ruft bei Full-context ohne packed Sources kein Modell auf', async () => {
+    const base = prepareModerationSummaryContextFromAnalysis({
+      analysis: analysisFixture(MODERATION_PROMPT_CONTEXT_MINIMAL_FIXTURE_V1),
+      plan,
+    });
+    const prepared = {
+      ...base,
+      request: {
+        ...base.request,
+        promptContext: withEmptyQaEvidence(base.request.promptContext),
+      },
+      plan,
+    };
+
+    const run = await runPreparedQaSummary(prepared);
+    expect(run.execution.attemptedMode).toBe('full-context');
+    expect(run.execution.effectiveMode).toBe('extractive');
+    expect(run.execution.fallback).toMatchObject({ reason: 'no_packed_sources' });
   });
 
   it('verwendet für Vorschau und Auftrag dasselbe gepackte Objekt ohne technische Prompttexte', () => {

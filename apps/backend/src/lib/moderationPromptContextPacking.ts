@@ -1133,16 +1133,23 @@ export class ModerationPromptPackingCache {
     readonly analysis: ModerationAnalysisContextV1;
     readonly profile: ModerationPromptPackingProfile;
     readonly packedAt?: Date;
+    readonly pack?: (input: PackModerationPromptContextInput) => ModerationPromptContextV1;
   }): FreshlyAuthorizedPackingResult {
     const sessionId = input.sessionId.trim();
     if (!sessionId) throw new Error('A session ID is required for moderation prompt caching.');
+    const pack = input.pack ?? packModerationPromptContext;
+    const packInput: PackModerationPromptContextInput = {
+      analysis: input.analysis,
+      profile: input.profile,
+      packedAt: input.packedAt,
+    };
     const now = this.#now();
     this.#prune(now);
     const semanticHash = hashModerationAnalysisForPacking(input.analysis, input.profile);
     const key = `${sessionId}:${semanticHash}`;
     if (this.#purgedUntil > now) {
       return {
-        promptContext: packModerationPromptContext(input),
+        promptContext: pack(packInput),
         cache: 'purge-fenced',
       };
     }
@@ -1154,7 +1161,7 @@ export class ModerationPromptPackingCache {
       return { promptContext: structuredClone(cached.value), cache: 'hit' };
     }
 
-    const promptContext = packModerationPromptContext(input);
+    const promptContext = pack(packInput);
     while (this.#entries.size >= this.#maxEntries()) {
       const oldestKey = this.#entries.keys().next().value as string | undefined;
       if (!oldestKey) break;
@@ -1219,6 +1226,7 @@ export function packFreshlyAuthorizedModerationPromptContext(input: {
   readonly analysis: ModerationAnalysisContextV1;
   readonly profile: ModerationPromptPackingProfile;
   readonly packedAt?: Date;
+  readonly pack?: (input: PackModerationPromptContextInput) => ModerationPromptContextV1;
 }): FreshlyAuthorizedPackingResult {
   return defaultModerationPromptPackingCache.getOrPackFreshlyAuthorized(input);
 }
