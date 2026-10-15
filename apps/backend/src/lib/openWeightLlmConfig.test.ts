@@ -3,7 +3,10 @@ import {
   isOpenWeightLlmEnabled,
   isPrivateOpenWeightLlmAddress,
   resolveOpenWeightLlmConfig,
+  resolveOpenWeightLlmLabelTimeoutMs,
+  resolveOpenWeightLlmLearningTimeoutMs,
   resolveOpenWeightLlmSocketPath,
+  resolveOpenWeightLlmSummaryTimeoutMs,
   resolveOpenWeightLlmUrl,
 } from './openWeightLlmConfig';
 
@@ -99,6 +102,16 @@ describe('openWeightLlmConfig', () => {
     expect(() =>
       resolveOpenWeightLlmConfig({ OPEN_WEIGHT_LLM_LEARNING_TIMEOUT_MS: '300001' }),
     ).toThrow(/zwischen 1000 und 300000/);
+  });
+
+  it('löst Task-Timeouts unabhängig von Token und Transport auf', () => {
+    expect(resolveOpenWeightLlmLabelTimeoutMs(undefined)).toBe(30_000);
+    expect(resolveOpenWeightLlmSummaryTimeoutMs(undefined)).toBe(90_000);
+    expect(resolveOpenWeightLlmLearningTimeoutMs(undefined)).toBe(300_000);
+    expect(resolveOpenWeightLlmSummaryTimeoutMs('180000')).toBe(180_000);
+    expect(() => resolveOpenWeightLlmSummaryTimeoutMs('abc')).toThrow(/ganze Zahl/);
+    expect(() => resolveOpenWeightLlmLabelTimeoutMs('abc')).toThrow(/ganze Zahl/);
+    expect(() => resolveOpenWeightLlmLearningTimeoutMs('abc')).toThrow(/ganze Zahl/);
   });
 
   it('verwirft zu kurze oder nicht URL-sichere Runtime-Credentials', () => {

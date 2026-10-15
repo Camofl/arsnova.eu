@@ -4,10 +4,12 @@ import {
   QA_SUMMARY_MODEL_OUTPUT_V2_CONTRACT_VERSION,
   QA_SUMMARY_V2_SCHEMA_VERSION,
 } from '@arsnova/shared-types';
+import { OPEN_WEIGHT_LLM_SUMMARY_TIMEOUT_DEFAULT_MS } from './openWeightLlmConfig';
 import {
   getOpenWeightLlmRuntimeProbe,
   getOpenWeightLlmSummaryV2ProbeRequestForTests,
   resetOpenWeightLlmRuntimeProbeForTests,
+  resolveOpenWeightLlmProbeTaskTimeoutsMs,
   wouldOpenWeightLlmRuntimeProbeRequireLiveMeasurement,
 } from './openWeightLlmRuntimeProbe';
 
@@ -219,6 +221,133 @@ describe('getOpenWeightLlmRuntimeProbe', () => {
     expect(request.promptContext.budget.definitionTokens).toBe(
       new TextEncoder().encode(request.definitionText).byteLength,
     );
+  });
+
+  it('hält Topic/Learning beim kurzen Probe-Budget und Summary beim konfigurierten Timeout', () => {
+    expect(resolveOpenWeightLlmProbeTaskTimeoutsMs(enabledEnv)).toEqual({
+      topic_label: 20_000,
+      qa_summary: OPEN_WEIGHT_LLM_SUMMARY_TIMEOUT_DEFAULT_MS,
+      learning_objectives: 20_000,
+    });
+    expect(
+      resolveOpenWeightLlmProbeTaskTimeoutsMs({
+        ...enabledEnv,
+        OPEN_WEIGHT_LLM_LABEL_TIMEOUT_MS: '12000',
+        OPEN_WEIGHT_LLM_SUMMARY_TIMEOUT_MS: '180000',
+        OPEN_WEIGHT_LLM_LEARNING_TIMEOUT_MS: '110000',
+      }),
+    ).toEqual({
+      topic_label: 20_000,
+      qa_summary: 180_000,
+      learning_objectives: 20_000,
+    });
+    expect(resolveOpenWeightLlmProbeTaskTimeoutsMs(enabledEnv, 2_500)).toEqual({
+      topic_label: 2_500,
+      qa_summary: 2_500,
+      learning_objectives: 2_500,
+    });
+    // Token-/Transport-Fehler dürfen die Summary-Timeout-Auflösung nicht werfen.
+    expect(
+      resolveOpenWeightLlmProbeTaskTimeoutsMs({
+        OPEN_WEIGHT_LLM_ENABLED: 'true',
+        OPEN_WEIGHT_LLM_TOKEN: 'zu-kurz',
+        OPEN_WEIGHT_LLM_URL: 'http://127.0.0.1:8080',
+        OPEN_WEIGHT_LLM_SOCKET_PATH: '/tmp/llm.sock',
+      }).qa_summary,
+    ).toBe(OPEN_WEIGHT_LLM_SUMMARY_TIMEOUT_DEFAULT_MS);
+  });
+
+  it('liefert bei ungültigem Summary-Timeout strukturiert misconfigured ohne Exception', async () => {
+    const topicLabel = vi.fn();
+    const summaryV2 = vi.fn();
+    const learning = vi.fn();
+    const result = await getOpenWeightLlmRuntimeProbe({
+      env: {
+        ...enabledEnv,
+        OPEN_WEIGHT_LLM_SUMMARY_TIMEOUT_MS: 'abc',
+      },
+      topicLabel: topicLabel as never,
+      summaryV2: summaryV2 as never,
+      learning: learning as never,
+    });
+    expect(result.enabled).toBe(true);
+    expect(result.overall).toBe('unavailable');
+    expect(result.tasks.qa_summary.reason).toBe('misconfigured');
+    expect(topicLabel).not.toHaveBeenCalled();
+    expect(summaryV2).not.toHaveBeenCalled();
+    expect(learning).not.toHaveBeenCalled();
+  });
+
+  it('übergibt 20s an Topic/Learning und das konfigurierte Summary-Timeout an summaryV2', async () => {
+    const timeoutSpy = vi.spyOn(AbortSignal, 'timeout');
+    const completedTopic = {
+      status: 'completed' as const,
+      output: {
+        schemaVersion: 1 as const,
+        taskType: 'topic_label' as const,
+        label: 'Probe',
+        sourceIds: ['probe-s1'],
+      },
+      telemetry: {
+        taskType: 'topic_label' as const,
+        elapsedMs: 1,
+        model: null,
+        promptTokens: null,
+        completionTokens: null,
+      },
+    };
+    const completedSummary = {
+      status: 'completed' as const,
+      output: {
+        schemaVersion: QA_SUMMARY_V2_SCHEMA_VERSION,
+        taskType: 'qa_summary' as const,
+        outputContract: QA_SUMMARY_MODEL_OUTPUT_V2_CONTRACT_VERSION,
+        output: {
+          status: 'ready' as const,
+          statements: [],
+          suggestedNextSteps: [],
+          limitations: [],
+        },
+      },
+      telemetry: {
+        taskType: 'qa_summary' as const,
+        elapsedMs: 1,
+        model: null,
+        promptTokens: null,
+        completionTokens: null,
+      },
+    };
+    const completedLearning = {
+      status: 'completed' as const,
+      output: {
+        schemaVersion: 1 as const,
+        taskType: 'learning_objectives' as const,
+        objectives: [],
+        limitations: [],
+      },
+      telemetry: {
+        taskType: 'learning_objectives' as const,
+        elapsedMs: 1,
+        model: null,
+        promptTokens: null,
+        completionTokens: null,
+      },
+    };
+
+    await getOpenWeightLlmRuntimeProbe({
+      env: {
+        ...enabledEnv,
+        OPEN_WEIGHT_LLM_SUMMARY_TIMEOUT_MS: '180000',
+      },
+      topicLabel: (async () => completedTopic) as never,
+      summaryV2: (async () => completedSummary) as never,
+      learning: (async () => completedLearning) as never,
+    });
+
+    expect(timeoutSpy).toHaveBeenCalledWith(20_000);
+    expect(timeoutSpy).toHaveBeenCalledWith(180_000);
+    expect(timeoutSpy.mock.calls.filter((call) => call[0] === 20_000)).toHaveLength(2);
+    timeoutSpy.mockRestore();
   });
 
   it('wertet schema-valides Summary-V2 mit status failed nicht als ok', async () => {

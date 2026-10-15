@@ -170,8 +170,9 @@ des gepackten Domainkontexts. Der Legacy-HTTP-Adapter bleibt als explizit ausgeh
 
 Qwen3-4B-Instruct-2507 hat nativ sehr großen Kontext. `--ctx-size` Default `0` lädt den
 Modellwert und sprengt den KV-Cache im 4-GB-cgroup. Encoder-Timeout in Compose ist bereits
-120 s, weil e5 auf CPU langsam ist. `QA_SUMMARY_TIMEOUT_MS` Default 8 s / Max 30 s ist um
-Gemini Flash-Lite und den Helferabbruch 5 s vorher gebaut.
+120 s, weil e5 auf CPU langsam ist. `QA_SUMMARY_TIMEOUT_MS` Default 90 s / Max 300 s ist an
+`OPEN_WEIGHT_LLM_SUMMARY_TIMEOUT_MS` und CPU-Prefill unter dem 8k-Packingprofil angeglichen
+(früher 8 s / 30 s aus der Gemini-Flash-Lite-Ära).
 
 Voranalyse §4.6/§5.3 bleibt: DoD ist **nicht** „gleich Gemini unter 3–8 s“. CPU-Prefill eines
 vollen 8.9c-Snapshots (`QA_SUMMARY_MAX_SOURCES` Default 20) passt in 2048 Tokens oft nicht.

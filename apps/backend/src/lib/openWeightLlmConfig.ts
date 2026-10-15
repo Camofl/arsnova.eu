@@ -166,6 +166,40 @@ function parseBoundedInt(
   return parsed;
 }
 
+/**
+ * Task-Timeouts einzeln auflösen — ohne Token-/Transport-Validierung.
+ * Betriebsprobe und Queue-Alignment dürfen nicht an der vollen Config scheitern.
+ */
+export function resolveOpenWeightLlmLabelTimeoutMs(
+  configuredValue: string | undefined = process.env['OPEN_WEIGHT_LLM_LABEL_TIMEOUT_MS'],
+): number {
+  return parseBoundedInt(
+    'OPEN_WEIGHT_LLM_LABEL_TIMEOUT_MS',
+    configuredValue,
+    OPEN_WEIGHT_LLM_LABEL_TIMEOUT_DEFAULT_MS,
+  );
+}
+
+export function resolveOpenWeightLlmSummaryTimeoutMs(
+  configuredValue: string | undefined = process.env['OPEN_WEIGHT_LLM_SUMMARY_TIMEOUT_MS'],
+): number {
+  return parseBoundedInt(
+    'OPEN_WEIGHT_LLM_SUMMARY_TIMEOUT_MS',
+    configuredValue,
+    OPEN_WEIGHT_LLM_SUMMARY_TIMEOUT_DEFAULT_MS,
+  );
+}
+
+export function resolveOpenWeightLlmLearningTimeoutMs(
+  configuredValue: string | undefined = process.env['OPEN_WEIGHT_LLM_LEARNING_TIMEOUT_MS'],
+): number {
+  return parseBoundedInt(
+    'OPEN_WEIGHT_LLM_LEARNING_TIMEOUT_MS',
+    configuredValue,
+    OPEN_WEIGHT_LLM_LEARNING_TIMEOUT_DEFAULT_MS,
+  );
+}
+
 export function resolveOpenWeightLlmConfig(
   env: NodeJS.ProcessEnv = process.env,
 ): OpenWeightLlmConfig {
@@ -186,20 +220,10 @@ export function resolveOpenWeightLlmConfig(
     token: resolveOpenWeightLlmToken(env['OPEN_WEIGHT_LLM_TOKEN']),
     model: OPEN_WEIGHT_LLM_MODEL_ALIAS,
     timeoutsMs: {
-      topic_label: parseBoundedInt(
-        'OPEN_WEIGHT_LLM_LABEL_TIMEOUT_MS',
-        env['OPEN_WEIGHT_LLM_LABEL_TIMEOUT_MS'],
-        OPEN_WEIGHT_LLM_LABEL_TIMEOUT_DEFAULT_MS,
-      ),
-      qa_summary: parseBoundedInt(
-        'OPEN_WEIGHT_LLM_SUMMARY_TIMEOUT_MS',
-        env['OPEN_WEIGHT_LLM_SUMMARY_TIMEOUT_MS'],
-        OPEN_WEIGHT_LLM_SUMMARY_TIMEOUT_DEFAULT_MS,
-      ),
-      learning_objectives: parseBoundedInt(
-        'OPEN_WEIGHT_LLM_LEARNING_TIMEOUT_MS',
+      topic_label: resolveOpenWeightLlmLabelTimeoutMs(env['OPEN_WEIGHT_LLM_LABEL_TIMEOUT_MS']),
+      qa_summary: resolveOpenWeightLlmSummaryTimeoutMs(env['OPEN_WEIGHT_LLM_SUMMARY_TIMEOUT_MS']),
+      learning_objectives: resolveOpenWeightLlmLearningTimeoutMs(
         env['OPEN_WEIGHT_LLM_LEARNING_TIMEOUT_MS'],
-        OPEN_WEIGHT_LLM_LEARNING_TIMEOUT_DEFAULT_MS,
       ),
     },
     maxOutputTokens: {
