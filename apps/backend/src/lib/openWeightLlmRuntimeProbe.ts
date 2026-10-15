@@ -22,7 +22,7 @@ import {
 import {
   isOpenWeightLlmEnabled,
   OPEN_WEIGHT_LLM_MODEL_ALIAS,
-  OPEN_WEIGHT_LLM_SUMMARY_TIMEOUT_DEFAULT_MS,
+  resolveOpenWeightLlmConfig,
 } from './openWeightLlmConfig';
 import {
   runOpenWeightLlmLearningObjectives,
@@ -36,13 +36,24 @@ import {
 
 /** Ergebnis-Cache und Mindestabstand zwischen Live-Messungen (auch bei refresh). */
 export const OPEN_WEIGHT_LLM_PROBE_CACHE_TTL_MS = 5 * 60_000;
-/** Pro Aufgabe bewusst kürzer als die Produktions-Timeouts — nur Erreichbarkeit/Schema. */
+/** Topic/Learning-Probe bewusst kürzer als Produktions-Timeouts — nur Erreichbarkeit/Schema. */
 export const OPEN_WEIGHT_LLM_PROBE_TASK_TIMEOUT_MS = 20_000;
+
 /**
- * Summary-Probe muss CPU-Prefill unter dem 8k-Profil überleben; sonst meldet der
- * Betriebsstatus fälschlich »nicht erreichbar«, während die Runtime noch rechnet.
+ * Summary-Probe-Deadline aus der aktiven Open-Weight-Konfiguration
+ * (`OPEN_WEIGHT_LLM_SUMMARY_TIMEOUT_MS`), nicht aus einem kompilierten Default.
+ * Sonst cached ein Operator-Timeout >90 s fünf Minuten lang einen falschen
+ * »nicht erreichbar«-Status.
  */
-export const OPEN_WEIGHT_LLM_PROBE_SUMMARY_TIMEOUT_MS = OPEN_WEIGHT_LLM_SUMMARY_TIMEOUT_DEFAULT_MS;
+export function resolveOpenWeightLlmProbeSummaryTimeoutMs(
+  env: NodeJS.ProcessEnv = process.env,
+  taskTimeoutOverride?: number,
+): number {
+  if (typeof taskTimeoutOverride === 'number') {
+    return taskTimeoutOverride;
+  }
+  return resolveOpenWeightLlmConfig(env).timeoutsMs.qa_summary;
+}
 
 const PROBE_SOURCE_ID = 'probe-s1';
 const PROBE_QUESTION_ID = '11111111-1111-4111-8111-111111111111';
@@ -247,6 +258,7 @@ async function measureProbe(hooks: ProbeHooks): Promise<OpenWeightLlmRuntimeProb
   }
 
   const timeoutMs = hooks.taskTimeoutMs ?? OPEN_WEIGHT_LLM_PROBE_TASK_TIMEOUT_MS;
+  const summaryTimeoutMs = resolveOpenWeightLlmProbeSummaryTimeoutMs(env, hooks.taskTimeoutMs);
   const topicLabel = hooks.topicLabel ?? runOpenWeightLlmTopicLabel;
   const summaryV2 = hooks.summaryV2 ?? runOpenWeightLlmSummaryV2;
   const learning = hooks.learning ?? runOpenWeightLlmLearningObjectives;
@@ -262,7 +274,7 @@ async function measureProbe(hooks: ProbeHooks): Promise<OpenWeightLlmRuntimeProb
 
   const qaSummary = await runOneTask(async () => {
     const result = await summaryV2(SUMMARY_V2_REQUEST, {
-      signal: AbortSignal.timeout(hooks.taskTimeoutMs ?? OPEN_WEIGHT_LLM_PROBE_SUMMARY_TIMEOUT_MS),
+      signal: AbortSignal.timeout(summaryTimeoutMs),
     });
     // Gleiche Erfolgssemantik wie runPreparedQaSummary: schema-valides
     // `{ output: { status: 'failed' } }` gilt produktiv als Fallback, nicht als ok.

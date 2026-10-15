@@ -4,10 +4,12 @@ import {
   QA_SUMMARY_MODEL_OUTPUT_V2_CONTRACT_VERSION,
   QA_SUMMARY_V2_SCHEMA_VERSION,
 } from '@arsnova/shared-types';
+import { OPEN_WEIGHT_LLM_SUMMARY_TIMEOUT_DEFAULT_MS } from './openWeightLlmConfig';
 import {
   getOpenWeightLlmRuntimeProbe,
   getOpenWeightLlmSummaryV2ProbeRequestForTests,
   resetOpenWeightLlmRuntimeProbeForTests,
+  resolveOpenWeightLlmProbeSummaryTimeoutMs,
   wouldOpenWeightLlmRuntimeProbeRequireLiveMeasurement,
 } from './openWeightLlmRuntimeProbe';
 
@@ -219,6 +221,95 @@ describe('getOpenWeightLlmRuntimeProbe', () => {
     expect(request.promptContext.budget.definitionTokens).toBe(
       new TextEncoder().encode(request.definitionText).byteLength,
     );
+  });
+
+  it('leitet die Summary-Probe-Deadline aus OPEN_WEIGHT_LLM_SUMMARY_TIMEOUT_MS ab', () => {
+    expect(resolveOpenWeightLlmProbeSummaryTimeoutMs(enabledEnv)).toBe(
+      OPEN_WEIGHT_LLM_SUMMARY_TIMEOUT_DEFAULT_MS,
+    );
+    expect(
+      resolveOpenWeightLlmProbeSummaryTimeoutMs({
+        ...enabledEnv,
+        OPEN_WEIGHT_LLM_SUMMARY_TIMEOUT_MS: '180000',
+      }),
+    ).toBe(180_000);
+    expect(resolveOpenWeightLlmProbeSummaryTimeoutMs(enabledEnv, 2_500)).toBe(2_500);
+  });
+
+  it('übergibt das konfigurierte Summary-Timeout als AbortSignal an summaryV2', async () => {
+    const timeoutSpy = vi.spyOn(AbortSignal, 'timeout');
+    let receivedSignal: AbortSignal | undefined;
+    const summaryV2 = vi.fn(
+      async (_request: unknown, options?: { readonly signal?: AbortSignal }) => {
+        receivedSignal = options?.signal;
+        return {
+          status: 'completed' as const,
+          output: {
+            schemaVersion: QA_SUMMARY_V2_SCHEMA_VERSION,
+            taskType: 'qa_summary' as const,
+            outputContract: QA_SUMMARY_MODEL_OUTPUT_V2_CONTRACT_VERSION,
+            output: {
+              status: 'ready' as const,
+              statements: [],
+              suggestedNextSteps: [],
+              limitations: [],
+            },
+          },
+          telemetry: {
+            taskType: 'qa_summary' as const,
+            elapsedMs: 1,
+            model: null,
+            promptTokens: null,
+            completionTokens: null,
+          },
+        };
+      },
+    );
+
+    await getOpenWeightLlmRuntimeProbe({
+      env: {
+        ...enabledEnv,
+        OPEN_WEIGHT_LLM_SUMMARY_TIMEOUT_MS: '180000',
+      },
+      topicLabel: (async () => ({
+        status: 'completed' as const,
+        output: {
+          schemaVersion: 1 as const,
+          taskType: 'topic_label' as const,
+          label: 'Probe',
+          sourceIds: ['probe-s1'],
+        },
+        telemetry: {
+          taskType: 'topic_label' as const,
+          elapsedMs: 1,
+          model: null,
+          promptTokens: null,
+          completionTokens: null,
+        },
+      })) as never,
+      summaryV2: summaryV2 as never,
+      learning: (async () => ({
+        status: 'completed' as const,
+        output: {
+          schemaVersion: 1 as const,
+          taskType: 'learning_objectives' as const,
+          objectives: [],
+          limitations: [],
+        },
+        telemetry: {
+          taskType: 'learning_objectives' as const,
+          elapsedMs: 1,
+          model: null,
+          promptTokens: null,
+          completionTokens: null,
+        },
+      })) as never,
+    });
+
+    expect(timeoutSpy).toHaveBeenCalledWith(180_000);
+    expect(summaryV2).toHaveBeenCalledTimes(1);
+    expect(receivedSignal).toBeInstanceOf(AbortSignal);
+    timeoutSpy.mockRestore();
   });
 
   it('wertet schema-valides Summary-V2 mit status failed nicht als ok', async () => {
