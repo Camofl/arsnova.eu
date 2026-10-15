@@ -29,6 +29,7 @@ import {
 import type { HostTokenContext } from './hostAuth';
 import { buildModerationPromptContext } from './moderationPromptContext';
 import {
+  compareModerationPromptCodeUnits,
   estimateModerationPromptUtf8Tokens,
   packFreshlyAuthorizedModerationPromptContext,
   packModerationPromptContext,
@@ -48,8 +49,8 @@ export const QA_SUMMARY_TECHNICAL_DEFINITION_TEXT =
   'Use moderation-prompt-definitions-v1: votes, scores and frequency are not learning, quality or people; PENDING is release status; derived, manual and confirmed objectives differ; omitted data is unknown.';
 
 export const QA_SUMMARY_MODERATION_PACKING_PROFILE = {
-  modelProfile: 'qwen3-4b-instruct-2507-q4_k_m:ctx-4096:summary-v2',
-  contextWindowTokens: 4_096,
+  modelProfile: 'qwen3-4b-instruct-2507-q4_k_m:ctx-8192:summary-v2',
+  contextWindowTokens: 8_192,
   instructionText: QA_SUMMARY_TECHNICAL_INSTRUCTION_TEXT,
   definitionText: QA_SUMMARY_TECHNICAL_DEFINITION_TEXT,
   reservedOutputTokens: 640,
@@ -180,6 +181,10 @@ export type PreparedModerationSummaryContext = Readonly<{
   plan: QaSummaryAdapterPlan;
 }>;
 
+/** Short reasons keep the empty packing shell under the configured token budget. */
+const QA_BASELINE_OMIT_REASON = 'qa-baseline';
+const QA_FORCE_FIT_OMIT_REASON = 'qa-force-fit';
+
 function qaTextBaselineAnalysis(
   analysis: ModerationAnalysisContextV1,
 ): ModerationAnalysisContextV1 {
@@ -193,7 +198,7 @@ function qaTextBaselineAnalysis(
             votes: { state: 'unavailable' as const, reason: 'not-collected' as const },
             nlp: {
               state: 'disabled' as const,
-              reason: 'Omitted for the 4096-token baseline.',
+              reason: QA_BASELINE_OMIT_REASON,
             },
             topicSourceIds: [],
           })),
@@ -210,7 +215,7 @@ function qaTextBaselineAnalysis(
     {
       code: 'budget-truncated' as const,
       section: 'topics' as const,
-      detail: 'Non-Q&A sections were omitted for the fixed 4096-token text baseline.',
+      detail: QA_BASELINE_OMIT_REASON,
     },
   ].slice(0, 100);
 
@@ -233,20 +238,170 @@ function qaTextBaselineAnalysis(
       questions,
       topics: {
         state: 'disabled',
-        reason: 'Omitted for the 4096-token baseline.',
+        reason: QA_BASELINE_OMIT_REASON,
       },
       compass: { state: 'unavailable', reason: 'outside-scope' },
       learningContext: { state: 'unavailable', reason: 'outside-scope' },
       releasedResults: {
         state: 'not-released',
-        reason: 'Omitted for the 4096-token baseline.',
+        reason: QA_BASELINE_OMIT_REASON,
       },
       feedback: {
         state: 'not-applicable',
-        reason: 'Omitted for the 4096-token baseline.',
+        reason: QA_BASELINE_OMIT_REASON,
       },
       sources: qaSources,
       limitations,
+    },
+  });
+}
+
+type ForceFitQuestion = Extract<
+  ModerationAnalysisContextV1['context']['questions'],
+  { state: 'available' }
+>['items'][number];
+
+function questionBestScore(question: ForceFitQuestion): number {
+  if (question.votes.state !== 'available') return -1;
+  return question.votes.bestScore.state === 'available' ? question.votes.bestScore.value : -1;
+}
+
+/**
+ * Diversify force-fit like the canonical packer: round-robin across status lanes
+ * so many PENDING items cannot starve PINNED/ACTIVE evidence.
+ */
+function forceFitQuestionCandidates(items: readonly ForceFitQuestion[]): ForceFitQuestion[] {
+  const byLaneOrder = (left: ForceFitQuestion, right: ForceFitQuestion): number =>
+    questionBestScore(right) - questionBestScore(left) ||
+    compareModerationPromptCodeUnits(left.sourceId, right.sourceId);
+  const pinned = items.filter(({ status }) => status === 'PINNED').sort(byLaneOrder);
+  const pending = items.filter(({ status }) => status === 'PENDING').sort(byLaneOrder);
+  const active = items.filter(({ status }) => status === 'ACTIVE').sort(byLaneOrder);
+  const other = items
+    .filter(({ status }) => status !== 'PINNED' && status !== 'PENDING' && status !== 'ACTIVE')
+    .sort(byLaneOrder);
+
+  const ranked: ForceFitQuestion[] = [];
+  const seen = new Set<string>();
+  const lanes = [pinned, pending, active, other] as const;
+  const maximum = Math.max(0, ...lanes.map((lane) => lane.length));
+  for (let index = 0; index < maximum; index += 1) {
+    for (const lane of lanes) {
+      const question = lane[index];
+      if (!question || seen.has(question.sourceId)) continue;
+      seen.add(question.sourceId);
+      ranked.push(question);
+    }
+  }
+  return ranked;
+}
+
+/**
+ * Ultra-slim Q&A-only analysis: top-N questions, short texts, compacted meta and
+ * limitations so at least one included source can fit the summary packing budget.
+ */
+function qaForceFitAnalysis(
+  analysis: ModerationAnalysisContextV1,
+  questionCount: number,
+  maxTextBytes: number,
+): ModerationAnalysisContextV1 {
+  const context = analysis.context;
+  if (context.questions.state !== 'available' || context.questions.items.length === 0) {
+    return analysis;
+  }
+
+  const ranked = forceFitQuestionCandidates(context.questions.items);
+  const selected = ranked.slice(0, Math.max(1, questionCount)).map((question) => ({
+    ...question,
+    answerState: { state: 'unavailable' as const, reason: 'not-collected' as const },
+    votes: { state: 'unavailable' as const, reason: 'not-collected' as const },
+    nlp: { state: 'disabled' as const, reason: QA_FORCE_FIT_OMIT_REASON },
+    topicSourceIds: [],
+  }));
+  const selectedIds = new Set(selected.map((question) => question.sourceId));
+  const qaSources = context.sources
+    .filter((source) => source.kind === 'qa-question' && selectedIds.has(source.id))
+    .map((source) => {
+      if (source.kind !== 'qa-question' || source.content.state !== 'included') return source;
+      const text = truncateUtf8ToMaxBytes(source.content.text, maxTextBytes);
+      return {
+        ...source,
+        content: {
+          state: 'included' as const,
+          text,
+          truncated: text !== source.content.text || source.content.truncated,
+        },
+      };
+    });
+  const corpus = context.questions.corpus;
+  const represented = selected.length;
+
+  return ModerationAnalysisContextV1Schema.parse({
+    ...analysis,
+    context: {
+      ...context,
+      meta: {
+        sourceRevision: 'f',
+        analysisVersion: 'f',
+        selectionVersion: 'f',
+        revisions: {
+          questionText: { state: 'available' as const, value: '1' },
+          questionVotes: { state: 'unavailable' as const, reason: 'not-collected' as const },
+          questionStatus: { state: 'available' as const, value: '1' },
+          questionAnswerState: {
+            state: 'unavailable' as const,
+            reason: 'not-collected' as const,
+          },
+          questionNlp: { state: 'available' as const, value: '1' },
+          topics: { state: 'not-applicable' as const, reason: QA_FORCE_FIT_OMIT_REASON },
+          learningObjectives: {
+            state: 'unavailable' as const,
+            reason: 'outside-scope' as const,
+          },
+          releasedResults: { state: 'unavailable' as const, reason: 'outside-scope' as const },
+          feedback: { state: 'not-applicable' as const, reason: QA_FORCE_FIT_OMIT_REASON },
+        },
+      },
+      scope: {
+        ...context.scope,
+        channels: ['qa'],
+        // Keep the original status filter so corpus.analyzed stays consistent with scope.
+        questionFilter: context.scope.questionFilter,
+        selectionLimits: {
+          ...context.scope.selectionLimits,
+          questions: represented,
+          topics: 0,
+          compassSignals: 0,
+          learningObjectives: 0,
+          resultAggregates: 0,
+          feedbackAggregates: 0,
+        },
+      },
+      questions: {
+        state: 'available' as const,
+        participantBasis: { state: 'unavailable' as const, reason: 'not-collected' as const },
+        corpus: {
+          total: corpus.total,
+          eligible: corpus.eligible,
+          analyzed: corpus.analyzed,
+          deduplicated: Math.max(represented, Math.min(corpus.deduplicated, corpus.analyzed)),
+          represented,
+        },
+        items: selected,
+      },
+      topics: { state: 'disabled', reason: QA_FORCE_FIT_OMIT_REASON },
+      compass: { state: 'unavailable', reason: 'outside-scope' },
+      learningContext: { state: 'unavailable', reason: 'outside-scope' },
+      releasedResults: { state: 'not-released', reason: QA_FORCE_FIT_OMIT_REASON },
+      feedback: { state: 'not-applicable', reason: QA_FORCE_FIT_OMIT_REASON },
+      sources: qaSources,
+      limitations: [
+        {
+          code: 'budget-truncated' as const,
+          section: 'questions' as const,
+          detail: QA_FORCE_FIT_OMIT_REASON,
+        },
+      ],
     },
   });
 }
@@ -272,6 +427,9 @@ function packedAnalyzedQuestionCount(promptContext: ModerationPromptContextV1): 
 
 /** Progressive UTF-8 byte caps for the minimum-coverage retry (not model tokens). */
 const MIN_QA_COVERAGE_TEXT_BYTES = [480, 240, 120, 72] as const;
+/** Force-fit: try larger top-N first so full-context is not under-filled by a 1-question pack. */
+const FORCE_FIT_QUESTION_COUNTS = [5, 3, 2, 1] as const;
+const FORCE_FIT_TEXT_BYTES = [96, 48, 32] as const;
 
 function truncateUtf8ToMaxBytes(text: string, maxBytes: number): string {
   if (Buffer.byteLength(text, 'utf8') <= maxBytes) return text;
@@ -319,34 +477,72 @@ function packOnce(input: {
   });
 }
 
+function tryPackOnce(input: {
+  readonly analysis: ModerationAnalysisContextV1;
+  readonly packedAt?: Date;
+}): ModerationPromptContextV1 | null {
+  try {
+    return packOnce(input);
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      error.message === 'Moderation prompt base metadata exceeds the configured context budget.'
+    ) {
+      return null;
+    }
+    throw error;
+  }
+}
+
 /**
- * When `initialPack` has analyzed Q&A questions but zero included source texts,
- * retries with the Q&A text baseline and progressively shorter texts.
+ * When `initialPack` is missing or has analyzed Q&A questions but zero included
+ * source texts, retries with the Q&A text baseline, progressively shorter texts,
+ * then a force-fit top-N question pack that drops shell bloat (meta/limitations).
+ * `initialPack` may be null when even the empty baseline shell exceeds the budget.
  */
 export function ensureMinimumQaQuestionCoverage(input: {
   readonly analysis: ModerationAnalysisContextV1;
   readonly packedAt?: Date;
-  readonly initialPack: ModerationPromptContextV1;
+  readonly initialPack: ModerationPromptContextV1 | null;
 }): ModerationPromptContextV1 {
-  if (
-    analyzedQuestionCount(input.analysis) === 0 ||
-    countIncludedQaQuestionSources(input.initialPack) > 0
-  ) {
+  if (analyzedQuestionCount(input.analysis) === 0) {
+    if (!input.initialPack) {
+      throw new Error('Moderation prompt base metadata exceeds the configured context budget.');
+    }
+    return input.initialPack;
+  }
+  if (input.initialPack && countIncludedQaQuestionSources(input.initialPack) > 0) {
     return input.initialPack;
   }
 
   const baseline = qaTextBaselineAnalysis(input.analysis);
-  let packed = packOnce({ analysis: baseline, packedAt: input.packedAt });
-  if (countIncludedQaQuestionSources(packed) > 0) return packed;
+  let packed: ModerationPromptContextV1 | null =
+    tryPackOnce({ analysis: baseline, packedAt: input.packedAt }) ?? input.initialPack;
+  if (packed && countIncludedQaQuestionSources(packed) > 0) return packed;
 
   for (const maxBytes of MIN_QA_COVERAGE_TEXT_BYTES) {
-    packed = packOnce({
+    const truncated = tryPackOnce({
       analysis: withTruncatedIncludedQaTexts(baseline, maxBytes),
       packedAt: input.packedAt,
     });
+    if (!truncated) continue;
+    packed = truncated;
     if (countIncludedQaQuestionSources(packed) > 0) return packed;
   }
-  return packed;
+
+  for (const questionCount of FORCE_FIT_QUESTION_COUNTS) {
+    for (const maxBytes of FORCE_FIT_TEXT_BYTES) {
+      const forceFitted = tryPackOnce({
+        analysis: qaForceFitAnalysis(input.analysis, questionCount, maxBytes),
+        packedAt: input.packedAt,
+      });
+      if (!forceFitted) continue;
+      packed = forceFitted;
+      if (countIncludedQaQuestionSources(packed) > 0) return packed;
+    }
+  }
+  if (packed) return packed;
+  throw new Error('Moderation prompt base metadata exceeds the configured context budget.');
 }
 
 /**
@@ -358,29 +554,20 @@ export function packSummaryModerationPromptContext(input: {
   readonly analysis: ModerationAnalysisContextV1;
   readonly packedAt?: Date;
 }): ModerationPromptContextV1 {
-  const packWithBaselineFallback = (
-    analysis: ModerationAnalysisContextV1,
-  ): ModerationPromptContextV1 => {
-    try {
-      return packOnce({ analysis, packedAt: input.packedAt });
-    } catch (error) {
-      if (
-        !(error instanceof Error) ||
-        error.message !== 'Moderation prompt base metadata exceeds the configured context budget.'
-      ) {
-        throw error;
-      }
-      return packOnce({
-        analysis: qaTextBaselineAnalysis(analysis),
-        packedAt: input.packedAt,
-      });
-    }
-  };
+  const packedAt = input.packedAt;
+  let initialPack = tryPackOnce({ analysis: input.analysis, packedAt });
+  if (!initialPack) {
+    // Full analysis shell exceeds budget — try Q&A baseline before force-fit.
+    initialPack = tryPackOnce({
+      analysis: qaTextBaselineAnalysis(input.analysis),
+      packedAt,
+    });
+  }
 
   return ensureMinimumQaQuestionCoverage({
     analysis: input.analysis,
-    packedAt: input.packedAt,
-    initialPack: packWithBaselineFallback(input.analysis),
+    packedAt,
+    initialPack,
   });
 }
 

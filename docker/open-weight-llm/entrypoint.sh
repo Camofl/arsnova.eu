@@ -36,7 +36,7 @@ set -- \
   --model "$model_path" \
   --alias qwen3-4b-instruct-2507-q4_k_m \
   --parallel 1 \
-  --ctx-size 4096 \
+  --ctx-size 8192 \
   --n-predict 768 \
   --threads "$threads" \
   --threads-batch "$threads" \

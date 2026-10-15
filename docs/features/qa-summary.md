@@ -4,7 +4,7 @@
 
 **Zielgruppe:** Product Owner, Entwickler, Betrieb
 **Stand:** 2026-10-05
-**Status:** Versionierter Summary-V2-Pfad, private Runtimeübergabe, Kontextvorschau und extraktiver Backend-Fallback implementiert; Kill-Switches produktiv default aus; reale CPU-/Prefill-/Speicherabnahme und reichhaltiges 4.096-Token-Profil offen
+**Status:** Versionierter Summary-V2-Pfad, private Runtimeübergabe, Kontextvorschau und extraktiver Backend-Fallback implementiert; Kill-Switches produktiv default aus; reale CPU-/Prefill-/Speicherabnahme und reichhaltiges 8.192-Token-Profil offen
 **Backlog:** Story 8.9c
 **ADR:** [0032-optional-nlp-cascade-for-qa-moderation-signals.md](../architecture/decisions/0032-optional-nlp-cascade-for-qa-moderation-signals.md) (Kaskade), [0035-self-hosted-llm-runtime-llama-cpp-over-ollama.md](../architecture/decisions/0035-self-hosted-llm-runtime-llama-cpp-over-ollama.md) (Slice-4-Runtime)
 
@@ -65,7 +65,7 @@ Die Adapterwahl ist ausdrücklich und nachvollziehbar:
 
 Vor dem Modelllauf baut die Queue den Kontext frisch auf; danach folgen derselbe erneute Kontextaufbau und ein Hashvergleich. Eine Quellenänderung verwirft die Modellantwort und bindet den Fallback an den neuen Stand. `summaryRuntime` prüft fertige Ergebnisse vor der nächsten Auslieferung erneut. Session-Purge löscht Ergebnis, Warteschlangeneintrag und flüchtiges Host-Credential und bricht einen laufenden Auftrag ab.
 
-Das technische Profil verwendet 4.096 konservative Budgeteinheiten, 640 Antwortreserve und 128 Sicherheitsmarge. Der reichhaltige Vollkontext passt derzeit nicht in dieses Profil; der Packer degradiert sichtbar auf eine Q&A-Textbaseline. Das ist ein sicherer Betriebszustand, aber **keine bestandene Full-context- oder CPU-Prefill-Abnahme**. Details und offene Nachweise stehen in [Issue #456 – Slice-8-Abnahme](../implementation/ISSUE-456-SLICE-8-ABNAHME.md).
+Das technische Profil verwendet 8.192 konservative Budgeteinheiten, 640 Antwortreserve und 128 Sicherheitsmarge (unter dem praxisnahen 8k-Arbeitsfenster von Qwen3-4B Q4; nie Modelldefault). Passen Basismetadaten trotzdem nicht, degradiert der Packer sichtbar auf eine Q&A-Textbaseline bzw. Force-Fit-Mindestbelege. Das ist ein sicherer Betriebszustand, aber **keine bestandene Full-context- oder CPU-Prefill-Abnahme**. Details und offene Nachweise stehen in [Issue #456 – Slice-8-Abnahme](../implementation/ISSUE-456-SLICE-8-ABNAHME.md).
 
 ## Lokal prüfen
 
@@ -120,4 +120,4 @@ Produktiv weder `QA_SUMMARY_ENABLED` noch `OPEN_WEIGHT_LLM_ENABLED` stillschweig
 
 [Issue #456](https://github.com/kqc-real/arsnova.eu/issues/456) liefert den versionierten Shared-Vertrag, hostautorisierten Gesamtbuilder, deterministischen Packer/Hash/Cache, die getrennte Lernzielvorbereitung sowie den V2-Adapter- und Vorschaupfad. Integrationsgrenzen und Zustände stehen in [moderation-prompt-context.md](moderation-prompt-context.md); die Datenhaltung regelt [ADR-0036](../architecture/decisions/0036-learning-objective-storage-and-live-projection.md).
 
-Runtime R ist in die Summary-Queue verdrahtet, bleibt aber produktiv deaktiviert. Der reale Runtime-Nachweis umfasst bislang nur einen kurzen `topic_label`-Auftrag. Für `qa_summary` V2 und `learning_objectives` fehlen der reale Lauf auf der vorgesehenen Hardware sowie CPU-/Prefill-/RSS-Werte. Zudem reicht das feste 4.096-Profil nicht für den reichhaltigen Vollkontext. Diese beiden Blocker sind in der [Slice-8-Abnahme](../implementation/ISSUE-456-SLICE-8-ABNAHME.md) ausdrücklich offen; kein Flag wird durch die Integration aktiviert.
+Runtime R ist in die Summary-Queue verdrahtet, bleibt aber produktiv deaktiviert. Der reale Runtime-Nachweis umfasst bislang nur einen kurzen `topic_label`-Auftrag. Für `qa_summary` V2 und `learning_objectives` fehlen der reale Lauf auf der vorgesehenen Hardware sowie CPU-/Prefill-/RSS-Werte. Zudem bleibt die Prefill-/RSS-Abnahme des 8.192-Profils für den reichhaltigen Vollkontext offen. Diese Blocker sind in der [Slice-8-Abnahme](../implementation/ISSUE-456-SLICE-8-ABNAHME.md) ausdrücklich offen; kein Flag wird durch die Integration aktiviert.

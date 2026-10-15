@@ -1087,6 +1087,39 @@ describe('moderation prompt context packing', () => {
 });
 
 describe('ModerationPromptPackingCache', () => {
+  it('caches keine leeren Q&A-Evidence-Packs', () => {
+    const cache = new ModerationPromptPackingCache();
+    const analysis = analysisFixture(MODERATION_PROMPT_CONTEXT_MINIMAL_FIXTURE_V1);
+    const packingProfile = profile();
+    const emptyPack = packModerationPromptContext({
+      analysis,
+      profile: packingProfile,
+      packedAt: PACKED_AT,
+    });
+    // Force an empty-evidence result through a custom packer while analysis still
+    // reports analyzed questions — production sticky extractive path.
+    if (emptyPack.context.questions.state !== 'available') {
+      throw new Error('Erwartete verfügbare Fragen.');
+    }
+    emptyPack.context.questions = {
+      ...emptyPack.context.questions,
+      corpus: { ...emptyPack.context.questions.corpus, analyzed: 20, represented: 0 },
+      items: [],
+    };
+    emptyPack.context.sources = [];
+
+    const input = {
+      sessionId: 'session-empty-evidence',
+      analysis,
+      profile: packingProfile,
+      packedAt: PACKED_AT,
+      pack: () => structuredClone(emptyPack),
+    };
+    expect(cache.getOrPackFreshlyAuthorized(input).cache).toBe('miss');
+    expect(cache.size).toBe(0);
+    expect(cache.getOrPackFreshlyAuthorized(input).cache).toBe('miss');
+  });
+
   it('misses on semantic changes and profile changes', () => {
     const cache = new ModerationPromptPackingCache();
     const first = analysisFixture();

@@ -18,9 +18,9 @@ Runtime R stellt eine gemeinsame, private CPU-Runtime für drei getrennte techni
 
 Die versionierten Zod-Verträge liegen in `libs/shared-types/src/open-weight-llm.ts`. Der Backend-Client übersetzt ausschließlich diese Verträge nach llama.cpp Chat Completions, prüft die strukturierte Antwort erneut und verwirft unbekannte Quellen- oder Aufgabenreferenzen. #456 Slice 5 verdrahtet den bewusst ausgelösten Vorbereitungsauftrag aus [Modellgestützte Lernzielableitung](learning-objective-derivation.md); Slice 7 verdrahtet `qa_summary` V2 mit dem versionierten [Moderations-Prompt-Kontext](moderation-prompt-context.md), einem hostgeschützten Vorschaupfad und dem extraktiven Backend-Fallback. Der Labelpfad ist für Host-Q&A und Host-Freitext angeschlossen und bleibt produktiv aus: [WORD-CLOUD-THEMENLABEL-1.14C-STUFE-2-PLAN.md](../implementation/WORD-CLOUD-THEMENLABEL-1.14C-STUFE-2-PLAN.md). Alle drei Aufträge behalten eigene Aktivierungs-, Schema-, Timeout- und Fallbackgrenzen.
 
-`topic_label`, `learning_objectives` und der Legacy-Summaryauftrag sind zusätzlich auf 2.500 UTF-8-Bytes für die vollständig serialisierte User-Nachricht begrenzt. Größere Lernzielmengen werden deterministisch in sequenzielle Aufträge geteilt. Summary V2 besitzt bewusst nicht diese historische Gesamtgrenze, sondern den bereits gepackten `ModerationPromptContextV1` mit seinem eigenen Kontext-, Instruktions-, Definitions-, Antwort- und Sicherheitsbudget. Sein festes Profil reserviert bei 4.096 insgesamt 640 für die Antwort und 128 als Sicherheitsmarge.
+`topic_label`, `learning_objectives` und der Legacy-Summaryauftrag sind zusätzlich auf 2.500 UTF-8-Bytes für die vollständig serialisierte User-Nachricht begrenzt. Größere Lernzielmengen werden deterministisch in sequenzielle Aufträge geteilt. Summary V2 besitzt bewusst nicht diese historische Gesamtgrenze, sondern den bereits gepackten `ModerationPromptContextV1` mit seinem eigenen Kontext-, Instruktions-, Definitions-, Antwort- und Sicherheitsbudget. Sein festes Profil reserviert bei 8.192 insgesamt 640 für die Antwort und 128 als Sicherheitsmarge (unter dem praxisnahen 8k-Arbeitsfenster von Qwen3-4B Q4; nativ 32k, nie Modelldefault).
 
-Der reichhaltige Summary-V2-Referenzkontext passt in diesem Profil nicht: Die App packt sichtbar eine Q&A-Textbaseline neu. Das verhindert einen unausführbaren Großauftrag, belegt aber nicht die vom Issue geforderte reichhaltige Vollkontexttauglichkeit. Es gibt keinen stillen Ausbau des Kontextfensters, keine GPU- und keine SaaS-Ausweicharchitektur.
+Der Summary-V2-Referenzkontext passt im 8.192-Profil mit Q&A-Belegen und sichtbaren Kürzungen; bei zu großen Basismetadaten degradiert der Packer kontrolliert auf Q&A-Textbaseline bzw. Force-Fit-Mindestbelege. Das verhindert unausführbare Großaufträge, belegt aber nicht die Prefill-/RSS-Abnahme auf dem vorgesehenen CPU-Host. Es gibt keinen stillen Ausbau auf Modelldefault (32k/128k), keine GPU- und keine SaaS-Ausweicharchitektur.
 
 `OPEN_WEIGHT_LLM_ENABLED` bleibt standardmäßig `false` und ist unabhängig von `NLP_ENABLED`, `QA_NLP_ENABLED`, `WORD_CLOUD_SEMANTIC_ENABLED` und `QA_SUMMARY_ENABLED`. Es gibt keinen SaaS-Fallback.
 
@@ -138,7 +138,7 @@ llama.cpp b10524 dokumentiert mehrere strukturierte `response_format`-Varianten.
 Der Entry-Point erzwingt unter anderem:
 
 ```text
---parallel 1 --ctx-size 4096 --n-predict 768
+--parallel 1 --ctx-size 8192 --n-predict 768
 --no-webui --slots --api-key … --reasoning off
 --n-gpu-layers 0 --slot-prompt-similarity 0 --jinja --offline
 ```
@@ -238,7 +238,7 @@ Der finale isolierte Container war zusätzlich effektiv als UID/GID `65532:65532
 
 Die drei lokalen Läufe belegen Schemaerzwingung und Ausführbarkeit des kurzen Labelauftrags. Danach wurde `learning_objectives` am 12.10.2026 auf dem privaten Produktionshost mit dem vollständigen Demo-Quiz ausgeführt: Nach Anpassung der Containergrenze auf 8 GiB RAM und 10 GiB RAM plus Swap wurden zehn Vorschläge als Entwürfe hinzugefügt; `memory.peak` der aktuellen cgroup betrug rund 3,56 GiB ohne neues OOM-Ereignis. Der vorangegangene Versuch war bei Batch 3 an der früheren 5-GiB-Grenze durch ein Docker-OOM-Ereignis abgebrochen. Details und verbleibende Nachweise stehen in [Modellgestützte Lernzielableitung](learning-objective-derivation.md) und der [Slice-8-Abnahme](../implementation/ISSUE-456-SLICE-8-ABNAHME.md).
 
-Dieser Produktionslauf belegt keine vollständige Lernzielqualität, keine p95 unter Last und keine Summary-V2-Prefill-/RSS-Messung. Der reichhaltige 4.096-Kontext bleibt offen. `OPEN_WEIGHT_LLM_ENABLED` ist im Repository standardmäßig `false`; der Betreiber hatte es für den Produktionslauf aktiviert. Aus diesem Lauf folgt keine allgemeine Freigabe der optionalen Consumer.
+Dieser Produktionslauf belegt keine vollständige Lernzielqualität, keine p95 unter Last und keine Summary-V2-Prefill-/RSS-Messung. Der reichhaltige 8.192-Kontext bleibt offen. `OPEN_WEIGHT_LLM_ENABLED` ist im Repository standardmäßig `false`; der Betreiber hatte es für den Produktionslauf aktiviert. Aus diesem Lauf folgt keine allgemeine Freigabe der optionalen Consumer.
 
 ## Verifikation
 

@@ -102,19 +102,20 @@ describe('moderationSummaryContext', () => {
     ).toBeLessThanOrEqual(QA_SUMMARY_MODERATION_PACKING_PROFILE.contextWindowTokens);
   });
 
-  it('degradiert einen zu großen Metadaten-Basiskontext sichtbar auf die Q&A-Textbaseline', () => {
+  it('packt den Referenzkontext im 8192-Profil mit Q&A-Belegen und sichtbaren Kürzungen', () => {
     const prepared = prepareModerationSummaryContextFromAnalysis({
       analysis: analysisFixture(MODERATION_PROMPT_CONTEXT_REFERENCE_FIXTURE_V1),
       plan,
     });
-    expect(prepared.request.promptContext.context.sources).toHaveLength(1);
-    expect(prepared.request.promptContext.context.sources[0]?.kind).toBe('qa-question');
-    expect(prepared.request.promptContext.context.limitations).toContainEqual(
-      expect.objectContaining({ code: 'budget-truncated', section: 'topics' }),
-    );
-    expect(prepared.request.promptContext.budget.truncations).toContainEqual(
-      expect.objectContaining({ section: 'questions', reason: 'token-budget' }),
-    );
+    expect(countIncludedQaQuestionSources(prepared.request.promptContext)).toBeGreaterThan(0);
+    expect(prepared.request.promptContext.budget.contextWindowTokens).toBe(8_192);
+    expect(
+      prepared.request.promptContext.budget.packedInputTokens +
+        prepared.request.promptContext.budget.reservedOutputTokens +
+        prepared.request.promptContext.budget.safetyMarginTokens,
+    ).toBeLessThanOrEqual(QA_SUMMARY_MODERATION_PACKING_PROFILE.contextWindowTokens);
+    expect(prepared.request.promptContext.budget.truncations.length).toBeGreaterThan(0);
+    expect(prepared.plan.selectedMode).toBe('full-context');
   });
 
   it('stellt Mindest-Q&A-Coverage her wenn der erste Pack keine included Sources liefert', () => {
@@ -128,6 +129,223 @@ describe('moderationSummaryContext', () => {
       initialPack: emptyFirstPack,
     });
     expect(countIncludedQaQuestionSources(recovered)).toBeGreaterThan(0);
+  });
+
+  it('force-fitted Full-context wenn Truncate-Baseline wegen Shell-Budget leer bleibt', () => {
+    const base = analysisFixture(MODERATION_PROMPT_CONTEXT_MINIMAL_FIXTURE_V1);
+    if (base.context.questions.state !== 'available') {
+      throw new Error('Erwartete verfügbare Fragen im Minimalfixture.');
+    }
+    const templateQuestion = base.context.questions.items[0]!;
+    const templateSource = base.context.sources.find((source) => source.kind === 'qa-question');
+    if (!templateSource || templateSource.kind !== 'qa-question') {
+      throw new Error('Erwartete Q&A-Quelle im Minimalfixture.');
+    }
+    const items = Array.from({ length: 20 }, (_, index) => ({
+      ...structuredClone(templateQuestion),
+      sourceId: `qa-question:00000000-0000-4000-8000-${String(index).padStart(12, '0')}`,
+    }));
+    const sources = items.map((question, index) => ({
+      ...structuredClone(templateSource),
+      id: question.sourceId,
+      content: {
+        state: 'included' as const,
+        text: `Produktionsfrage ${index}: ${'Wort '.repeat(60)}`.slice(0, 350),
+        truncated: false,
+      },
+    }));
+    const analysis = ModerationAnalysisContextV1Schema.parse({
+      ...base,
+      assembledAt: '2026-10-15T05:31:38.381Z',
+      context: {
+        ...base.context,
+        questions: {
+          ...base.context.questions,
+          items,
+          corpus: {
+            total: 21,
+            eligible: 20,
+            analyzed: 20,
+            deduplicated: 20,
+            represented: 20,
+          },
+        },
+        sources,
+        scope: {
+          ...base.context.scope,
+          selectionLimits: {
+            ...base.context.scope.selectionLimits,
+            questions: 20,
+          },
+        },
+        // At ctx-8192, ~18 fat question-limitations leave headroom too small for
+        // truncate-only recovery but still allow the slim force-fit pack.
+        limitations: Array.from({ length: 18 }, (_, index) => ({
+          code: 'budget-truncated' as const,
+          section: 'questions' as const,
+          detail: `detail-${index}-`.padEnd(200, '.'),
+        })),
+      },
+    });
+
+    const prepared = prepareModerationSummaryContextFromAnalysis({ analysis, plan });
+    const included = countIncludedQaQuestionSources(prepared.request.promptContext);
+    expect(included).toBeGreaterThan(0);
+    // Larger force-fit candidates are tried first (5→1), so more than one question
+    // should land when the slim shell allows it.
+    expect(included).toBeGreaterThanOrEqual(3);
+    expect(prepared.plan.selectedMode).toBe('full-context');
+    expect(prepared.plan.fallback).toBeNull();
+    expect(prepared.request.promptContext.context.limitations).toContainEqual(
+      expect.objectContaining({ detail: 'qa-force-fit' }),
+    );
+    expect(prepared.request.promptContext.context.scope.questionFilter).toMatchObject(
+      analysis.context.scope.questionFilter,
+    );
+  });
+
+  it('diversifiziert Force-Fit über PENDING, PINNED und ACTIVE per Round-Robin', () => {
+    const base = analysisFixture(MODERATION_PROMPT_CONTEXT_MINIMAL_FIXTURE_V1);
+    if (base.context.questions.state !== 'available') {
+      throw new Error('Erwartete verfügbare Fragen im Minimalfixture.');
+    }
+    const templateQuestion = base.context.questions.items[0]!;
+    const templateSource = base.context.sources.find((source) => source.kind === 'qa-question');
+    if (!templateSource || templateSource.kind !== 'qa-question') {
+      throw new Error('Erwartete Q&A-Quelle im Minimalfixture.');
+    }
+    const statuses = [
+      ...Array.from({ length: 6 }, () => 'PENDING' as const),
+      'PINNED' as const,
+      'ACTIVE' as const,
+    ];
+    const items = statuses.map((status, index) => ({
+      ...structuredClone(templateQuestion),
+      sourceId: `qa-question:00000000-0000-4000-8000-${String(index).padStart(12, '0')}`,
+      status,
+    }));
+    const sources = items.map((question, index) => ({
+      ...structuredClone(templateSource),
+      id: question.sourceId,
+      content: {
+        state: 'included' as const,
+        text: `Statusfrage ${question.status} ${index}: ${'Wort '.repeat(40)}`.slice(0, 280),
+        truncated: false,
+      },
+    }));
+    const analysis = ModerationAnalysisContextV1Schema.parse({
+      ...base,
+      assembledAt: '2026-10-15T05:31:38.381Z',
+      context: {
+        ...base.context,
+        questions: {
+          ...base.context.questions,
+          items,
+          corpus: {
+            total: 8,
+            eligible: 8,
+            analyzed: 8,
+            deduplicated: 8,
+            represented: 8,
+          },
+        },
+        sources,
+        scope: {
+          ...base.context.scope,
+          questionFilter: {
+            state: 'available' as const,
+            statuses: ['PENDING', 'ACTIVE', 'PINNED'],
+            timeWindow: { kind: 'entire-session' as const },
+          },
+          selectionLimits: {
+            ...base.context.scope.selectionLimits,
+            questions: 8,
+          },
+        },
+        limitations: Array.from({ length: 18 }, (_, index) => ({
+          code: 'budget-truncated' as const,
+          section: 'questions' as const,
+          detail: `mix-${index}-`.padEnd(200, '.'),
+        })),
+      },
+    });
+
+    const prepared = prepareModerationSummaryContextFromAnalysis({ analysis, plan });
+    expect(prepared.request.promptContext.context.limitations).toContainEqual(
+      expect.objectContaining({ detail: 'qa-force-fit' }),
+    );
+    const packedStatuses = new Set(
+      prepared.request.promptContext.context.questions.state === 'available'
+        ? prepared.request.promptContext.context.questions.items.map((question) => question.status)
+        : [],
+    );
+    expect(packedStatuses.has('PENDING')).toBe(true);
+    expect(packedStatuses.has('PINNED')).toBe(true);
+    expect(packedStatuses.has('ACTIVE')).toBe(true);
+  });
+
+  it('erreicht Force-Fit auch wenn die Baseline-Shell selbst das Budget sprengt', () => {
+    const base = analysisFixture(MODERATION_PROMPT_CONTEXT_MINIMAL_FIXTURE_V1);
+    if (base.context.questions.state !== 'available') {
+      throw new Error('Erwartete verfügbare Fragen im Minimalfixture.');
+    }
+    const templateQuestion = base.context.questions.items[0]!;
+    const templateSource = base.context.sources.find((source) => source.kind === 'qa-question');
+    if (!templateSource || templateSource.kind !== 'qa-question') {
+      throw new Error('Erwartete Q&A-Quelle im Minimalfixture.');
+    }
+    const items = Array.from({ length: 5 }, (_, index) => ({
+      ...structuredClone(templateQuestion),
+      sourceId: `qa-question:00000000-0000-4000-8000-${String(index).padStart(12, '0')}`,
+    }));
+    const sources = items.map((question, index) => ({
+      ...structuredClone(templateSource),
+      id: question.sourceId,
+      content: {
+        state: 'included' as const,
+        text: `Frage ${index}: ${'Inhalt '.repeat(40)}`.slice(0, 280),
+        truncated: false,
+      },
+    }));
+    const analysis = ModerationAnalysisContextV1Schema.parse({
+      ...base,
+      assembledAt: '2026-10-15T05:31:38.381Z',
+      context: {
+        ...base.context,
+        questions: {
+          ...base.context.questions,
+          items,
+          corpus: {
+            total: 5,
+            eligible: 5,
+            analyzed: 5,
+            deduplicated: 5,
+            represented: 5,
+          },
+        },
+        sources,
+        scope: {
+          ...base.context.scope,
+          selectionLimits: {
+            ...base.context.scope.selectionLimits,
+            questions: 5,
+          },
+        },
+        // Enough fat question-limitations that even the empty baseline shell exceeds 8192.
+        limitations: Array.from({ length: 40 }, (_, index) => ({
+          code: 'budget-truncated' as const,
+          section: 'questions' as const,
+          detail: `shell-${index}-`.padEnd(280, '.'),
+        })),
+      },
+    });
+
+    const prepared = prepareModerationSummaryContextFromAnalysis({ analysis, plan });
+    expect(countIncludedQaQuestionSources(prepared.request.promptContext)).toBeGreaterThan(0);
+    expect(prepared.plan.selectedMode).toBe('full-context');
+    expect(prepared.request.promptContext.context.limitations).toContainEqual(
+      expect.objectContaining({ detail: 'qa-force-fit' }),
+    );
   });
 
   it('stuft Full-context auf extractive herab wenn analysierte Fragen ohne included Sources bleiben', () => {

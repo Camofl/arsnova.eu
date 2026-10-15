@@ -30,7 +30,7 @@ test('Entry-Point erzwingt Auth, CPU-only, einen Slot und die vereinbarten Hartf
   const entrypoint = readFileSync(join(runtimeRoot, 'entrypoint.sh'), 'utf8');
   for (const flag of [
     '--parallel 1',
-    '--ctx-size 4096',
+    '--ctx-size 8192',
     '--n-predict 768',
     '--no-webui',
     '--slots',
