@@ -20,7 +20,7 @@ Die versionierten Zod-Verträge liegen in `libs/shared-types/src/open-weight-llm
 
 `topic_label`, `learning_objectives` und der Legacy-Summaryauftrag sind zusätzlich auf 2.500 UTF-8-Bytes für die vollständig serialisierte User-Nachricht begrenzt. Größere Lernzielmengen werden deterministisch in sequenzielle Aufträge geteilt. Summary V2 besitzt bewusst nicht diese historische Gesamtgrenze, sondern den bereits gepackten `ModerationPromptContextV1` mit seinem eigenen Kontext-, Instruktions-, Definitions-, Antwort- und Sicherheitsbudget. Sein festes Profil reserviert bei 8.192 insgesamt 640 für die Antwort und 128 als Sicherheitsmarge (unter dem praxisnahen 8k-Arbeitsfenster von Qwen3-4B Q4; nativ 32k, nie Modelldefault).
 
-Der reichhaltige Summary-V2-Referenzkontext passt in diesem Profil nicht: Die App packt sichtbar eine Q&A-Textbaseline neu. Das verhindert einen unausführbaren Großauftrag, belegt aber nicht die vom Issue geforderte reichhaltige Vollkontexttauglichkeit. Es gibt keinen stillen Ausbau des Kontextfensters, keine GPU- und keine SaaS-Ausweicharchitektur.
+Der Summary-V2-Referenzkontext passt im 8.192-Profil mit Q&A-Belegen und sichtbaren Kürzungen; bei zu großen Basismetadaten degradiert der Packer kontrolliert auf Q&A-Textbaseline bzw. Force-Fit-Mindestbelege. Das verhindert unausführbare Großaufträge, belegt aber nicht die Prefill-/RSS-Abnahme auf dem vorgesehenen CPU-Host. Es gibt keinen stillen Ausbau auf Modelldefault (32k/128k), keine GPU- und keine SaaS-Ausweicharchitektur.
 
 `OPEN_WEIGHT_LLM_ENABLED` bleibt standardmäßig `false` und ist unabhängig von `NLP_ENABLED`, `QA_NLP_ENABLED`, `WORD_CLOUD_SEMANTIC_ENABLED` und `QA_SUMMARY_ENABLED`. Es gibt keinen SaaS-Fallback.
 

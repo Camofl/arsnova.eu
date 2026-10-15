@@ -314,9 +314,6 @@ function qaForceFitAnalysis(
     topicSourceIds: [],
   }));
   const selectedIds = new Set(selected.map((question) => question.sourceId));
-  const selectedStatuses = [...new Set(selected.map((question) => question.status))] as Array<
-    'PENDING' | 'ACTIVE' | 'PINNED'
-  >;
   const qaSources = context.sources
     .filter((source) => source.kind === 'qa-question' && selectedIds.has(source.id))
     .map((source) => {
@@ -363,16 +360,8 @@ function qaForceFitAnalysis(
       scope: {
         ...context.scope,
         channels: ['qa'],
-        questionFilter:
-          context.scope.questionFilter.state === 'available'
-            ? {
-                ...context.scope.questionFilter,
-                statuses:
-                  selectedStatuses.length > 0
-                    ? selectedStatuses.slice(0, 3)
-                    : context.scope.questionFilter.statuses,
-              }
-            : context.scope.questionFilter,
+        // Keep the original status filter so corpus.analyzed stays consistent with scope.
+        questionFilter: context.scope.questionFilter,
         selectionLimits: {
           ...context.scope.selectionLimits,
           questions: represented,
@@ -433,8 +422,8 @@ function packedAnalyzedQuestionCount(promptContext: ModerationPromptContextV1): 
 
 /** Progressive UTF-8 byte caps for the minimum-coverage retry (not model tokens). */
 const MIN_QA_COVERAGE_TEXT_BYTES = [480, 240, 120, 72] as const;
-/** Force-fit: fewer questions and shorter texts when truncate-only still yields an empty pack. */
-const FORCE_FIT_QUESTION_COUNTS = [1, 2, 3, 5] as const;
+/** Force-fit: try larger top-N first so full-context is not under-filled by a 1-question pack. */
+const FORCE_FIT_QUESTION_COUNTS = [5, 3, 2, 1] as const;
 const FORCE_FIT_TEXT_BYTES = [96, 48, 32] as const;
 
 function truncateUtf8ToMaxBytes(text: string, maxBytes: number): string {
@@ -501,25 +490,30 @@ function tryPackOnce(input: {
 }
 
 /**
- * When `initialPack` has analyzed Q&A questions but zero included source texts,
- * retries with the Q&A text baseline, progressively shorter texts, then a
- * force-fit top-N question pack that drops shell bloat (meta/limitations).
+ * When `initialPack` is missing or has analyzed Q&A questions but zero included
+ * source texts, retries with the Q&A text baseline, progressively shorter texts,
+ * then a force-fit top-N question pack that drops shell bloat (meta/limitations).
+ * `initialPack` may be null when even the empty baseline shell exceeds the budget.
  */
 export function ensureMinimumQaQuestionCoverage(input: {
   readonly analysis: ModerationAnalysisContextV1;
   readonly packedAt?: Date;
-  readonly initialPack: ModerationPromptContextV1;
+  readonly initialPack: ModerationPromptContextV1 | null;
 }): ModerationPromptContextV1 {
-  if (
-    analyzedQuestionCount(input.analysis) === 0 ||
-    countIncludedQaQuestionSources(input.initialPack) > 0
-  ) {
+  if (analyzedQuestionCount(input.analysis) === 0) {
+    if (!input.initialPack) {
+      throw new Error('Moderation prompt base metadata exceeds the configured context budget.');
+    }
+    return input.initialPack;
+  }
+  if (input.initialPack && countIncludedQaQuestionSources(input.initialPack) > 0) {
     return input.initialPack;
   }
 
   const baseline = qaTextBaselineAnalysis(input.analysis);
-  let packed = tryPackOnce({ analysis: baseline, packedAt: input.packedAt }) ?? input.initialPack;
-  if (countIncludedQaQuestionSources(packed) > 0) return packed;
+  let packed: ModerationPromptContextV1 | null =
+    tryPackOnce({ analysis: baseline, packedAt: input.packedAt }) ?? input.initialPack;
+  if (packed && countIncludedQaQuestionSources(packed) > 0) return packed;
 
   for (const maxBytes of MIN_QA_COVERAGE_TEXT_BYTES) {
     const truncated = tryPackOnce({
@@ -542,7 +536,8 @@ export function ensureMinimumQaQuestionCoverage(input: {
       if (countIncludedQaQuestionSources(packed) > 0) return packed;
     }
   }
-  return packed;
+  if (packed) return packed;
+  throw new Error('Moderation prompt base metadata exceeds the configured context budget.');
 }
 
 /**
@@ -554,29 +549,20 @@ export function packSummaryModerationPromptContext(input: {
   readonly analysis: ModerationAnalysisContextV1;
   readonly packedAt?: Date;
 }): ModerationPromptContextV1 {
-  const packWithBaselineFallback = (
-    analysis: ModerationAnalysisContextV1,
-  ): ModerationPromptContextV1 => {
-    try {
-      return packOnce({ analysis, packedAt: input.packedAt });
-    } catch (error) {
-      if (
-        !(error instanceof Error) ||
-        error.message !== 'Moderation prompt base metadata exceeds the configured context budget.'
-      ) {
-        throw error;
-      }
-      return packOnce({
-        analysis: qaTextBaselineAnalysis(analysis),
-        packedAt: input.packedAt,
-      });
-    }
-  };
+  const packedAt = input.packedAt;
+  let initialPack = tryPackOnce({ analysis: input.analysis, packedAt });
+  if (!initialPack) {
+    // Full analysis shell exceeds budget — try Q&A baseline before force-fit.
+    initialPack = tryPackOnce({
+      analysis: qaTextBaselineAnalysis(input.analysis),
+      packedAt,
+    });
+  }
 
   return ensureMinimumQaQuestionCoverage({
     analysis: input.analysis,
-    packedAt: input.packedAt,
-    initialPack: packWithBaselineFallback(input.analysis),
+    packedAt,
+    initialPack,
   });
 }
 
