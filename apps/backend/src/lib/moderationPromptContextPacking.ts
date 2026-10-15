@@ -1090,6 +1090,18 @@ type CacheEntry = {
   readonly value: ModerationPromptContextV1;
 };
 
+/** Analyzed Q&A questions present but no model-visible included question texts. */
+export function isEmptyQaEvidencePack(promptContext: ModerationPromptContextV1): boolean {
+  const analyzed =
+    promptContext.context.questions.state === 'available'
+      ? promptContext.context.questions.corpus.analyzed
+      : 0;
+  if (analyzed === 0) return false;
+  return !promptContext.context.sources.some(
+    (source) => source.kind === 'qa-question' && source.content.state === 'included',
+  );
+}
+
 export type FreshlyAuthorizedPackingResult = Readonly<{
   promptContext: ModerationPromptContextV1;
   cache: 'hit' | 'miss' | 'purge-fenced';
@@ -1162,16 +1174,20 @@ export class ModerationPromptPackingCache {
     }
 
     const promptContext = pack(packInput);
-    while (this.#entries.size >= this.#maxEntries()) {
-      const oldestKey = this.#entries.keys().next().value as string | undefined;
-      if (!oldestKey) break;
-      this.#entries.delete(oldestKey);
+    // Do not cache empty-evidence packs: analyzed Q&A with zero included source
+    // texts would stick extractive fallback for the TTL and block force-fit retries.
+    if (!isEmptyQaEvidencePack(promptContext)) {
+      while (this.#entries.size >= this.#maxEntries()) {
+        const oldestKey = this.#entries.keys().next().value as string | undefined;
+        if (!oldestKey) break;
+        this.#entries.delete(oldestKey);
+      }
+      this.#entries.set(key, {
+        sessionId,
+        expiresAt: now + this.#ttlMs(),
+        value: structuredClone(promptContext),
+      });
     }
-    this.#entries.set(key, {
-      sessionId,
-      expiresAt: now + this.#ttlMs(),
-      value: structuredClone(promptContext),
-    });
     return { promptContext, cache: 'miss' };
   }
 

@@ -180,6 +180,10 @@ export type PreparedModerationSummaryContext = Readonly<{
   plan: QaSummaryAdapterPlan;
 }>;
 
+/** Short reasons keep the empty packing shell under the 4096-token budget. */
+const QA_BASELINE_OMIT_REASON = 'qa-baseline';
+const QA_FORCE_FIT_OMIT_REASON = 'qa-force-fit';
+
 function qaTextBaselineAnalysis(
   analysis: ModerationAnalysisContextV1,
 ): ModerationAnalysisContextV1 {
@@ -193,7 +197,7 @@ function qaTextBaselineAnalysis(
             votes: { state: 'unavailable' as const, reason: 'not-collected' as const },
             nlp: {
               state: 'disabled' as const,
-              reason: 'Omitted for the 4096-token baseline.',
+              reason: QA_BASELINE_OMIT_REASON,
             },
             topicSourceIds: [],
           })),
@@ -210,7 +214,7 @@ function qaTextBaselineAnalysis(
     {
       code: 'budget-truncated' as const,
       section: 'topics' as const,
-      detail: 'Non-Q&A sections were omitted for the fixed 4096-token text baseline.',
+      detail: QA_BASELINE_OMIT_REASON,
     },
   ].slice(0, 100);
 
@@ -233,20 +237,177 @@ function qaTextBaselineAnalysis(
       questions,
       topics: {
         state: 'disabled',
-        reason: 'Omitted for the 4096-token baseline.',
+        reason: QA_BASELINE_OMIT_REASON,
       },
       compass: { state: 'unavailable', reason: 'outside-scope' },
       learningContext: { state: 'unavailable', reason: 'outside-scope' },
       releasedResults: {
         state: 'not-released',
-        reason: 'Omitted for the 4096-token baseline.',
+        reason: QA_BASELINE_OMIT_REASON,
       },
       feedback: {
         state: 'not-applicable',
-        reason: 'Omitted for the 4096-token baseline.',
+        reason: QA_BASELINE_OMIT_REASON,
       },
       sources: qaSources,
       limitations,
+    },
+  });
+}
+
+function questionForceFitRank(question: {
+  readonly status: string;
+  readonly votes:
+    | { readonly state: 'unavailable' }
+    | {
+        readonly state: 'available';
+        readonly bestScore:
+          | { readonly state: 'available'; readonly value: number }
+          | { readonly state: 'unavailable' };
+      };
+}): number {
+  if (question.status === 'PENDING') return 0;
+  if (question.status === 'PINNED') return 1;
+  return 2;
+}
+
+function questionBestScore(question: {
+  readonly votes:
+    | { readonly state: 'unavailable' }
+    | {
+        readonly state: 'available';
+        readonly bestScore:
+          | { readonly state: 'available'; readonly value: number }
+          | { readonly state: 'unavailable' };
+      };
+}): number {
+  if (question.votes.state !== 'available') return -1;
+  return question.votes.bestScore.state === 'available' ? question.votes.bestScore.value : -1;
+}
+
+/**
+ * Ultra-slim Q&A-only analysis: top-N questions, short texts, compacted meta and
+ * limitations so at least one included source can fit the summary packing budget.
+ */
+function qaForceFitAnalysis(
+  analysis: ModerationAnalysisContextV1,
+  questionCount: number,
+  maxTextBytes: number,
+): ModerationAnalysisContextV1 {
+  const context = analysis.context;
+  if (context.questions.state !== 'available' || context.questions.items.length === 0) {
+    return analysis;
+  }
+
+  const ranked = [...context.questions.items].sort((left, right) => {
+    const byStatus = questionForceFitRank(left) - questionForceFitRank(right);
+    if (byStatus !== 0) return byStatus;
+    const byScore = questionBestScore(right) - questionBestScore(left);
+    if (byScore !== 0) return byScore;
+    return left.sourceId < right.sourceId ? -1 : left.sourceId > right.sourceId ? 1 : 0;
+  });
+  const selected = ranked.slice(0, Math.max(1, questionCount)).map((question) => ({
+    ...question,
+    answerState: { state: 'unavailable' as const, reason: 'not-collected' as const },
+    votes: { state: 'unavailable' as const, reason: 'not-collected' as const },
+    nlp: { state: 'disabled' as const, reason: QA_FORCE_FIT_OMIT_REASON },
+    topicSourceIds: [],
+  }));
+  const selectedIds = new Set(selected.map((question) => question.sourceId));
+  const selectedStatuses = [...new Set(selected.map((question) => question.status))] as Array<
+    'PENDING' | 'ACTIVE' | 'PINNED'
+  >;
+  const qaSources = context.sources
+    .filter((source) => source.kind === 'qa-question' && selectedIds.has(source.id))
+    .map((source) => {
+      if (source.kind !== 'qa-question' || source.content.state !== 'included') return source;
+      const text = truncateUtf8ToMaxBytes(source.content.text, maxTextBytes);
+      return {
+        ...source,
+        content: {
+          state: 'included' as const,
+          text,
+          truncated: text !== source.content.text || source.content.truncated,
+        },
+      };
+    });
+  const corpus = context.questions.corpus;
+  const represented = selected.length;
+
+  return ModerationAnalysisContextV1Schema.parse({
+    ...analysis,
+    context: {
+      ...context,
+      meta: {
+        sourceRevision: 'f',
+        analysisVersion: 'f',
+        selectionVersion: 'f',
+        revisions: {
+          questionText: { state: 'available' as const, value: '1' },
+          questionVotes: { state: 'unavailable' as const, reason: 'not-collected' as const },
+          questionStatus: { state: 'available' as const, value: '1' },
+          questionAnswerState: {
+            state: 'unavailable' as const,
+            reason: 'not-collected' as const,
+          },
+          questionNlp: { state: 'available' as const, value: '1' },
+          topics: { state: 'not-applicable' as const, reason: QA_FORCE_FIT_OMIT_REASON },
+          learningObjectives: {
+            state: 'unavailable' as const,
+            reason: 'outside-scope' as const,
+          },
+          releasedResults: { state: 'unavailable' as const, reason: 'outside-scope' as const },
+          feedback: { state: 'not-applicable' as const, reason: QA_FORCE_FIT_OMIT_REASON },
+        },
+      },
+      scope: {
+        ...context.scope,
+        channels: ['qa'],
+        questionFilter:
+          context.scope.questionFilter.state === 'available'
+            ? {
+                ...context.scope.questionFilter,
+                statuses:
+                  selectedStatuses.length > 0
+                    ? selectedStatuses.slice(0, 3)
+                    : context.scope.questionFilter.statuses,
+              }
+            : context.scope.questionFilter,
+        selectionLimits: {
+          ...context.scope.selectionLimits,
+          questions: represented,
+          topics: 0,
+          compassSignals: 0,
+          learningObjectives: 0,
+          resultAggregates: 0,
+          feedbackAggregates: 0,
+        },
+      },
+      questions: {
+        state: 'available' as const,
+        participantBasis: { state: 'unavailable' as const, reason: 'not-collected' as const },
+        corpus: {
+          total: corpus.total,
+          eligible: corpus.eligible,
+          analyzed: corpus.analyzed,
+          deduplicated: Math.max(represented, Math.min(corpus.deduplicated, corpus.analyzed)),
+          represented,
+        },
+        items: selected,
+      },
+      topics: { state: 'disabled', reason: QA_FORCE_FIT_OMIT_REASON },
+      compass: { state: 'unavailable', reason: 'outside-scope' },
+      learningContext: { state: 'unavailable', reason: 'outside-scope' },
+      releasedResults: { state: 'not-released', reason: QA_FORCE_FIT_OMIT_REASON },
+      feedback: { state: 'not-applicable', reason: QA_FORCE_FIT_OMIT_REASON },
+      sources: qaSources,
+      limitations: [
+        {
+          code: 'budget-truncated' as const,
+          section: 'questions' as const,
+          detail: QA_FORCE_FIT_OMIT_REASON,
+        },
+      ],
     },
   });
 }
@@ -272,6 +433,9 @@ function packedAnalyzedQuestionCount(promptContext: ModerationPromptContextV1): 
 
 /** Progressive UTF-8 byte caps for the minimum-coverage retry (not model tokens). */
 const MIN_QA_COVERAGE_TEXT_BYTES = [480, 240, 120, 72] as const;
+/** Force-fit: fewer questions and shorter texts when truncate-only still yields an empty pack. */
+const FORCE_FIT_QUESTION_COUNTS = [1, 2, 3, 5] as const;
+const FORCE_FIT_TEXT_BYTES = [96, 48, 32] as const;
 
 function truncateUtf8ToMaxBytes(text: string, maxBytes: number): string {
   if (Buffer.byteLength(text, 'utf8') <= maxBytes) return text;
@@ -319,9 +483,27 @@ function packOnce(input: {
   });
 }
 
+function tryPackOnce(input: {
+  readonly analysis: ModerationAnalysisContextV1;
+  readonly packedAt?: Date;
+}): ModerationPromptContextV1 | null {
+  try {
+    return packOnce(input);
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      error.message === 'Moderation prompt base metadata exceeds the configured context budget.'
+    ) {
+      return null;
+    }
+    throw error;
+  }
+}
+
 /**
  * When `initialPack` has analyzed Q&A questions but zero included source texts,
- * retries with the Q&A text baseline and progressively shorter texts.
+ * retries with the Q&A text baseline, progressively shorter texts, then a
+ * force-fit top-N question pack that drops shell bloat (meta/limitations).
  */
 export function ensureMinimumQaQuestionCoverage(input: {
   readonly analysis: ModerationAnalysisContextV1;
@@ -336,15 +518,29 @@ export function ensureMinimumQaQuestionCoverage(input: {
   }
 
   const baseline = qaTextBaselineAnalysis(input.analysis);
-  let packed = packOnce({ analysis: baseline, packedAt: input.packedAt });
+  let packed = tryPackOnce({ analysis: baseline, packedAt: input.packedAt }) ?? input.initialPack;
   if (countIncludedQaQuestionSources(packed) > 0) return packed;
 
   for (const maxBytes of MIN_QA_COVERAGE_TEXT_BYTES) {
-    packed = packOnce({
+    const truncated = tryPackOnce({
       analysis: withTruncatedIncludedQaTexts(baseline, maxBytes),
       packedAt: input.packedAt,
     });
+    if (!truncated) continue;
+    packed = truncated;
     if (countIncludedQaQuestionSources(packed) > 0) return packed;
+  }
+
+  for (const questionCount of FORCE_FIT_QUESTION_COUNTS) {
+    for (const maxBytes of FORCE_FIT_TEXT_BYTES) {
+      const forceFitted = tryPackOnce({
+        analysis: qaForceFitAnalysis(input.analysis, questionCount, maxBytes),
+        packedAt: input.packedAt,
+      });
+      if (!forceFitted) continue;
+      packed = forceFitted;
+      if (countIncludedQaQuestionSources(packed) > 0) return packed;
+    }
   }
   return packed;
 }

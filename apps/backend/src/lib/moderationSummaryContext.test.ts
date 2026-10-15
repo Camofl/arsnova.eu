@@ -130,6 +130,70 @@ describe('moderationSummaryContext', () => {
     expect(countIncludedQaQuestionSources(recovered)).toBeGreaterThan(0);
   });
 
+  it('force-fitted Full-context wenn Truncate-Baseline wegen Shell-Budget leer bleibt', () => {
+    const base = analysisFixture(MODERATION_PROMPT_CONTEXT_MINIMAL_FIXTURE_V1);
+    if (base.context.questions.state !== 'available') {
+      throw new Error('Erwartete verfügbare Fragen im Minimalfixture.');
+    }
+    const templateQuestion = base.context.questions.items[0]!;
+    const templateSource = base.context.sources.find((source) => source.kind === 'qa-question');
+    if (!templateSource || templateSource.kind !== 'qa-question') {
+      throw new Error('Erwartete Q&A-Quelle im Minimalfixture.');
+    }
+    const items = Array.from({ length: 20 }, (_, index) => ({
+      ...structuredClone(templateQuestion),
+      sourceId: `qa-question:00000000-0000-4000-8000-${String(index).padStart(12, '0')}`,
+    }));
+    const sources = items.map((question, index) => ({
+      ...structuredClone(templateSource),
+      id: question.sourceId,
+      content: {
+        state: 'included' as const,
+        text: `Produktionsfrage ${index}: ${'Wort '.repeat(60)}`.slice(0, 350),
+        truncated: false,
+      },
+    }));
+    const analysis = ModerationAnalysisContextV1Schema.parse({
+      ...base,
+      assembledAt: '2026-10-15T05:31:38.381Z',
+      context: {
+        ...base.context,
+        questions: {
+          ...base.context.questions,
+          items,
+          corpus: {
+            total: 21,
+            eligible: 20,
+            analyzed: 20,
+            deduplicated: 20,
+            represented: 20,
+          },
+        },
+        sources,
+        scope: {
+          ...base.context.scope,
+          selectionLimits: {
+            ...base.context.scope.selectionLimits,
+            questions: 20,
+          },
+        },
+        limitations: Array.from({ length: 2 }, (_, index) => ({
+          code: 'budget-truncated' as const,
+          section: 'questions' as const,
+          detail: `detail-${index}-`.padEnd(200, '.'),
+        })),
+      },
+    });
+
+    const prepared = prepareModerationSummaryContextFromAnalysis({ analysis, plan });
+    expect(countIncludedQaQuestionSources(prepared.request.promptContext)).toBeGreaterThan(0);
+    expect(prepared.plan.selectedMode).toBe('full-context');
+    expect(prepared.plan.fallback).toBeNull();
+    expect(prepared.request.promptContext.context.limitations).toContainEqual(
+      expect.objectContaining({ detail: 'qa-force-fit' }),
+    );
+  });
+
   it('stuft Full-context auf extractive herab wenn analysierte Fragen ohne included Sources bleiben', () => {
     const base = prepareModerationSummaryContextFromAnalysis({
       analysis: analysisFixture(MODERATION_PROMPT_CONTEXT_MINIMAL_FIXTURE_V1),
