@@ -22,7 +22,7 @@ import {
 import {
   isOpenWeightLlmEnabled,
   OPEN_WEIGHT_LLM_MODEL_ALIAS,
-  resolveOpenWeightLlmConfig,
+  resolveOpenWeightLlmSummaryTimeoutMs,
 } from './openWeightLlmConfig';
 import {
   runOpenWeightLlmLearningObjectives,
@@ -40,10 +40,9 @@ export const OPEN_WEIGHT_LLM_PROBE_CACHE_TTL_MS = 5 * 60_000;
 export const OPEN_WEIGHT_LLM_PROBE_TASK_TIMEOUT_MS = 20_000;
 
 /**
- * Summary-Probe-Deadline aus der aktiven Open-Weight-Konfiguration
- * (`OPEN_WEIGHT_LLM_SUMMARY_TIMEOUT_MS`), nicht aus einem kompilierten Default.
- * Sonst cached ein Operator-Timeout >90 s fünf Minuten lang einen falschen
- * »nicht erreichbar«-Status.
+ * Summary-Probe-Deadline aus `OPEN_WEIGHT_LLM_SUMMARY_TIMEOUT_MS` (gebundene Parserlogik),
+ * nicht aus einem kompilierten Default und nicht über die volle Config-Validierung
+ * (Token/Transport) — die würde die Probe sonst mit einer Exception abbrechen.
  */
 export function resolveOpenWeightLlmProbeSummaryTimeoutMs(
   env: NodeJS.ProcessEnv = process.env,
@@ -52,7 +51,7 @@ export function resolveOpenWeightLlmProbeSummaryTimeoutMs(
   if (typeof taskTimeoutOverride === 'number') {
     return taskTimeoutOverride;
   }
-  return resolveOpenWeightLlmConfig(env).timeoutsMs.qa_summary;
+  return resolveOpenWeightLlmSummaryTimeoutMs(env['OPEN_WEIGHT_LLM_SUMMARY_TIMEOUT_MS']);
 }
 
 const PROBE_SOURCE_ID = 'probe-s1';
@@ -170,6 +169,26 @@ function disabledProbe(checkedAt: string): OpenWeightLlmRuntimeProbeDTO {
   });
 }
 
+function misconfiguredTask(): OpenWeightLlmProbeTaskResult {
+  return { status: 'unavailable', elapsedMs: null, reason: 'misconfigured' };
+}
+
+function misconfiguredProbe(checkedAt: string): OpenWeightLlmRuntimeProbeDTO {
+  return OpenWeightLlmRuntimeProbeSchema.parse({
+    enabled: true,
+    overall: 'unavailable',
+    checkedAt,
+    cache: 'live',
+    modelAlias: OPEN_WEIGHT_LLM_MODEL_ALIAS,
+    modelReported: null,
+    tasks: {
+      topic_label: misconfiguredTask(),
+      qa_summary: misconfiguredTask(),
+      learning_objectives: misconfiguredTask(),
+    },
+  });
+}
+
 function mapFailureReason(reason: string): OpenWeightLlmProbeTaskStatus {
   switch (reason) {
     case 'busy':
@@ -258,7 +277,14 @@ async function measureProbe(hooks: ProbeHooks): Promise<OpenWeightLlmRuntimeProb
   }
 
   const timeoutMs = hooks.taskTimeoutMs ?? OPEN_WEIGHT_LLM_PROBE_TASK_TIMEOUT_MS;
-  const summaryTimeoutMs = resolveOpenWeightLlmProbeSummaryTimeoutMs(env, hooks.taskTimeoutMs);
+  let summaryTimeoutMs: number;
+  try {
+    summaryTimeoutMs = resolveOpenWeightLlmProbeSummaryTimeoutMs(env, hooks.taskTimeoutMs);
+  } catch {
+    // Ungültiges OPEN_WEIGHT_LLM_SUMMARY_TIMEOUT_MS darf health.openWeightLlmProbe
+    // nicht mit einem tRPC-Fehler abbrechen; Status bleibt strukturiert.
+    return misconfiguredProbe(checkedAt);
+  }
   const topicLabel = hooks.topicLabel ?? runOpenWeightLlmTopicLabel;
   const summaryV2 = hooks.summaryV2 ?? runOpenWeightLlmSummaryV2;
   const learning = hooks.learning ?? runOpenWeightLlmLearningObjectives;

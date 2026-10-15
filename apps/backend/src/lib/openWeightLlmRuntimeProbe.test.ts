@@ -234,6 +234,43 @@ describe('getOpenWeightLlmRuntimeProbe', () => {
       }),
     ).toBe(180_000);
     expect(resolveOpenWeightLlmProbeSummaryTimeoutMs(enabledEnv, 2_500)).toBe(2_500);
+    // Token-/Transport-Fehler dürfen die Timeout-Auflösung nicht werfen.
+    expect(
+      resolveOpenWeightLlmProbeSummaryTimeoutMs({
+        OPEN_WEIGHT_LLM_ENABLED: 'true',
+        OPEN_WEIGHT_LLM_TOKEN: 'zu-kurz',
+        OPEN_WEIGHT_LLM_URL: 'http://127.0.0.1:8080',
+        OPEN_WEIGHT_LLM_SOCKET_PATH: '/tmp/llm.sock',
+      }),
+    ).toBe(OPEN_WEIGHT_LLM_SUMMARY_TIMEOUT_DEFAULT_MS);
+  });
+
+  it('liefert bei ungültigem Summary-Timeout strukturiert misconfigured ohne Exception', async () => {
+    const topicLabel = vi.fn();
+    const summaryV2 = vi.fn();
+    const learning = vi.fn();
+    const result = await getOpenWeightLlmRuntimeProbe({
+      env: {
+        ...enabledEnv,
+        OPEN_WEIGHT_LLM_SUMMARY_TIMEOUT_MS: 'abc',
+      },
+      topicLabel: topicLabel as never,
+      summaryV2: summaryV2 as never,
+      learning: learning as never,
+    });
+    expect(result.enabled).toBe(true);
+    expect(result.overall).toBe('unavailable');
+    expect(result.cache).toBe('live');
+    expect(result.tasks.topic_label).toEqual({
+      status: 'unavailable',
+      elapsedMs: null,
+      reason: 'misconfigured',
+    });
+    expect(result.tasks.qa_summary.reason).toBe('misconfigured');
+    expect(result.tasks.learning_objectives.reason).toBe('misconfigured');
+    expect(topicLabel).not.toHaveBeenCalled();
+    expect(summaryV2).not.toHaveBeenCalled();
+    expect(learning).not.toHaveBeenCalled();
   });
 
   it('übergibt das konfigurierte Summary-Timeout als AbortSignal an summaryV2', async () => {

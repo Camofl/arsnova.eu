@@ -166,6 +166,17 @@ function parseBoundedInt(
   return parsed;
 }
 
+/** Nur den Summary-Timeout; wirft nicht bei Token-/Transport-Fehlkonfiguration. */
+export function resolveOpenWeightLlmSummaryTimeoutMs(
+  configuredValue: string | undefined = process.env['OPEN_WEIGHT_LLM_SUMMARY_TIMEOUT_MS'],
+): number {
+  return parseBoundedInt(
+    'OPEN_WEIGHT_LLM_SUMMARY_TIMEOUT_MS',
+    configuredValue,
+    OPEN_WEIGHT_LLM_SUMMARY_TIMEOUT_DEFAULT_MS,
+  );
+}
+
 export function resolveOpenWeightLlmConfig(
   env: NodeJS.ProcessEnv = process.env,
 ): OpenWeightLlmConfig {
@@ -191,11 +202,7 @@ export function resolveOpenWeightLlmConfig(
         env['OPEN_WEIGHT_LLM_LABEL_TIMEOUT_MS'],
         OPEN_WEIGHT_LLM_LABEL_TIMEOUT_DEFAULT_MS,
       ),
-      qa_summary: parseBoundedInt(
-        'OPEN_WEIGHT_LLM_SUMMARY_TIMEOUT_MS',
-        env['OPEN_WEIGHT_LLM_SUMMARY_TIMEOUT_MS'],
-        OPEN_WEIGHT_LLM_SUMMARY_TIMEOUT_DEFAULT_MS,
-      ),
+      qa_summary: resolveOpenWeightLlmSummaryTimeoutMs(env['OPEN_WEIGHT_LLM_SUMMARY_TIMEOUT_MS']),
       learning_objectives: parseBoundedInt(
         'OPEN_WEIGHT_LLM_LEARNING_TIMEOUT_MS',
         env['OPEN_WEIGHT_LLM_LEARNING_TIMEOUT_MS'],
