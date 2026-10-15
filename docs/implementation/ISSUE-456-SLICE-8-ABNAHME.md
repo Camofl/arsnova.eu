@@ -61,7 +61,7 @@ Der technische Übergabepfad verwendet derzeit dieses feste Profil:
 
 | Anteil                                      |  Wert | Bedeutung                                                             |
 | ------------------------------------------- | ----: | --------------------------------------------------------------------- |
-| Kontextfenster                              | 4.096 | konservative UTF-8-Obergrenze des Packers für das feste Runtimeprofil |
+| Kontextfenster                              | 8.192 | konservative UTF-8-Obergrenze des Packers für das feste Runtimeprofil |
 | technische Instruktion                      |   314 | exakte UTF-8-Bytes                                                    |
 | Bedeutungsdefinition                        |   203 | exakte UTF-8-Bytes                                                    |
 | Antwortreserve                              |   640 | reservierte Ausgabetokens                                             |
@@ -76,11 +76,11 @@ Die llama.cpp-Übergabe besteht bei V2 aus genau drei Nachrichten:
 
 Transportfelder wie Hash, `packedAt` und der Budgetbericht werden nicht noch einmal als Userinhalt dupliziert. Untrusted Fragen-, Quiz- und Lernzieltexte bleiben dadurch strukturell von den beiden Systemnachrichten getrennt.
 
-### Offener Blocker: reichhaltiger Vollkontext passt nicht in 4.096
+### Offener Blocker: Prefill-/RSS-Abnahme des 8.192-Profils
 
-Der reichhaltige Referenzkontext mit allen Fachmetadaten überschreitet in diesem festen Profil bereits mit seinen Basismetadaten das verfügbare Budget. Die Implementierung verschweigt das nicht: Sie packt kontrolliert eine Q&A-Textbaseline neu und weist ausgelassene Bereiche und `token-budget`-/`budget-truncated`-Gründe im Vertrag und in der Vorschau aus.
+Das feste Profil liegt bei 8.192 (unter dem praxisnahen 8k-Arbeitsfenster von Qwen3-4B Q4). Bei zu großen Basismetadaten verschweigt die Implementierung das nicht: Sie packt kontrolliert eine Q&A-Textbaseline bzw. Force-Fit-Mindestbelege neu und weist ausgelassene Bereiche und `token-budget`-/`budget-truncated`-Gründe im Vertrag und in der Vorschau aus.
 
-Damit sind V2-Vertrag, Quellenbindung, Vorschau und Fallback ausführbar. **Nicht belegt ist, dass der im Issue geforderte reichhaltige Vollkontext auf dem vorgesehenen CPU-Profil mit 4.096 Kontexttokens nutzbar ist.** Das darf weder als bestandene Full-context-Abnahme noch als Anlass für einen stillen Kontext-, GPU-, Modell- oder SaaS-Wechsel dargestellt werden. Vor einer Produktivfreigabe braucht es eine ausdrückliche Profilentscheidung und eine erneute Messung.
+Damit sind V2-Vertrag, Quellenbindung, Vorschau und Fallback ausführbar. **Nicht belegt ist die Prefill-/RSS-Abnahme des reichhaltigen Vollkontexts auf dem vorgesehenen CPU-Profil mit 8.192 Kontexttokens.** Das darf weder als bestandene Full-context-Abnahme noch als Anlass für einen stillen Kontext-Hochsetzen auf Modelldefault (32k/128k), GPU-, Modell- oder SaaS-Wechsel dargestellt werden. Vor einer Produktivfreigabe braucht es eine ausdrückliche Messung.
 
 ## Reale Modell- und Betriebsmessung
 
@@ -105,9 +105,9 @@ Bis diese Daten und die fachliche Prüfung für Lernziele sowie der reale Summar
 | Abnahmepunkt                                                                    | Stand am 2026-10-13                                                                                                                                                                                     |
 | ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Vorbereitung → Lernziele → Q&A/Quiz/Feedback → Vorschau → versionierter Auftrag | Realmodell-Lernziellauf mit vollständigem Demo-Quiz erfolgreich; lokaler Integrationsrunner und modellfreie Verträge vorhanden, aber sein echter `--run` hier nicht nachgewiesen                        |
-| Vollständiger Kontext und Minimalfall nur Q&A-Texte                             | beide Vertragswege getestet; 4.096-Profil degradiert den reichhaltigen Kontext jedoch auf die ausgewiesene Q&A-Baseline                                                                                 |
+| Vollständiger Kontext und Minimalfall nur Q&A-Texte                             | beide Vertragswege getestet; 8.192-Profil packt Referenzbelege, degradiert bei Shell-Überlauf auf Q&A-Baseline/Force-Fit                                                                                |
 | Produktionsnahe CPU-/Prefill-/Speichermessung                                   | cgroup-Spitzenwert für erfolgreichen Lernziellauf gemeldet; CPU, Prefill/TTFT, Gesamtlaufzeit, Modell-RSS und reale Summary-V2-Messung weiterhin offen                                                  |
-| Nutzbares Budgetprofil                                                          | Lernziel-Demo-Quiz lief mit dem bestehenden Profil durch; reichhaltiger Summary-Vollkontext bei 4.096 **nicht belegt**                                                                                  |
+| Nutzbares Budgetprofil                                                          | Lernziel-Demo-Quiz lief mit dem bestehenden Profil durch; Prefill-/RSS des 8.192-Summaryprofils **nicht belegt**                                                                                        |
 | Join, Vote, Q&A-Submit und WebSocket unabhängig vom Modell                      | Architektur und modellfreie Hotpath-/Slot-/Queue-Tests vorhanden; keine automatische Inferenz in diesen Pfaden                                                                                          |
 | Telemetrie ohne Rohprompt, Texte oder Personenkennungen                         | Standardlogs der Lernziel-Batches enthalten Laufzeit und Tokenzahlen ohne Rohinhalt; vollständige Prompt-/Antwortdaten nur im ausdrücklich aktivierbaren Diagnosemodus; Summary-V2-Realtelemetrie offen |
 | Berechtigung, Freigabe, Cache, Quellenintegrität, Fallback                      | fokussierte Shared-/Backend-/Frontendtests decken positive, negative und Änderungsfälle ab                                                                                                              |
