@@ -7,14 +7,18 @@
  * Ohne private `QA_SUMMARY_INFERENCE_URL` gibt es keinen Cloud-Fallback.
  */
 import { QA_SUMMARY_MIN_VISIBLE_QUESTIONS } from '@arsnova/shared-types';
-import { resolveOpenWeightLlmSummaryTimeoutMs } from './openWeightLlmConfig';
+import {
+  isOpenWeightLlmEnabled,
+  resolveOpenWeightLlmConfig,
+  resolveOpenWeightLlmSummaryTimeoutMs,
+} from './openWeightLlmConfig';
 
 /**
  * Queue wall-clock around the private open-weight summary call.
  * Must cover CPU prefill for the 8k packing profile; the old 8s/30s Gemini-era
  * ceiling forced extractive fallback before llama.cpp could answer.
- * Effective budget is max(QA_SUMMARY_TIMEOUT_MS, OPEN_WEIGHT_LLM_SUMMARY_TIMEOUT_MS)
- * so a raised Open-Weight timeout alone cannot be cut short by the queue.
+ * When the Open-Weight full-context path is active, the effective budget is
+ * max(QA_SUMMARY_TIMEOUT_MS, OPEN_WEIGHT_LLM_SUMMARY_TIMEOUT_MS).
  */
 export const QA_SUMMARY_TIMEOUT_DEFAULT_MS = 90_000;
 export const QA_SUMMARY_TIMEOUT_MIN_MS = 500;
@@ -141,12 +145,29 @@ export function resolveQaSummaryTimeoutMs(
   );
 }
 
+/** true nur bei aktivem, transportfähigem Open-Weight-Full-Context (nicht Legacy). */
+function isOpenWeightFullContextPathActive(env: NodeJS.ProcessEnv): boolean {
+  if (!isOpenWeightLlmEnabled(env['OPEN_WEIGHT_LLM_ENABLED'])) {
+    return false;
+  }
+  try {
+    const config = resolveOpenWeightLlmConfig(env);
+    return config.transport !== null && config.token !== null;
+  } catch {
+    return false;
+  }
+}
+
 /**
- * Effektives Queue-Wall-Clock: mindestens so lang wie der Open-Weight-Summary-Timeout,
- * sonst erzwingt die Queue den extraktiven Fallback bevor llama.cpp antworten kann.
+ * Effektives Queue-Wall-Clock. Anhebung auf den Open-Weight-Summary-Timeout nur,
+ * wenn der Full-Context-Pfad wirklich aktiv ist — sonst behält
+ * `QA_SUMMARY_TIMEOUT_MS` seine dokumentierte Wirkung (Legacy/disabled).
  */
 export function resolveEffectiveQaSummaryTimeoutMs(env: NodeJS.ProcessEnv = process.env): number {
   const queueTimeoutMs = resolveQaSummaryTimeoutMs(env['QA_SUMMARY_TIMEOUT_MS']);
+  if (!isOpenWeightFullContextPathActive(env)) {
+    return queueTimeoutMs;
+  }
   let openWeightTimeoutMs = queueTimeoutMs;
   try {
     openWeightTimeoutMs = resolveOpenWeightLlmSummaryTimeoutMs(

@@ -22,8 +22,6 @@ import {
 import {
   isOpenWeightLlmEnabled,
   OPEN_WEIGHT_LLM_MODEL_ALIAS,
-  resolveOpenWeightLlmLabelTimeoutMs,
-  resolveOpenWeightLlmLearningTimeoutMs,
   resolveOpenWeightLlmSummaryTimeoutMs,
 } from './openWeightLlmConfig';
 import {
@@ -38,6 +36,11 @@ import {
 
 /** Ergebnis-Cache und Mindestabstand zwischen Live-Messungen (auch bei refresh). */
 export const OPEN_WEIGHT_LLM_PROBE_CACHE_TTL_MS = 5 * 60_000;
+/**
+ * Kurzes Probe-Budget für Topic/Learning (Erreichbarkeit/Schema).
+ * Nur die Summary-Probe braucht die konfigurierte Produktions-Deadline (CPU-Prefill).
+ */
+export const OPEN_WEIGHT_LLM_PROBE_TASK_TIMEOUT_MS = 20_000;
 
 export type OpenWeightLlmProbeTaskTimeoutsMs = {
   readonly topic_label: number;
@@ -46,11 +49,10 @@ export type OpenWeightLlmProbeTaskTimeoutsMs = {
 };
 
 /**
- * Probe-Deadlines aus den produktiven Open-Weight-Timeouts (einzeln geparst).
- * Keine volle Config-Validierung — Token/Transport-Fehler dürfen die Probe nicht
- * mit einer Exception abbrechen; der Client meldet sie pro Aufgabe als
- * `misconfigured`. Ungültige Timeout-Zahlen werfen und werden vom Aufrufer
- * in ein strukturiertes Probe-Ergebnis übersetzt.
+ * Topic/Learning: festes kurzes Probe-Budget.
+ * Summary: konfiguriertes `OPEN_WEIGHT_LLM_SUMMARY_TIMEOUT_MS` (einzeln geparst,
+ * ohne volle Token-/Transport-Validierung). Ungültige Summary-Timeout-Zahlen werfen
+ * und werden vom Aufrufer in ein strukturiertes Probe-Ergebnis übersetzt.
  */
 export function resolveOpenWeightLlmProbeTaskTimeoutsMs(
   env: NodeJS.ProcessEnv = process.env,
@@ -64,11 +66,9 @@ export function resolveOpenWeightLlmProbeTaskTimeoutsMs(
     };
   }
   return {
-    topic_label: resolveOpenWeightLlmLabelTimeoutMs(env['OPEN_WEIGHT_LLM_LABEL_TIMEOUT_MS']),
+    topic_label: OPEN_WEIGHT_LLM_PROBE_TASK_TIMEOUT_MS,
     qa_summary: resolveOpenWeightLlmSummaryTimeoutMs(env['OPEN_WEIGHT_LLM_SUMMARY_TIMEOUT_MS']),
-    learning_objectives: resolveOpenWeightLlmLearningTimeoutMs(
-      env['OPEN_WEIGHT_LLM_LEARNING_TIMEOUT_MS'],
-    ),
+    learning_objectives: OPEN_WEIGHT_LLM_PROBE_TASK_TIMEOUT_MS,
   };
 }
 

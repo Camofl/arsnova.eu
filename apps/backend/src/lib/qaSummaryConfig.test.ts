@@ -39,21 +39,43 @@ describe('qaSummaryConfig', () => {
     expect(() => resolveQaSummaryTimeoutMs('300001')).toThrow(/zwischen/);
   });
 
-  it('hebt das effektive Queue-Timeout auf den Open-Weight-Summary-Timeout an', () => {
+  it('hebt das Queue-Timeout nur bei aktivem Open-Weight-Full-Context an', () => {
+    const openWeightActive = {
+      OPEN_WEIGHT_LLM_ENABLED: 'true',
+      OPEN_WEIGHT_LLM_URL: 'http://127.0.0.1:8080',
+      OPEN_WEIGHT_LLM_TOKEN: 'a'.repeat(32),
+    };
     expect(
       resolveEffectiveQaSummaryTimeoutMs({
+        ...openWeightActive,
         QA_SUMMARY_TIMEOUT_MS: '90000',
         OPEN_WEIGHT_LLM_SUMMARY_TIMEOUT_MS: '180000',
       }),
     ).toBe(180_000);
     expect(
       resolveEffectiveQaSummaryTimeoutMs({
+        ...openWeightActive,
         QA_SUMMARY_TIMEOUT_MS: '200000',
         OPEN_WEIGHT_LLM_SUMMARY_TIMEOUT_MS: '90000',
       }),
     ).toBe(200_000);
+    // Legacy / Open Weight aus: dokumentiertes QA_SUMMARY_TIMEOUT_MS bleibt wirksam.
     expect(
       resolveEffectiveQaSummaryTimeoutMs({
+        OPEN_WEIGHT_LLM_ENABLED: 'false',
+        QA_SUMMARY_TIMEOUT_MS: '5000',
+        OPEN_WEIGHT_LLM_SUMMARY_TIMEOUT_MS: '180000',
+      }),
+    ).toBe(5_000);
+    expect(
+      resolveEffectiveQaSummaryTimeoutMs({
+        QA_SUMMARY_TIMEOUT_MS: '5000',
+        OPEN_WEIGHT_LLM_SUMMARY_TIMEOUT_MS: '180000',
+      }),
+    ).toBe(5_000);
+    expect(
+      resolveEffectiveQaSummaryTimeoutMs({
+        ...openWeightActive,
         QA_SUMMARY_TIMEOUT_MS: '90000',
         OPEN_WEIGHT_LLM_SUMMARY_TIMEOUT_MS: 'abc',
       }),

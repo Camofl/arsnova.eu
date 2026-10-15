@@ -223,11 +223,11 @@ describe('getOpenWeightLlmRuntimeProbe', () => {
     );
   });
 
-  it('leitet alle Probe-Deadlines aus den Open-Weight-Timeout-Envs ab', () => {
+  it('hält Topic/Learning beim kurzen Probe-Budget und Summary beim konfigurierten Timeout', () => {
     expect(resolveOpenWeightLlmProbeTaskTimeoutsMs(enabledEnv)).toEqual({
-      topic_label: 30_000,
+      topic_label: 20_000,
       qa_summary: OPEN_WEIGHT_LLM_SUMMARY_TIMEOUT_DEFAULT_MS,
-      learning_objectives: 300_000,
+      learning_objectives: 20_000,
     });
     expect(
       resolveOpenWeightLlmProbeTaskTimeoutsMs({
@@ -237,16 +237,16 @@ describe('getOpenWeightLlmRuntimeProbe', () => {
         OPEN_WEIGHT_LLM_LEARNING_TIMEOUT_MS: '110000',
       }),
     ).toEqual({
-      topic_label: 12_000,
+      topic_label: 20_000,
       qa_summary: 180_000,
-      learning_objectives: 110_000,
+      learning_objectives: 20_000,
     });
     expect(resolveOpenWeightLlmProbeTaskTimeoutsMs(enabledEnv, 2_500)).toEqual({
       topic_label: 2_500,
       qa_summary: 2_500,
       learning_objectives: 2_500,
     });
-    // Token-/Transport-Fehler dürfen die Timeout-Auflösung nicht werfen.
+    // Token-/Transport-Fehler dürfen die Summary-Timeout-Auflösung nicht werfen.
     expect(
       resolveOpenWeightLlmProbeTaskTimeoutsMs({
         OPEN_WEIGHT_LLM_ENABLED: 'true',
@@ -257,35 +257,28 @@ describe('getOpenWeightLlmRuntimeProbe', () => {
     ).toBe(OPEN_WEIGHT_LLM_SUMMARY_TIMEOUT_DEFAULT_MS);
   });
 
-  it('liefert bei ungültigem Timeout-Env strukturiert misconfigured ohne Exception', async () => {
-    for (const envKey of [
-      'OPEN_WEIGHT_LLM_SUMMARY_TIMEOUT_MS',
-      'OPEN_WEIGHT_LLM_LABEL_TIMEOUT_MS',
-      'OPEN_WEIGHT_LLM_LEARNING_TIMEOUT_MS',
-    ] as const) {
-      resetOpenWeightLlmRuntimeProbeForTests();
-      const topicLabel = vi.fn();
-      const summaryV2 = vi.fn();
-      const learning = vi.fn();
-      const result = await getOpenWeightLlmRuntimeProbe({
-        env: {
-          ...enabledEnv,
-          [envKey]: 'abc',
-        },
-        topicLabel: topicLabel as never,
-        summaryV2: summaryV2 as never,
-        learning: learning as never,
-      });
-      expect(result.enabled).toBe(true);
-      expect(result.overall).toBe('unavailable');
-      expect(result.tasks.qa_summary.reason).toBe('misconfigured');
-      expect(topicLabel).not.toHaveBeenCalled();
-      expect(summaryV2).not.toHaveBeenCalled();
-      expect(learning).not.toHaveBeenCalled();
-    }
+  it('liefert bei ungültigem Summary-Timeout strukturiert misconfigured ohne Exception', async () => {
+    const topicLabel = vi.fn();
+    const summaryV2 = vi.fn();
+    const learning = vi.fn();
+    const result = await getOpenWeightLlmRuntimeProbe({
+      env: {
+        ...enabledEnv,
+        OPEN_WEIGHT_LLM_SUMMARY_TIMEOUT_MS: 'abc',
+      },
+      topicLabel: topicLabel as never,
+      summaryV2: summaryV2 as never,
+      learning: learning as never,
+    });
+    expect(result.enabled).toBe(true);
+    expect(result.overall).toBe('unavailable');
+    expect(result.tasks.qa_summary.reason).toBe('misconfigured');
+    expect(topicLabel).not.toHaveBeenCalled();
+    expect(summaryV2).not.toHaveBeenCalled();
+    expect(learning).not.toHaveBeenCalled();
   });
 
-  it('übergibt konfigurierte Deadlines als AbortSignal an alle drei Aufgaben', async () => {
+  it('übergibt 20s an Topic/Learning und das konfigurierte Summary-Timeout an summaryV2', async () => {
     const timeoutSpy = vi.spyOn(AbortSignal, 'timeout');
     const completedTopic = {
       status: 'completed' as const,
@@ -344,18 +337,16 @@ describe('getOpenWeightLlmRuntimeProbe', () => {
     await getOpenWeightLlmRuntimeProbe({
       env: {
         ...enabledEnv,
-        OPEN_WEIGHT_LLM_LABEL_TIMEOUT_MS: '12000',
         OPEN_WEIGHT_LLM_SUMMARY_TIMEOUT_MS: '180000',
-        OPEN_WEIGHT_LLM_LEARNING_TIMEOUT_MS: '110000',
       },
       topicLabel: (async () => completedTopic) as never,
       summaryV2: (async () => completedSummary) as never,
       learning: (async () => completedLearning) as never,
     });
 
-    expect(timeoutSpy).toHaveBeenCalledWith(12_000);
+    expect(timeoutSpy).toHaveBeenCalledWith(20_000);
     expect(timeoutSpy).toHaveBeenCalledWith(180_000);
-    expect(timeoutSpy).toHaveBeenCalledWith(110_000);
+    expect(timeoutSpy.mock.calls.filter((call) => call[0] === 20_000)).toHaveLength(2);
     timeoutSpy.mockRestore();
   });
 
