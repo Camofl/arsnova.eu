@@ -102,19 +102,20 @@ describe('moderationSummaryContext', () => {
     ).toBeLessThanOrEqual(QA_SUMMARY_MODERATION_PACKING_PROFILE.contextWindowTokens);
   });
 
-  it('degradiert einen zu großen Metadaten-Basiskontext sichtbar auf die Q&A-Textbaseline', () => {
+  it('packt den Referenzkontext im 8192-Profil mit Q&A-Belegen und sichtbaren Kürzungen', () => {
     const prepared = prepareModerationSummaryContextFromAnalysis({
       analysis: analysisFixture(MODERATION_PROMPT_CONTEXT_REFERENCE_FIXTURE_V1),
       plan,
     });
-    expect(prepared.request.promptContext.context.sources).toHaveLength(1);
-    expect(prepared.request.promptContext.context.sources[0]?.kind).toBe('qa-question');
-    expect(prepared.request.promptContext.context.limitations).toContainEqual(
-      expect.objectContaining({ code: 'budget-truncated', section: 'topics' }),
-    );
-    expect(prepared.request.promptContext.budget.truncations).toContainEqual(
-      expect.objectContaining({ section: 'questions', reason: 'token-budget' }),
-    );
+    expect(countIncludedQaQuestionSources(prepared.request.promptContext)).toBeGreaterThan(0);
+    expect(prepared.request.promptContext.budget.contextWindowTokens).toBe(8_192);
+    expect(
+      prepared.request.promptContext.budget.packedInputTokens +
+        prepared.request.promptContext.budget.reservedOutputTokens +
+        prepared.request.promptContext.budget.safetyMarginTokens,
+    ).toBeLessThanOrEqual(QA_SUMMARY_MODERATION_PACKING_PROFILE.contextWindowTokens);
+    expect(prepared.request.promptContext.budget.truncations.length).toBeGreaterThan(0);
+    expect(prepared.plan.selectedMode).toBe('full-context');
   });
 
   it('stellt Mindest-Q&A-Coverage her wenn der erste Pack keine included Sources liefert', () => {
@@ -177,7 +178,9 @@ describe('moderationSummaryContext', () => {
             questions: 20,
           },
         },
-        limitations: Array.from({ length: 2 }, (_, index) => ({
+        // At ctx-8192, ~18 fat question-limitations leave headroom too small for
+        // truncate-only recovery but still allow the slim force-fit pack.
+        limitations: Array.from({ length: 18 }, (_, index) => ({
           code: 'budget-truncated' as const,
           section: 'questions' as const,
           detail: `detail-${index}-`.padEnd(200, '.'),

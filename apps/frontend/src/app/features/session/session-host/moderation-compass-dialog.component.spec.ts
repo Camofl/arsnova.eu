@@ -90,7 +90,7 @@ describe('ModerationCompassDialogComponent', () => {
         },
         budget: {
           packedInputTokens: 3138,
-          contextWindowTokens: 4096,
+          contextWindowTokens: 8192,
           reservedOutputTokens: 640,
           safetyMarginTokens: 128,
           truncations: [{ section: 'questions', omittedItems: 2499, reason: 'token-budget' }],

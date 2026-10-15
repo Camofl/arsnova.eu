@@ -178,18 +178,19 @@ vollen 8.9c-Snapshots (`QA_SUMMARY_MAX_SOURCES` Default 20) passt in 2048 Tokens
 
 Verbindlich:
 
-- `--ctx-size` explizit 2048 oder 4096, nach gemessener KV-Größe, nie Modelldefault.
+- `--ctx-size` explizit setzen (aktuell 8192), nach gemessener KV-Größe und unter dem
+  praxisnahen 8k-Arbeitsfenster von Qwen3-4B Q4; nie Modelldefault (nativ 32k / RoPE bis 128k).
 - `--n-predict` als harte Obergrenze (Richtung 256); Label-Requests setzen zusätzlich ein
   deutlich kleineres `max_tokens`.
 - Getrennte Backend-Timeouts für Label-, Summary- und Lernziel-Job; Werte erst nach Prefill-Messung auf
   der echten 8-vCPU-Box, nicht als Kopie der Gemini-Fenster.
 - Der Summary-V2-Packer sendet eine **deterministisch ausgewählte, dependency-geschlossene**
   Teilmenge, nicht automatisch alle 20 Legacy-Snapshot-Quellen.
-- Das feste Implementierungsprofil verwendet 4.096, 640 Antwortreserve und 128
+- Das feste Implementierungsprofil verwendet 8.192, 640 Antwortreserve und 128
   Sicherheitsmarge. Instruktion und Definition belegen konservativ weitere 314 und 203
-  UTF-8-Einheiten; für das kanonische Kontext-JSON bleiben höchstens 2.811.
-- Der reichhaltige Referenzkontext passt in dieses Profil bereits mit seinen
-  Basismetadaten nicht. Der Packer degradiert sichtbar auf eine Q&A-Textbaseline. Das ist
+  UTF-8-Einheiten; für das kanonische Kontext-JSON bleiben höchstens 6.907.
+- Der reichhaltige Referenzkontext kann trotz 8k noch an Basismetadaten scheitern. Der Packer
+  degradiert dann sichtbar auf eine Q&A-Textbaseline bzw. Force-Fit-Mindestbelege. Das ist
   kein Nachweis eines nutzbaren reichhaltigen Vollkontextprofils.
 - Eine Produktivaktivierung startet erst, wenn die Messung auf der vorgesehenen CPU-Box
   und eine ausdrückliche Profilentscheidung vorliegen. 1.14c Stufe 2 (kurze Labels) bleibt
@@ -261,7 +262,7 @@ keine allgemeine Produktivfreigabe. Label benötigt seine eigene Ausbaustufe. De
 Lernzielpfad erzeugte am 12.10.2026 auf dem privaten Produktionshost für das
 vollständige Demo-Quiz zehn Entwürfe; seine vollständige Mess- und Qualitätsabnahme
 bleibt offen. Summary V2 benötigt weiterhin einen realen Consumer-/Hardwarelauf;
-das reichhaltige 4.096-Summaryprofil ist derzeit nicht belegt.
+das reichhaltige 8.192-Summaryprofil ist derzeit nicht belegt.
 
 ## Performance-Steckbrief
 
@@ -436,21 +437,22 @@ Lernzielaufträge einen typisierten Belegt-Zustand für manuellen Retry.
 
 ### Messprofil und Rollout
 
-2.048/4.096 Kontexttokens und Qwen3-4B-Instruct-2507 Q4_K_M bleiben das initiale
-Messprofil, keine Eignungsgarantie für den reicheren Kontext. Instruktionen, Metadaten,
+8.192 Kontexttokens und Qwen3-4B-Instruct-2507 Q4_K_M sind das aktuelle Laufzeit-/Packing-Profil
+(unter dem praxisnahen 8k-Arbeitsfenster; nativ 32k wird nicht als Default geladen).
+Keine Eignungsgarantie für den reicheren Modellkontext. Instruktionen, Metadaten,
 Quellen, Antwort- und Sicherheitsreserve gemeinsam budgetieren. „Richtung acht Quellen“
 ist keine feste neue Quellenzahl.
 
 Kurze Labels bleiben der erste generative Betriebsnachweis. Lernzielableitung und
 angereicherte Summary benötigen eigene Messungen. Die produktionsnahe 8-vCPU-Prefill-Abnahme
 der Summary bleibt Voraussetzung für 8.9c Slice 4 und die Gesamt-/Betriebsabnahme von #456;
-der lokale Lauf für R ersetzt sie nicht. Kein stilles Hochsetzen des Kontexts oder
-GPU-/SaaS-Wechsel. Bei fehlender Eignung bleibt der betreffende generative Pfad
+der lokale Lauf für R ersetzt sie nicht. Kein stilles Hochsetzen auf Modelldefault (32k/128k)
+oder GPU-/SaaS-Wechsel. Bei fehlender Eignung bleibt der betreffende generative Pfad
 deaktiviert und seine Abnahme offen; Kompass, extraktive Labels und manuelle Ziele bleiben nutzbar.
 
-Der integrierte Summary-V2-Packer bestätigt diese Grenze konkret: Im festen 4.096-Profil
-passt der reichhaltige Referenzkontext nicht, sodass kontrolliert die ausgewiesene
-Q&A-Textbaseline gepackt wird. Für `qa_summary` V2 und `learning_objectives` stand in der
+Der integrierte Summary-V2-Packer bestätigt die Budgetgrenze konkret: Wenn der reichhaltige
+Referenzkontext nicht passt, wird kontrolliert die ausgewiesene Q&A-Textbaseline bzw. ein
+Force-Fit-Mindestbeleg gepackt. Für `qa_summary` V2 und `learning_objectives` stand in der
 Slice-8-Integration keine reale Zielruntime zur Verfügung. Beide Betriebsnachweise bleiben
 offen; Details stehen in
 [Issue #456 – Slice-8-Abnahme](../../implementation/ISSUE-456-SLICE-8-ABNAHME.md).

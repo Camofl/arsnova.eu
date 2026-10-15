@@ -48,8 +48,8 @@ export const QA_SUMMARY_TECHNICAL_DEFINITION_TEXT =
   'Use moderation-prompt-definitions-v1: votes, scores and frequency are not learning, quality or people; PENDING is release status; derived, manual and confirmed objectives differ; omitted data is unknown.';
 
 export const QA_SUMMARY_MODERATION_PACKING_PROFILE = {
-  modelProfile: 'qwen3-4b-instruct-2507-q4_k_m:ctx-4096:summary-v2',
-  contextWindowTokens: 4_096,
+  modelProfile: 'qwen3-4b-instruct-2507-q4_k_m:ctx-8192:summary-v2',
+  contextWindowTokens: 8_192,
   instructionText: QA_SUMMARY_TECHNICAL_INSTRUCTION_TEXT,
   definitionText: QA_SUMMARY_TECHNICAL_DEFINITION_TEXT,
   reservedOutputTokens: 640,
@@ -180,7 +180,7 @@ export type PreparedModerationSummaryContext = Readonly<{
   plan: QaSummaryAdapterPlan;
 }>;
 
-/** Short reasons keep the empty packing shell under the 4096-token budget. */
+/** Short reasons keep the empty packing shell under the configured token budget. */
 const QA_BASELINE_OMIT_REASON = 'qa-baseline';
 const QA_FORCE_FIT_OMIT_REASON = 'qa-force-fit';
 
