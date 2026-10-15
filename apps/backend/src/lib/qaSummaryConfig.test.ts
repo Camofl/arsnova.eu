@@ -4,6 +4,7 @@ import {
   isQaSummaryEnabled,
   QA_SUMMARY_CONCURRENCY_DEFAULT,
   QA_SUMMARY_TIMEOUT_DEFAULT_MS,
+  resolveEffectiveQaSummaryTimeoutMs,
   resolveQaSummaryConfig,
   resolveQaSummaryInferenceUrl,
   resolveQaSummaryMaxSources,
@@ -38,6 +39,27 @@ describe('qaSummaryConfig', () => {
     expect(() => resolveQaSummaryTimeoutMs('300001')).toThrow(/zwischen/);
   });
 
+  it('hebt das effektive Queue-Timeout auf den Open-Weight-Summary-Timeout an', () => {
+    expect(
+      resolveEffectiveQaSummaryTimeoutMs({
+        QA_SUMMARY_TIMEOUT_MS: '90000',
+        OPEN_WEIGHT_LLM_SUMMARY_TIMEOUT_MS: '180000',
+      }),
+    ).toBe(180_000);
+    expect(
+      resolveEffectiveQaSummaryTimeoutMs({
+        QA_SUMMARY_TIMEOUT_MS: '200000',
+        OPEN_WEIGHT_LLM_SUMMARY_TIMEOUT_MS: '90000',
+      }),
+    ).toBe(200_000);
+    expect(
+      resolveEffectiveQaSummaryTimeoutMs({
+        QA_SUMMARY_TIMEOUT_MS: '90000',
+        OPEN_WEIGHT_LLM_SUMMARY_TIMEOUT_MS: 'abc',
+      }),
+    ).toBe(90_000);
+  });
+
   it('laesst QA_SUMMARY_MAX_SOURCES nicht unter die Frageschwelle fallen', () => {
     expect(resolveQaSummaryMaxSources(undefined)).toBe(20);
     expect(resolveQaSummaryMaxSources('3')).toBe(3);
@@ -61,6 +83,7 @@ describe('qaSummaryConfig', () => {
       resolveQaSummaryConfig({
         QA_SUMMARY_ENABLED: 'true',
         QA_SUMMARY_TIMEOUT_MS: '9000',
+        OPEN_WEIGHT_LLM_SUMMARY_TIMEOUT_MS: '9000',
         QA_SUMMARY_QUEUE_LIMIT: '4',
         QA_SUMMARY_CONCURRENCY: '1',
         QA_SUMMARY_COOLDOWN_MS: '15000',

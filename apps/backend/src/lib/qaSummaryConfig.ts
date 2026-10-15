@@ -7,12 +7,14 @@
  * Ohne private `QA_SUMMARY_INFERENCE_URL` gibt es keinen Cloud-Fallback.
  */
 import { QA_SUMMARY_MIN_VISIBLE_QUESTIONS } from '@arsnova/shared-types';
+import { resolveOpenWeightLlmSummaryTimeoutMs } from './openWeightLlmConfig';
 
 /**
  * Queue wall-clock around the private open-weight summary call.
  * Must cover CPU prefill for the 8k packing profile; the old 8s/30s Gemini-era
  * ceiling forced extractive fallback before llama.cpp could answer.
- * Keep aligned with `OPEN_WEIGHT_LLM_SUMMARY_TIMEOUT_MS` (default 90s, max 300s).
+ * Effective budget is max(QA_SUMMARY_TIMEOUT_MS, OPEN_WEIGHT_LLM_SUMMARY_TIMEOUT_MS)
+ * so a raised Open-Weight timeout alone cannot be cut short by the queue.
  */
 export const QA_SUMMARY_TIMEOUT_DEFAULT_MS = 90_000;
 export const QA_SUMMARY_TIMEOUT_MIN_MS = 500;
@@ -139,6 +141,23 @@ export function resolveQaSummaryTimeoutMs(
   );
 }
 
+/**
+ * Effektives Queue-Wall-Clock: mindestens so lang wie der Open-Weight-Summary-Timeout,
+ * sonst erzwingt die Queue den extraktiven Fallback bevor llama.cpp antworten kann.
+ */
+export function resolveEffectiveQaSummaryTimeoutMs(env: NodeJS.ProcessEnv = process.env): number {
+  const queueTimeoutMs = resolveQaSummaryTimeoutMs(env['QA_SUMMARY_TIMEOUT_MS']);
+  let openWeightTimeoutMs = queueTimeoutMs;
+  try {
+    openWeightTimeoutMs = resolveOpenWeightLlmSummaryTimeoutMs(
+      env['OPEN_WEIGHT_LLM_SUMMARY_TIMEOUT_MS'],
+    );
+  } catch {
+    // Ungültiges Open-Weight-Timeout bleibt Client-Sache; Queue nutzt den eigenen Wert.
+  }
+  return Math.min(QA_SUMMARY_TIMEOUT_MAX_MS, Math.max(queueTimeoutMs, openWeightTimeoutMs));
+}
+
 export function resolveQaSummaryQueueLimit(
   configuredValue = process.env['QA_SUMMARY_QUEUE_LIMIT'],
 ): number {
@@ -206,7 +225,7 @@ export function resolveQaSummaryConfig(env: NodeJS.ProcessEnv = process.env): Qa
   }
   return {
     enabled: isQaSummaryEnabled(env['QA_SUMMARY_ENABLED']),
-    timeoutMs: resolveQaSummaryTimeoutMs(env['QA_SUMMARY_TIMEOUT_MS']),
+    timeoutMs: resolveEffectiveQaSummaryTimeoutMs(env),
     queueLimit: resolveQaSummaryQueueLimit(env['QA_SUMMARY_QUEUE_LIMIT']),
     concurrency: resolveQaSummaryConcurrency(env['QA_SUMMARY_CONCURRENCY']),
     cooldownMs: resolveQaSummaryCooldownMs(env['QA_SUMMARY_COOLDOWN_MS']),

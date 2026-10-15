@@ -22,6 +22,8 @@ import {
 import {
   isOpenWeightLlmEnabled,
   OPEN_WEIGHT_LLM_MODEL_ALIAS,
+  resolveOpenWeightLlmLabelTimeoutMs,
+  resolveOpenWeightLlmLearningTimeoutMs,
   resolveOpenWeightLlmSummaryTimeoutMs,
 } from './openWeightLlmConfig';
 import {
@@ -36,22 +38,38 @@ import {
 
 /** Ergebnis-Cache und Mindestabstand zwischen Live-Messungen (auch bei refresh). */
 export const OPEN_WEIGHT_LLM_PROBE_CACHE_TTL_MS = 5 * 60_000;
-/** Topic/Learning-Probe bewusst kürzer als Produktions-Timeouts — nur Erreichbarkeit/Schema. */
-export const OPEN_WEIGHT_LLM_PROBE_TASK_TIMEOUT_MS = 20_000;
+
+export type OpenWeightLlmProbeTaskTimeoutsMs = {
+  readonly topic_label: number;
+  readonly qa_summary: number;
+  readonly learning_objectives: number;
+};
 
 /**
- * Summary-Probe-Deadline aus `OPEN_WEIGHT_LLM_SUMMARY_TIMEOUT_MS` (gebundene Parserlogik),
- * nicht aus einem kompilierten Default und nicht über die volle Config-Validierung
- * (Token/Transport) — die würde die Probe sonst mit einer Exception abbrechen.
+ * Probe-Deadlines aus den produktiven Open-Weight-Timeouts (einzeln geparst).
+ * Keine volle Config-Validierung — Token/Transport-Fehler dürfen die Probe nicht
+ * mit einer Exception abbrechen; der Client meldet sie pro Aufgabe als
+ * `misconfigured`. Ungültige Timeout-Zahlen werfen und werden vom Aufrufer
+ * in ein strukturiertes Probe-Ergebnis übersetzt.
  */
-export function resolveOpenWeightLlmProbeSummaryTimeoutMs(
+export function resolveOpenWeightLlmProbeTaskTimeoutsMs(
   env: NodeJS.ProcessEnv = process.env,
   taskTimeoutOverride?: number,
-): number {
+): OpenWeightLlmProbeTaskTimeoutsMs {
   if (typeof taskTimeoutOverride === 'number') {
-    return taskTimeoutOverride;
+    return {
+      topic_label: taskTimeoutOverride,
+      qa_summary: taskTimeoutOverride,
+      learning_objectives: taskTimeoutOverride,
+    };
   }
-  return resolveOpenWeightLlmSummaryTimeoutMs(env['OPEN_WEIGHT_LLM_SUMMARY_TIMEOUT_MS']);
+  return {
+    topic_label: resolveOpenWeightLlmLabelTimeoutMs(env['OPEN_WEIGHT_LLM_LABEL_TIMEOUT_MS']),
+    qa_summary: resolveOpenWeightLlmSummaryTimeoutMs(env['OPEN_WEIGHT_LLM_SUMMARY_TIMEOUT_MS']),
+    learning_objectives: resolveOpenWeightLlmLearningTimeoutMs(
+      env['OPEN_WEIGHT_LLM_LEARNING_TIMEOUT_MS'],
+    ),
+  };
 }
 
 const PROBE_SOURCE_ID = 'probe-s1';
@@ -276,80 +294,96 @@ async function measureProbe(hooks: ProbeHooks): Promise<OpenWeightLlmRuntimeProb
     return disabledProbe(checkedAt);
   }
 
-  const timeoutMs = hooks.taskTimeoutMs ?? OPEN_WEIGHT_LLM_PROBE_TASK_TIMEOUT_MS;
-  let summaryTimeoutMs: number;
+  let timeouts: OpenWeightLlmProbeTaskTimeoutsMs;
   try {
-    summaryTimeoutMs = resolveOpenWeightLlmProbeSummaryTimeoutMs(env, hooks.taskTimeoutMs);
+    timeouts = resolveOpenWeightLlmProbeTaskTimeoutsMs(env, hooks.taskTimeoutMs);
   } catch {
-    // Ungültiges OPEN_WEIGHT_LLM_SUMMARY_TIMEOUT_MS darf health.openWeightLlmProbe
-    // nicht mit einem tRPC-Fehler abbrechen; Status bleibt strukturiert.
+    // Ungültige Timeout-Env-Werte: strukturierter Status, kein tRPC-Fehler.
     return misconfiguredProbe(checkedAt);
   }
+
   const topicLabel = hooks.topicLabel ?? runOpenWeightLlmTopicLabel;
   const summaryV2 = hooks.summaryV2 ?? runOpenWeightLlmSummaryV2;
   const learning = hooks.learning ?? runOpenWeightLlmLearningObjectives;
 
-  const topic = await runOneTask(async () => {
-    const result = await topicLabel(TOPIC_LABEL_REQUEST, TOPIC_LABEL_FALLBACK, {
-      signal: AbortSignal.timeout(timeoutMs),
-    });
-    return result.status === 'completed'
-      ? { status: 'completed', model: result.telemetry.model }
-      : { status: 'fallback', reason: result.reason };
-  }, now);
+  try {
+    const topic = await runOneTask(async () => {
+      const result = await topicLabel(TOPIC_LABEL_REQUEST, TOPIC_LABEL_FALLBACK, {
+        signal: AbortSignal.timeout(timeouts.topic_label),
+      });
+      return result.status === 'completed'
+        ? { status: 'completed', model: result.telemetry.model }
+        : { status: 'fallback', reason: result.reason };
+    }, now);
 
-  const qaSummary = await runOneTask(async () => {
-    const result = await summaryV2(SUMMARY_V2_REQUEST, {
-      signal: AbortSignal.timeout(summaryTimeoutMs),
-    });
-    // Gleiche Erfolgssemantik wie runPreparedQaSummary: schema-valides
-    // `{ output: { status: 'failed' } }` gilt produktiv als Fallback, nicht als ok.
-    if (result.status === 'completed' && result.output.output.status !== 'failed') {
-      return { status: 'completed', model: result.telemetry.model };
-    }
-    return {
-      status: result.status === 'completed' ? 'invalid_response' : result.status,
-      reason: result.status === 'completed' ? 'invalid_response' : result.status,
+    const qaSummary = await runOneTask(async () => {
+      const result = await summaryV2(SUMMARY_V2_REQUEST, {
+        signal: AbortSignal.timeout(timeouts.qa_summary),
+      });
+      // Gleiche Erfolgssemantik wie runPreparedQaSummary: schema-valides
+      // `{ output: { status: 'failed' } }` gilt produktiv als Fallback, nicht als ok.
+      if (result.status === 'completed' && result.output.output.status !== 'failed') {
+        return { status: 'completed', model: result.telemetry.model };
+      }
+      return {
+        status: result.status === 'completed' ? 'invalid_response' : result.status,
+        reason: result.status === 'completed' ? 'invalid_response' : result.status,
+      };
+    }, now);
+
+    const learningObjectives = await runOneTask(async () => {
+      const result = await learning(LEARNING_REQUEST, {
+        signal: AbortSignal.timeout(timeouts.learning_objectives),
+      });
+      return result.status === 'completed'
+        ? { status: 'completed', model: result.telemetry.model }
+        : { status: result.status, reason: result.status };
+    }, now);
+
+    const tasks = {
+      topic_label: {
+        status: topic.status,
+        elapsedMs: topic.elapsedMs,
+        reason: topic.reason,
+      },
+      qa_summary: {
+        status: qaSummary.status,
+        elapsedMs: qaSummary.elapsedMs,
+        reason: qaSummary.reason,
+      },
+      learning_objectives: {
+        status: learningObjectives.status,
+        elapsedMs: learningObjectives.elapsedMs,
+        reason: learningObjectives.reason,
+      },
     };
-  }, now);
+    const modelReported = topic.model ?? qaSummary.model ?? learningObjectives.model ?? null;
 
-  const learningObjectives = await runOneTask(async () => {
-    const result = await learning(LEARNING_REQUEST, {
-      signal: AbortSignal.timeout(timeoutMs),
+    return OpenWeightLlmRuntimeProbeSchema.parse({
+      enabled: true,
+      overall: overallFromTasks(tasks),
+      checkedAt,
+      cache: 'live',
+      modelAlias: OPEN_WEIGHT_LLM_MODEL_ALIAS,
+      modelReported,
+      tasks,
     });
-    return result.status === 'completed'
-      ? { status: 'completed', model: result.telemetry.model }
-      : { status: result.status, reason: result.status };
-  }, now);
-
-  const tasks = {
-    topic_label: {
-      status: topic.status,
-      elapsedMs: topic.elapsedMs,
-      reason: topic.reason,
-    },
-    qa_summary: {
-      status: qaSummary.status,
-      elapsedMs: qaSummary.elapsedMs,
-      reason: qaSummary.reason,
-    },
-    learning_objectives: {
-      status: learningObjectives.status,
-      elapsedMs: learningObjectives.elapsedMs,
-      reason: learningObjectives.reason,
-    },
-  };
-  const modelReported = topic.model ?? qaSummary.model ?? learningObjectives.model ?? null;
-
-  return OpenWeightLlmRuntimeProbeSchema.parse({
-    enabled: true,
-    overall: overallFromTasks(tasks),
-    checkedAt,
-    cache: 'live',
-    modelAlias: OPEN_WEIGHT_LLM_MODEL_ALIAS,
-    modelReported,
-    tasks,
-  });
+  } catch {
+    // Schema-/Unerwartete Fehler: lieber strukturiert unavailable als rejected Promise.
+    return OpenWeightLlmRuntimeProbeSchema.parse({
+      enabled: true,
+      overall: 'unavailable',
+      checkedAt,
+      cache: 'live',
+      modelAlias: OPEN_WEIGHT_LLM_MODEL_ALIAS,
+      modelReported: null,
+      tasks: {
+        topic_label: { status: 'unavailable', elapsedMs: null, reason: 'error' },
+        qa_summary: { status: 'unavailable', elapsedMs: null, reason: 'error' },
+        learning_objectives: { status: 'unavailable', elapsedMs: null, reason: 'error' },
+      },
+    });
+  }
 }
 
 export function resetOpenWeightLlmRuntimeProbeForTests(): void {
@@ -409,7 +443,8 @@ export async function getOpenWeightLlmRuntimeProbe(
   }
 
   // Claim vor jedem await: parallele Burst-Requests coalescen auf dasselbe Promise;
-  // beforeLiveMeasurement (Rate-Limit) läuft nur beim Leader.
+  // beforeLiveMeasurement (Rate-Limit) läuft nur beim Leader und darf weiter werfen
+  // (TOO_MANY_REQUESTS). measureProbe selbst liefert nur strukturierte DTOs.
   const beforeLive = options.beforeLiveMeasurement;
   probeInFlight = (async () => {
     if (beforeLive) {

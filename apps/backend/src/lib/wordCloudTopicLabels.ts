@@ -15,9 +15,10 @@ import {
 } from '@arsnova/shared-types';
 import {
   isOpenWeightLlmEnabled,
+  OPEN_WEIGHT_LLM_LABEL_TIMEOUT_DEFAULT_MS,
   OPEN_WEIGHT_LLM_MODEL_ID,
   OPEN_WEIGHT_LLM_MODEL_VERSION,
-  resolveOpenWeightLlmConfig,
+  resolveOpenWeightLlmLabelTimeoutMs,
 } from './openWeightLlmConfig';
 import { runOpenWeightLlmTopicLabel, type OpenWeightLlmLiveResult } from './openWeightLlmClient';
 import { analyzeSemanticWordCloudSnapshot } from './wordCloudSemanticAnalyze';
@@ -136,9 +137,9 @@ function runtimeEnabled(env: NodeJS.ProcessEnv): boolean {
 
 function labelTimeoutMs(env: NodeJS.ProcessEnv): number {
   try {
-    return resolveOpenWeightLlmConfig(env).timeoutsMs.topic_label;
+    return resolveOpenWeightLlmLabelTimeoutMs(env['OPEN_WEIGHT_LLM_LABEL_TIMEOUT_MS']);
   } catch {
-    return 30_000;
+    return OPEN_WEIGHT_LLM_LABEL_TIMEOUT_DEFAULT_MS;
   }
 }
 
