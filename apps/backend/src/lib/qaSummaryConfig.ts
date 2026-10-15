@@ -8,9 +8,15 @@
  */
 import { QA_SUMMARY_MIN_VISIBLE_QUESTIONS } from '@arsnova/shared-types';
 
-export const QA_SUMMARY_TIMEOUT_DEFAULT_MS = 8_000;
+/**
+ * Queue wall-clock around the private open-weight summary call.
+ * Must cover CPU prefill for the 8k packing profile; the old 8s/30s Gemini-era
+ * ceiling forced extractive fallback before llama.cpp could answer.
+ * Keep aligned with `OPEN_WEIGHT_LLM_SUMMARY_TIMEOUT_MS` (default 90s, max 300s).
+ */
+export const QA_SUMMARY_TIMEOUT_DEFAULT_MS = 90_000;
 export const QA_SUMMARY_TIMEOUT_MIN_MS = 500;
-export const QA_SUMMARY_TIMEOUT_MAX_MS = 30_000;
+export const QA_SUMMARY_TIMEOUT_MAX_MS = 300_000;
 export const QA_SUMMARY_QUEUE_LIMIT_DEFAULT = 8;
 export const QA_SUMMARY_QUEUE_LIMIT_MIN = 1;
 export const QA_SUMMARY_QUEUE_LIMIT_MAX = 32;

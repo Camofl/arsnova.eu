@@ -19,7 +19,11 @@ import {
   type OpenWeightLlmTopicLabelOutput,
   type OpenWeightLlmTopicLabelRequest,
 } from '@arsnova/shared-types';
-import { isOpenWeightLlmEnabled, OPEN_WEIGHT_LLM_MODEL_ALIAS } from './openWeightLlmConfig';
+import {
+  isOpenWeightLlmEnabled,
+  OPEN_WEIGHT_LLM_MODEL_ALIAS,
+  OPEN_WEIGHT_LLM_SUMMARY_TIMEOUT_DEFAULT_MS,
+} from './openWeightLlmConfig';
 import {
   runOpenWeightLlmLearningObjectives,
   runOpenWeightLlmSummaryV2,
@@ -34,6 +38,11 @@ import {
 export const OPEN_WEIGHT_LLM_PROBE_CACHE_TTL_MS = 5 * 60_000;
 /** Pro Aufgabe bewusst kürzer als die Produktions-Timeouts — nur Erreichbarkeit/Schema. */
 export const OPEN_WEIGHT_LLM_PROBE_TASK_TIMEOUT_MS = 20_000;
+/**
+ * Summary-Probe muss CPU-Prefill unter dem 8k-Profil überleben; sonst meldet der
+ * Betriebsstatus fälschlich »nicht erreichbar«, während die Runtime noch rechnet.
+ */
+export const OPEN_WEIGHT_LLM_PROBE_SUMMARY_TIMEOUT_MS = OPEN_WEIGHT_LLM_SUMMARY_TIMEOUT_DEFAULT_MS;
 
 const PROBE_SOURCE_ID = 'probe-s1';
 const PROBE_QUESTION_ID = '11111111-1111-4111-8111-111111111111';
@@ -253,7 +262,7 @@ async function measureProbe(hooks: ProbeHooks): Promise<OpenWeightLlmRuntimeProb
 
   const qaSummary = await runOneTask(async () => {
     const result = await summaryV2(SUMMARY_V2_REQUEST, {
-      signal: AbortSignal.timeout(timeoutMs),
+      signal: AbortSignal.timeout(hooks.taskTimeoutMs ?? OPEN_WEIGHT_LLM_PROBE_SUMMARY_TIMEOUT_MS),
     });
     // Gleiche Erfolgssemantik wie runPreparedQaSummary: schema-valides
     // `{ output: { status: 'failed' } }` gilt produktiv als Fallback, nicht als ok.

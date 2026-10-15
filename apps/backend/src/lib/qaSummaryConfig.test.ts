@@ -28,10 +28,14 @@ describe('qaSummaryConfig', () => {
     expect(isQaSummaryEnabled('true')).toBe(true);
   });
 
-  it('begrenzt Timeout hart', () => {
+  it('begrenzt Timeout hart und deckt den Open-Weight-Summary-Default', () => {
     expect(resolveQaSummaryTimeoutMs(undefined)).toBe(QA_SUMMARY_TIMEOUT_DEFAULT_MS);
+    expect(QA_SUMMARY_TIMEOUT_DEFAULT_MS).toBe(90_000);
+    expect(resolveQaSummaryTimeoutMs('90000')).toBe(90_000);
+    expect(resolveQaSummaryTimeoutMs('300000')).toBe(300_000);
     expect(() => resolveQaSummaryTimeoutMs('abc')).toThrow(/ganze Zahl/);
     expect(() => resolveQaSummaryTimeoutMs('100')).toThrow(/zwischen/);
+    expect(() => resolveQaSummaryTimeoutMs('300001')).toThrow(/zwischen/);
   });
 
   it('laesst QA_SUMMARY_MAX_SOURCES nicht unter die Frageschwelle fallen', () => {
