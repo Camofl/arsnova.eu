@@ -204,6 +204,86 @@ describe('moderationSummaryContext', () => {
     );
   });
 
+  it('diversifiziert Force-Fit über PENDING, PINNED und ACTIVE per Round-Robin', () => {
+    const base = analysisFixture(MODERATION_PROMPT_CONTEXT_MINIMAL_FIXTURE_V1);
+    if (base.context.questions.state !== 'available') {
+      throw new Error('Erwartete verfügbare Fragen im Minimalfixture.');
+    }
+    const templateQuestion = base.context.questions.items[0]!;
+    const templateSource = base.context.sources.find((source) => source.kind === 'qa-question');
+    if (!templateSource || templateSource.kind !== 'qa-question') {
+      throw new Error('Erwartete Q&A-Quelle im Minimalfixture.');
+    }
+    const statuses = [
+      ...Array.from({ length: 6 }, () => 'PENDING' as const),
+      'PINNED' as const,
+      'ACTIVE' as const,
+    ];
+    const items = statuses.map((status, index) => ({
+      ...structuredClone(templateQuestion),
+      sourceId: `qa-question:00000000-0000-4000-8000-${String(index).padStart(12, '0')}`,
+      status,
+    }));
+    const sources = items.map((question, index) => ({
+      ...structuredClone(templateSource),
+      id: question.sourceId,
+      content: {
+        state: 'included' as const,
+        text: `Statusfrage ${question.status} ${index}: ${'Wort '.repeat(40)}`.slice(0, 280),
+        truncated: false,
+      },
+    }));
+    const analysis = ModerationAnalysisContextV1Schema.parse({
+      ...base,
+      assembledAt: '2026-10-15T05:31:38.381Z',
+      context: {
+        ...base.context,
+        questions: {
+          ...base.context.questions,
+          items,
+          corpus: {
+            total: 8,
+            eligible: 8,
+            analyzed: 8,
+            deduplicated: 8,
+            represented: 8,
+          },
+        },
+        sources,
+        scope: {
+          ...base.context.scope,
+          questionFilter: {
+            state: 'available' as const,
+            statuses: ['PENDING', 'ACTIVE', 'PINNED'],
+            timeWindow: { kind: 'entire-session' as const },
+          },
+          selectionLimits: {
+            ...base.context.scope.selectionLimits,
+            questions: 8,
+          },
+        },
+        limitations: Array.from({ length: 18 }, (_, index) => ({
+          code: 'budget-truncated' as const,
+          section: 'questions' as const,
+          detail: `mix-${index}-`.padEnd(200, '.'),
+        })),
+      },
+    });
+
+    const prepared = prepareModerationSummaryContextFromAnalysis({ analysis, plan });
+    expect(prepared.request.promptContext.context.limitations).toContainEqual(
+      expect.objectContaining({ detail: 'qa-force-fit' }),
+    );
+    const packedStatuses = new Set(
+      prepared.request.promptContext.context.questions.state === 'available'
+        ? prepared.request.promptContext.context.questions.items.map((question) => question.status)
+        : [],
+    );
+    expect(packedStatuses.has('PENDING')).toBe(true);
+    expect(packedStatuses.has('PINNED')).toBe(true);
+    expect(packedStatuses.has('ACTIVE')).toBe(true);
+  });
+
   it('erreicht Force-Fit auch wenn die Baseline-Shell selbst das Budget sprengt', () => {
     const base = analysisFixture(MODERATION_PROMPT_CONTEXT_MINIMAL_FIXTURE_V1);
     if (base.context.questions.state !== 'available') {

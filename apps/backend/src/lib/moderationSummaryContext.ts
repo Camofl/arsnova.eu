@@ -29,6 +29,7 @@ import {
 import type { HostTokenContext } from './hostAuth';
 import { buildModerationPromptContext } from './moderationPromptContext';
 import {
+  compareModerationPromptCodeUnits,
   estimateModerationPromptUtf8Tokens,
   packFreshlyAuthorizedModerationPromptContext,
   packModerationPromptContext,
@@ -255,34 +256,44 @@ function qaTextBaselineAnalysis(
   });
 }
 
-function questionForceFitRank(question: {
-  readonly status: string;
-  readonly votes:
-    | { readonly state: 'unavailable' }
-    | {
-        readonly state: 'available';
-        readonly bestScore:
-          | { readonly state: 'available'; readonly value: number }
-          | { readonly state: 'unavailable' };
-      };
-}): number {
-  if (question.status === 'PENDING') return 0;
-  if (question.status === 'PINNED') return 1;
-  return 2;
-}
+type ForceFitQuestion = Extract<
+  ModerationAnalysisContextV1['context']['questions'],
+  { state: 'available' }
+>['items'][number];
 
-function questionBestScore(question: {
-  readonly votes:
-    | { readonly state: 'unavailable' }
-    | {
-        readonly state: 'available';
-        readonly bestScore:
-          | { readonly state: 'available'; readonly value: number }
-          | { readonly state: 'unavailable' };
-      };
-}): number {
+function questionBestScore(question: ForceFitQuestion): number {
   if (question.votes.state !== 'available') return -1;
   return question.votes.bestScore.state === 'available' ? question.votes.bestScore.value : -1;
+}
+
+/**
+ * Diversify force-fit like the canonical packer: round-robin across status lanes
+ * so many PENDING items cannot starve PINNED/ACTIVE evidence.
+ */
+function forceFitQuestionCandidates(items: readonly ForceFitQuestion[]): ForceFitQuestion[] {
+  const byLaneOrder = (left: ForceFitQuestion, right: ForceFitQuestion): number =>
+    questionBestScore(right) - questionBestScore(left) ||
+    compareModerationPromptCodeUnits(left.sourceId, right.sourceId);
+  const pinned = items.filter(({ status }) => status === 'PINNED').sort(byLaneOrder);
+  const pending = items.filter(({ status }) => status === 'PENDING').sort(byLaneOrder);
+  const active = items.filter(({ status }) => status === 'ACTIVE').sort(byLaneOrder);
+  const other = items
+    .filter(({ status }) => status !== 'PINNED' && status !== 'PENDING' && status !== 'ACTIVE')
+    .sort(byLaneOrder);
+
+  const ranked: ForceFitQuestion[] = [];
+  const seen = new Set<string>();
+  const lanes = [pinned, pending, active, other] as const;
+  const maximum = Math.max(0, ...lanes.map((lane) => lane.length));
+  for (let index = 0; index < maximum; index += 1) {
+    for (const lane of lanes) {
+      const question = lane[index];
+      if (!question || seen.has(question.sourceId)) continue;
+      seen.add(question.sourceId);
+      ranked.push(question);
+    }
+  }
+  return ranked;
 }
 
 /**
@@ -299,13 +310,7 @@ function qaForceFitAnalysis(
     return analysis;
   }
 
-  const ranked = [...context.questions.items].sort((left, right) => {
-    const byStatus = questionForceFitRank(left) - questionForceFitRank(right);
-    if (byStatus !== 0) return byStatus;
-    const byScore = questionBestScore(right) - questionBestScore(left);
-    if (byScore !== 0) return byScore;
-    return left.sourceId < right.sourceId ? -1 : left.sourceId > right.sourceId ? 1 : 0;
-  });
+  const ranked = forceFitQuestionCandidates(context.questions.items);
   const selected = ranked.slice(0, Math.max(1, questionCount)).map((question) => ({
     ...question,
     answerState: { state: 'unavailable' as const, reason: 'not-collected' as const },
