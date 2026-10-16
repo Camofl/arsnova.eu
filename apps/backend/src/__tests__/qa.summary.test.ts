@@ -238,4 +238,21 @@ describe('qa summary V2 (issue #456 slice 7)', () => {
       hostCaller.requestSummary({ sessionId: SESSION_ID, locale: 'de' }),
     ).rejects.toMatchObject({ code: 'FORBIDDEN' });
   });
+
+  it('erlaubt dem Host die Zusammenfassung auch in der Nachbereitungsfrist nach Session-Ende', async () => {
+    vi.stubEnv('QA_SUMMARY_ENABLED', 'true');
+    const endedRecently = new Date(Date.now() - 60_000);
+    prismaMock.session.findUnique.mockResolvedValue({
+      ...activeSession(),
+      status: 'FINISHED',
+      endedAt: endedRecently,
+      qaClosesAt: endedRecently,
+    });
+
+    const pending = await hostCaller.requestSummary({ sessionId: SESSION_ID, locale: 'de' });
+    expect(pending.result?.status).toBe('pending');
+    await waitForQaSummaryIdleForTests();
+    const ready = await hostCaller.summaryRuntime({ sessionId: SESSION_ID });
+    expect(ready.result?.status).toBe('ready');
+  });
 });

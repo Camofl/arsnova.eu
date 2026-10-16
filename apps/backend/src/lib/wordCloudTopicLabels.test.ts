@@ -374,4 +374,56 @@ describe('applyWordCloudTopicLabels', () => {
     expect(result.labelSettlement).toBe('complete');
     expect(result.labelModelId).toBeNull();
   });
+
+  it('begrenzt Cluster-Quellen auf 6 und komprimiert lange UUID-SourceIds für das 96-Token-Budget', async () => {
+    let capturedRequest: Parameters<TopicLabelCaller>[0] | undefined;
+    const label = labeler(async (request) => {
+      capturedRequest = request;
+      return {
+        status: 'completed',
+        output: {
+          schemaVersion: 1,
+          taskType: 'topic_label',
+          label: 'Klausurtermine',
+          sourceIds: request.sources.slice(0, 2).map((source) => source.id),
+        },
+        telemetry: {
+          taskType: 'topic_label',
+          elapsedMs: 1,
+          model: null,
+          promptTokens: null,
+          completionTokens: null,
+        },
+      };
+    });
+    const manyUuidMembers: WordCloudAnalysisEntryDTO = {
+      key: 'semantic-uuid-cluster',
+      label: 'Wann ist die Klausur?',
+      count: 10,
+      basisLabel: 'Wann ist die Klausur?',
+      confidence: 0.9,
+      variants: [],
+      members: Array.from({ length: 10 }, (_, index) => ({
+        sourceId: `0199e3a4-7b2c-7d8e-9f10-1a2b3c4d5e${String(index).padStart(2, '0')}`,
+        text: `Frage ${index + 1} zur Klausurorganisation`,
+        weight: 1,
+      })),
+    };
+    const result = await applyWordCloudTopicLabels(input, output([manyUuidMembers]), {
+      env: enabledEnv,
+      label,
+    });
+    expect(capturedRequest?.sources).toHaveLength(6);
+    expect(capturedRequest?.sources.map((source) => source.id)).toEqual([
+      's1',
+      's2',
+      's3',
+      's4',
+      's5',
+      's6',
+    ]);
+    expect(result.entries[0]?.label).toBe('Klausurtermine');
+    expect(result.entries[0]?.labelOrigin).toBe('model');
+    expect(result.entries[0]?.members[0]?.sourceId).toBe('0199e3a4-7b2c-7d8e-9f10-1a2b3c4d5e00');
+  });
 });

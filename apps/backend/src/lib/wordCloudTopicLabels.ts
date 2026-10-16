@@ -33,6 +33,13 @@ export const WORD_CLOUD_TOPIC_LABEL_PHASE_BUDGET_MS = 8_000;
 /** Harte Obergrenze, damit die Host-Wartezeit im Hörsaal nicht ungebunden wächst. */
 export const WORD_CLOUD_TOPIC_LABEL_PHASE_BUDGET_CAP_MS = 120_000;
 const TOPIC_LABEL_MAX_CANDIDATES = 12;
+/**
+ * Repräsentative Obergrenze pro Cluster: hält CPU-Prefill kurz und vermeidet,
+ * dass lange UUID-Listen in `sourceIds` das 96-Token-Ausgabebudget sprengen.
+ */
+export const TOPIC_LABEL_MAX_SOURCES_PER_CLUSTER = 6;
+const TOPIC_LABEL_MAX_SOURCE_TEXT_CHARS = 240;
+const TOPIC_LABEL_COMPACT_ID_MAX_LENGTH = 20;
 const TOPIC_LABEL_LOCALES = new Set(['de', 'en']);
 const TRANSIENT_REASONS = new Set([
   'busy',
@@ -81,15 +88,23 @@ function orderedMembers(entry: WordCloudAnalysisEntryDTO) {
   });
 }
 
+function compactTopicLabelSourceId(rawId: string, index: number): string {
+  const trimmed = rawId.trim().slice(0, 80);
+  if (trimmed.length <= TOPIC_LABEL_COMPACT_ID_MAX_LENGTH) {
+    return trimmed;
+  }
+  return trimmed.startsWith('qa') ? `qa-${index + 1}` : `s${index + 1}`;
+}
+
 function packRequest(
   entry: WordCloudAnalysisEntryDTO,
   locale: AnalyzeWordCloudOutput['locale'],
   snapshotHash: string,
 ): OpenWeightLlmTopicLabelRequest | null {
-  const members = orderedMembers(entry);
-  const sources = members.map((member) => ({
-    id: member.sourceId.slice(0, 80),
-    text: member.text.trim().slice(0, 500),
+  const members = orderedMembers(entry).slice(0, TOPIC_LABEL_MAX_SOURCES_PER_CLUSTER);
+  const sources = members.map((member, index) => ({
+    id: compactTopicLabelSourceId(member.sourceId, index),
+    text: member.text.trim().slice(0, TOPIC_LABEL_MAX_SOURCE_TEXT_CHARS),
   }));
   const clusterId = `${snapshotHash.slice(0, 16)}:${entry.key}`.slice(0, 80);
   let kept = sources;
@@ -192,10 +207,15 @@ export async function applyWordCloudTopicLabels(
   let acceptedModelLabel = false;
   const entries: WordCloudAnalysisEntryDTO[] = [];
 
+  let previousAbortedOrTimedOut = false;
   for (const entry of output.entries) {
     if (entry.members.length < 2) {
       entries.push(withOrigin(entry, 'extractive'));
       continue;
+    }
+    if (previousAbortedOrTimedOut) {
+      await new Promise((resolve) => setTimeout(resolve, 1_500));
+      previousAbortedOrTimedOut = false;
     }
     const remaining = phaseBudgetMs - (now() - startedAt);
     if (remaining < 50) {
@@ -217,6 +237,9 @@ export async function applyWordCloudTopicLabels(
     const result = await label(request, fallback, {
       signal: AbortSignal.timeout(Math.min(perCallCap, remaining)),
     });
+    if (result.status === 'fallback') {
+      previousAbortedOrTimedOut = result.reason === 'aborted' || result.reason === 'timeout';
+    }
     if (result.status === 'completed' && acceptLabel(result.output.label, request.sources)) {
       acceptedModelLabel = true;
       entries.push(withOrigin(entry, 'model', result.output.label.trim()));

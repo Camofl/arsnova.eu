@@ -84,6 +84,13 @@ describe('Q&A summary V2 contracts', () => {
     expect(JSON.stringify(request).length).toBeGreaterThan(2_500);
     expect(QaSummaryInferenceRequestV2Schema.safeParse(request).success).toBe(true);
     expect(OpenWeightLlmSummaryRequestV2Schema.safeParse(request).success).toBe(true);
+    expect(QA_SUMMARY_TECHNICAL_INSTRUCTION_VERSION).toBe('qa-summary-technical-handoff-v2');
+    expect(
+      QaSummaryInferenceRequestV2Schema.safeParse({
+        ...request,
+        instructionVersion: 'qa-summary-technical-handoff-v1',
+      }).success,
+    ).toBe(false);
   });
 
   it('keeps the legacy 2,500-byte summary request bound unchanged', () => {

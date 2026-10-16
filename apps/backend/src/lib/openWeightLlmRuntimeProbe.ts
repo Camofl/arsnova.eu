@@ -286,6 +286,16 @@ async function runOneTask(
   }
 }
 
+const OPEN_WEIGHT_LLM_PROBE_CANCEL_COOLDOWN_MS = 1_500;
+
+async function waitForProbeCancelCooldown(
+  previousOutcome: OpenWeightLlmProbeTaskResult,
+): Promise<void> {
+  if (previousOutcome.reason === 'aborted' || previousOutcome.reason === 'timeout') {
+    await new Promise((resolve) => setTimeout(resolve, OPEN_WEIGHT_LLM_PROBE_CANCEL_COOLDOWN_MS));
+  }
+}
+
 async function measureProbe(hooks: ProbeHooks): Promise<OpenWeightLlmRuntimeProbeDTO> {
   const env = hooks.env ?? process.env;
   const now = hooks.now ?? Date.now;
@@ -316,6 +326,8 @@ async function measureProbe(hooks: ProbeHooks): Promise<OpenWeightLlmRuntimeProb
         : { status: 'fallback', reason: result.reason };
     }, now);
 
+    await waitForProbeCancelCooldown(topic);
+
     const qaSummary = await runOneTask(async () => {
       const result = await summaryV2(SUMMARY_V2_REQUEST, {
         signal: AbortSignal.timeout(timeouts.qa_summary),
@@ -330,6 +342,8 @@ async function measureProbe(hooks: ProbeHooks): Promise<OpenWeightLlmRuntimeProb
         reason: result.status === 'completed' ? 'invalid_response' : result.status,
       };
     }, now);
+
+    await waitForProbeCancelCooldown(qaSummary);
 
     const learningObjectives = await runOneTask(async () => {
       const result = await learning(LEARNING_REQUEST, {
