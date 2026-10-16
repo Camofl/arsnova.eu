@@ -90,10 +90,13 @@ describe('moderationSummaryContext', () => {
       instructionTokens: Buffer.byteLength(QA_SUMMARY_TECHNICAL_INSTRUCTION_TEXT, 'utf8'),
       definitionTokens: Buffer.byteLength(QA_SUMMARY_TECHNICAL_DEFINITION_TEXT, 'utf8'),
     });
+    expect(QA_SUMMARY_TECHNICAL_INSTRUCTION_TEXT).toContain('2 to 4 short statements');
     const prepared = prepareModerationSummaryContextFromAnalysis({
       analysis: analysisFixture(MODERATION_PROMPT_CONTEXT_MINIMAL_FIXTURE_V1),
       plan,
     });
+    expect(prepared.request.instructionVersion).toBe('qa-summary-technical-handoff-v2');
+    expect(prepared.preview.instructionVersion).toBe('qa-summary-technical-handoff-v2');
     expect(prepared.request.promptContext.budget).toMatchObject(counts);
     expect(
       prepared.request.promptContext.budget.packedInputTokens +
