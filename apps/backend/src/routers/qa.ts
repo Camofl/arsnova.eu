@@ -1557,7 +1557,13 @@ export const qaRouter = router({
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Session nicht gefunden.' });
       }
       const hostToken = await assertHostSessionAccessFromContext(ctx, session.code);
-      assertQaSessionOpenForParticipants(session);
+      assertQaHostContentReadAllowed(session);
+      if (!isQaEnabled(session)) {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'Q&A ist in dieser Session nicht aktiviert.',
+        });
+      }
       if (!isQaSummaryEnabled()) {
         throw new TRPCError({
           code: 'FORBIDDEN',

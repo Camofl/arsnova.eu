@@ -622,4 +622,61 @@ describe('getOpenWeightLlmRuntimeProbe', () => {
     expect(result.tasks.learning_objectives.status).toBe('busy');
     expect(result.overall).toBe('busy');
   });
+
+  it('wartet nach einer abgebrochenen Teilprobe kurz auf die Slot-Freigabe von llama-server', async () => {
+    const result = await getOpenWeightLlmRuntimeProbe({
+      env: enabledEnv,
+      topicLabel: (async () => ({
+        status: 'fallback' as const,
+        reason: 'timeout',
+        output: {
+          schemaVersion: 1 as const,
+          taskType: 'topic_label' as const,
+          label: 'Probe',
+          sourceIds: ['probe-s1'],
+        },
+      })) as never,
+      summaryV2: (async () => ({
+        status: 'completed' as const,
+        output: {
+          schemaVersion: QA_SUMMARY_V2_SCHEMA_VERSION,
+          taskType: 'qa_summary' as const,
+          outputContract: QA_SUMMARY_MODEL_OUTPUT_V2_CONTRACT_VERSION,
+          output: {
+            status: 'ready' as const,
+            statements: [],
+            suggestedNextSteps: [],
+            limitations: [],
+          },
+        },
+        telemetry: {
+          taskType: 'qa_summary' as const,
+          elapsedMs: 1,
+          model: 'qwen3-4b-instruct-2507-q4_k_m',
+          promptTokens: null,
+          completionTokens: null,
+        },
+      })) as never,
+      learning: (async () => ({
+        status: 'completed' as const,
+        output: {
+          schemaVersion: 1 as const,
+          taskType: 'learning_objectives' as const,
+          objectives: [],
+          limitations: [],
+        },
+        telemetry: {
+          taskType: 'learning_objectives' as const,
+          elapsedMs: 1,
+          model: null,
+          promptTokens: null,
+          completionTokens: null,
+        },
+      })) as never,
+    });
+    expect(result.tasks.topic_label.status).toBe('unavailable');
+    expect(result.tasks.qa_summary.status).toBe('ok');
+    expect(result.tasks.learning_objectives.status).toBe('ok');
+    expect(result.overall).toBe('degraded');
+  });
 });
