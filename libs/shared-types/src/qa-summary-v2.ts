@@ -52,9 +52,9 @@ export type QaSummaryStatementV2 = z.infer<typeof QaSummaryStatementV2Schema>;
 const QaSummaryModelOutputV2BaseSchema = z
   .object({
     status: z.enum(['ready', 'uncertain', 'failed']),
-    statements: z.array(QaSummaryStatementV2Schema).max(6),
-    suggestedNextSteps: z.array(QaSummaryStatementV2Schema).max(4),
-    limitations: z.array(z.string().trim().min(1).max(280)).max(6),
+    statements: z.array(QaSummaryStatementV2Schema).max(4),
+    suggestedNextSteps: z.array(QaSummaryStatementV2Schema).max(2),
+    limitations: z.array(z.string().trim().min(1).max(280)).max(2),
     modelVersion: z.string().trim().min(1).max(120).optional(),
   })
   .strict();

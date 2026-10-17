@@ -89,7 +89,12 @@ export async function runPreparedQaSummary(
     const legacy = await runQaSummaryLegacyRequest(prepared.legacyRequest, options);
     if (legacy.status !== 'failed') {
       return {
-        output: QaSummaryModelOutputV2Schema.parse(legacy),
+        output: QaSummaryModelOutputV2Schema.parse({
+          ...legacy,
+          statements: legacy.statements.slice(0, 4),
+          suggestedNextSteps: legacy.suggestedNextSteps.slice(0, 2),
+          limitations: legacy.limitations.slice(0, 2),
+        }),
         execution: QaSummaryExecutionV2Schema.parse({
           attemptedMode: 'legacy-text',
           effectiveMode: 'legacy-text',

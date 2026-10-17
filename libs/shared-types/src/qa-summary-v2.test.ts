@@ -275,6 +275,39 @@ describe('Q&A summary V2 contracts', () => {
     } as const;
     expect(OpenWeightLlmRequestSchema.safeParse(request).success).toBe(true);
     expect(OpenWeightLlmSummaryOutputV2Schema.safeParse(output).success).toBe(true);
+    expect(
+      OpenWeightLlmSummaryOutputV2Schema.safeParse({
+        ...output,
+        output: {
+          ...output.output,
+          statements: Array.from({ length: 5 }, (_, index) => ({
+            text: `Aussage ${index + 1}`,
+            sourceIds: [SOURCE_ID],
+          })),
+        },
+      }).success,
+    ).toBe(false);
+    expect(
+      OpenWeightLlmSummaryOutputV2Schema.safeParse({
+        ...output,
+        output: {
+          ...output.output,
+          suggestedNextSteps: Array.from({ length: 3 }, (_, index) => ({
+            text: `Schritt ${index + 1}`,
+            sourceIds: [SOURCE_ID],
+          })),
+        },
+      }).success,
+    ).toBe(false);
+    expect(
+      OpenWeightLlmSummaryOutputV2Schema.safeParse({
+        ...output,
+        output: {
+          ...output.output,
+          limitations: ['Hinweis 1', 'Hinweis 2', 'Hinweis 3'],
+        },
+      }).success,
+    ).toBe(false);
     expect(hasOnlyAllowedOpenWeightLlmReferences(request, output)).toBe(true);
     expect(
       hasOnlyAllowedOpenWeightLlmReferences(request, {
