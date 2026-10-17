@@ -145,9 +145,13 @@ describe('QaWordCloudDialogComponent', () => {
       themeFallbackHint: () => 'Themen werden vorbereitet. Es gelten Wörter und Phrasen.',
     });
 
-    const progress = fixture.nativeElement.querySelector(
-      '.qa-word-cloud-dialog__progress',
+    const stage = fixture.nativeElement.querySelector(
+      '.qa-word-cloud-dialog__stage',
     ) as HTMLElement | null;
+    const status = stage?.querySelector('.qa-word-cloud-dialog__status') as HTMLElement | null;
+    const progress = status?.querySelector('.qa-word-cloud-dialog__progress') as HTMLElement | null;
+    expect(stage).not.toBeNull();
+    expect(status).not.toBeNull();
     expect(progress).not.toBeNull();
     expect(progress?.getAttribute('aria-busy')).toBe('true');
     expect(progress?.textContent).toContain('Themen werden vorbereitet.');
@@ -155,6 +159,7 @@ describe('QaWordCloudDialogComponent', () => {
     expect(progress?.querySelector('mat-progress-bar')).not.toBeNull();
     expect(progress?.textContent).not.toContain('Das kann einen Moment dauern');
     expect(fixture.nativeElement.querySelector('.qa-word-cloud-dialog__mode-note')).toBeNull();
+    expect(stage?.querySelector('.qa-word-cloud-dialog__cloud')).not.toBeNull();
   });
 
   it('ergaenzt nach laengerem Warten einen groben Zeit-Hinweis', () => {
