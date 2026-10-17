@@ -5990,8 +5990,8 @@ button.session-host__btn-discussion {
   border: 0;
   border-radius: 0;
   box-shadow: none;
-  background: color-mix(in srgb, var(--mat-sys-surface) 94%, transparent);
-  backdrop-filter: blur(22px) saturate(1.12);
+  background: var(--app-bg-root);
+  backdrop-filter: none;
 }
 
 .session-host__extra-note {
