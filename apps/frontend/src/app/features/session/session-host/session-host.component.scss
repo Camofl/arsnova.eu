@@ -5796,8 +5796,16 @@ button.session-host__btn-discussion {
   padding-inline: 3rem 3.25rem;
 }
 
-.session-host__extra--maximized .session-host__word-cloud-progress {
-  margin-inline: auto;
+.session-host__extra--maximized .session-host__word-cloud-stage {
+  flex: 1 1 0%;
+  min-height: 0;
+}
+
+.session-host__extra--maximized
+  .session-host__word-cloud-status:not(.session-host__word-cloud-status--cover) {
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
   text-align: center;
 }
 
@@ -5942,9 +5950,53 @@ button.session-host__btn-discussion {
   gap: 0.35rem;
 }
 
-.session-host__extra-note {
-  margin: 0 0 0.5rem;
+.session-host__word-cloud-stage {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.session-host__word-cloud-status {
+  position: absolute;
+  z-index: 4;
+  top: 0.75rem;
+  right: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.4rem;
+  width: min(calc(100% - 1.5rem), 24rem);
+  padding: 0.55rem 0.75rem 0.65rem;
+  pointer-events: none;
   text-align: right;
+  border: 1px solid color-mix(in srgb, var(--mat-sys-primary) 16%, transparent);
+  border-radius: var(--mat-sys-corner-small, 0.5rem);
+  background: color-mix(in srgb, var(--mat-sys-surface) 82%, transparent);
+  box-shadow: 0 0.7rem 1.8rem color-mix(in srgb, var(--mat-sys-shadow) 16%, transparent);
+  backdrop-filter: blur(14px) saturate(1.2);
+}
+
+.session-host__word-cloud-status--cover {
+  inset: 0;
+  top: 0;
+  right: 0;
+  left: 0;
+  width: auto;
+  justify-content: center;
+  padding: 1.25rem;
+  pointer-events: auto;
+  text-align: center;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: var(--app-bg-root);
+  backdrop-filter: none;
+}
+
+.session-host__extra-note {
+  margin: 0;
+  text-align: inherit;
   font: var(--mat-sys-label-medium);
   color: var(--mat-sys-on-surface-variant);
 }
@@ -5954,9 +6006,10 @@ button.session-host__btn-discussion {
   flex-direction: column;
   align-items: stretch;
   gap: 0.4rem;
-  width: min(100%, 22rem);
-  margin: 0 0 0.65rem auto;
-  text-align: right;
+  width: 100%;
+  max-width: 22rem;
+  margin: 0 auto;
+  text-align: inherit;
 }
 
 .session-host__word-cloud-progress-label {
@@ -6014,12 +6067,9 @@ button.session-host__btn-discussion {
     max-width: 100%;
   }
 
-  .session-host__extra-note {
-    text-align: left;
-  }
-
-  .session-host__word-cloud-progress {
-    margin-inline: 0 auto;
+  .session-host__word-cloud-status:not(.session-host__word-cloud-status--cover) {
+    right: auto;
+    left: 0.75rem;
     text-align: left;
   }
 

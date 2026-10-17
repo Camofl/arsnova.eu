@@ -128,7 +128,16 @@ export class QaWordCloudDialogComponent {
     () => this.analysisVariant() === 'SEMANTIC' && this.smoothingStatus() === 'stale',
   );
   readonly themesPending = computed(
-    () => this.analysisVariant() === 'SEMANTIC' && this.smoothingStatus() === 'pending',
+    () =>
+      this.analysisVariant() === 'SEMANTIC' &&
+      this.smoothingStatus() === 'pending' &&
+      (this.analysisEntries()?.length ?? 0) === 0,
+  );
+  readonly themesRefreshing = computed(
+    () =>
+      this.analysisVariant() === 'SEMANTIC' &&
+      this.smoothingStatus() === 'pending' &&
+      (this.analysisEntries()?.length ?? 0) > 0,
   );
   readonly themeProgressLabel = $localize`:@@sessionQa.wordCloudSemanticPendingLabel:Themen werden vorbereitet.`;
   readonly themeProgressFallback = $localize`:@@sessionQa.wordCloudSemanticPendingFallback:Es gelten Wörter und Phrasen.`;
