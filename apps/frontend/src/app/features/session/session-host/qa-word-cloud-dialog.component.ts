@@ -133,6 +133,12 @@ export class QaWordCloudDialogComponent {
       this.smoothingStatus() === 'pending' &&
       (this.analysisEntries()?.length ?? 0) === 0,
   );
+  readonly themesRefreshing = computed(
+    () =>
+      this.analysisVariant() === 'SEMANTIC' &&
+      this.smoothingStatus() === 'pending' &&
+      (this.analysisEntries()?.length ?? 0) > 0,
+  );
   readonly themeProgressLabel = $localize`:@@sessionQa.wordCloudSemanticPendingLabel:Themen werden vorbereitet.`;
   readonly themeProgressFallback = $localize`:@@sessionQa.wordCloudSemanticPendingFallback:Es gelten Wörter und Phrasen.`;
   readonly themeRefreshLabel = $localize`:@@sessionQa.wordCloudRefreshThemes:Themen aktualisieren`;

@@ -1910,6 +1910,18 @@ describe('WordCloudComponent', () => {
 
     const component = fixture.componentInstance as unknown as {
       stageWidth: { set: (value: number) => void };
+      displayWords: () => unknown[];
+      createLayoutWords: (entries: unknown[]) => Array<{
+        text: string;
+        size: number;
+        rotate: 0 | 90;
+        padding: number;
+        entry: { groupKey: string };
+      }>;
+      createTermSeededRandom: (
+        words: ReadonlyArray<{ size: number; entry: { groupKey: string } }>,
+        baseSeedSignature: string,
+      ) => () => number;
       layoutStableRandomSeedSignature: () => string;
       layoutInputSignature: () => string;
     };
@@ -1918,8 +1930,13 @@ describe('WordCloudComponent', () => {
 
     const seedBefore = component.layoutStableRandomSeedSignature();
     const inputSigBefore = component.layoutInputSignature();
+    const wordsBefore = component.createLayoutWords(component.displayWords());
+    const rngBefore = component.createTermSeededRandom(wordsBefore, seedBefore);
+    // Vor dem Sortierwechsel ist kapitel-4 größer (Platz 1) und folien-moodle kleiner (Platz 2).
+    const kapitelTripletBefore = [rngBefore(), rngBefore(), rngBefore()];
+    const folienTripletBefore = [rngBefore(), rngBefore(), rngBefore()];
 
-    // Sortierwechsel: gleiche Cluster-Keys, aber umgekehrte Gewichte (count)
+    // Sortierwechsel: gleiche Cluster-Keys, aber umgekehrte Gewichte (count) und Ränge
     fixture.componentRef.setInput('analysisEntries', [
       {
         key: 'folien-moodle',
@@ -1944,6 +1961,18 @@ describe('WordCloudComponent', () => {
 
     expect(component.layoutInputSignature()).not.toBe(inputSigBefore);
     expect(component.layoutStableRandomSeedSignature()).toBe(seedBefore);
+
+    const wordsAfter = component.createLayoutWords(component.displayWords());
+    const rngAfter = component.createTermSeededRandom(
+      wordsAfter,
+      component.layoutStableRandomSeedSignature(),
+    );
+    // Nach dem Sortierwechsel sortiert d3-cloud folien-moodle zuerst und kapitel-4 als Zweites;
+    // trotzdem behält jeder groupKey exakt sein eigenes Zufallstriplet (startX, startY, dt).
+    const folienTripletAfter = [rngAfter(), rngAfter(), rngAfter()];
+    const kapitelTripletAfter = [rngAfter(), rngAfter(), rngAfter()];
+    expect(folienTripletAfter).toEqual(folienTripletBefore);
+    expect(kapitelTripletAfter).toEqual(kapitelTripletBefore);
 
     const { readFileSync } = await import('node:fs');
     const { fileURLToPath } = await import('node:url');

@@ -183,6 +183,37 @@ describe('QaWordCloudDialogComponent', () => {
     );
   });
 
+  it('hält bei vorhandenen Themen während eines Sortier-/Refresh-Lauzes einen layoutfreien Live-Status für Screenreader aufrecht', () => {
+    const { fixture } = setup('SEMANTIC', {
+      smoothingStatus: () => 'pending',
+      themeFallbackHint: () => 'Themen werden vorbereitet. Es gelten Wörter und Phrasen.',
+      analysisEntries: () => [
+        {
+          key: 'kapitel-4',
+          label: 'Klausurrelevanz Kapitel 4',
+          count: 42,
+          basisLabel: 'Klausurrelevanz Kapitel 4',
+          confidence: 0.91,
+          variants: [],
+          members: [],
+        },
+      ],
+    });
+
+    expect(fixture.nativeElement.querySelector('.qa-word-cloud-dialog__progress')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.qa-word-cloud-dialog__mode-note')).toBeNull();
+
+    const srStatus = fixture.nativeElement.querySelector(
+      '.qa-word-cloud-dialog__sr-status',
+    ) as HTMLElement | null;
+    expect(srStatus).not.toBeNull();
+    expect(srStatus?.classList.contains('sr-only')).toBe(true);
+    expect(srStatus?.getAttribute('role')).toBe('status');
+    expect(srStatus?.getAttribute('aria-live')).toBe('polite');
+    expect(srStatus?.getAttribute('aria-busy')).toBe('true');
+    expect(srStatus?.textContent).toContain('Themen werden vorbereitet.');
+  });
+
   it('bietet Themen aktualisieren nur wenn die Analyse veraltet ist', () => {
     const toggleSmoothing = vi.fn();
     const { fixture } = setup('SEMANTIC', {

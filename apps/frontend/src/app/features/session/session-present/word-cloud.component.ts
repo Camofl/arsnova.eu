@@ -1928,7 +1928,7 @@ export class WordCloudComponent implements AfterViewInit, OnDestroy {
         .padding((word) => word.padding)
         .rotate((word) => word.rotate)
         .fontSize((word) => word.size)
-        .random(this.createSeededRandom(this.hashSignature(this.layoutStableRandomSeedSignature())))
+        .random(this.createTermSeededRandom(layoutWords, this.layoutStableRandomSeedSignature()))
         .timeInterval(CLOUD_LAYOUT_TIME_SLICE_MS);
 
       this.activeCloudLayout = layout;
@@ -1996,6 +1996,29 @@ export class WordCloudComponent implements AfterViewInit, OnDestroy {
       return module.default;
     });
     return this.d3CloudImportPromise;
+  }
+
+  private createTermSeededRandom(
+    words: readonly LayoutWord[],
+    baseSeedSignature: string,
+  ): () => number {
+    // d3-cloud sortiert seine Wortliste intern vor der Platzierung nach ~~fontSize absteigend
+    // und konsumiert pro Wort genau drei Zufallszahlen (startX, startY, Spiralrichtung dt).
+    // Indem wir die Zufallssequenz in derselben Sortierreihenfolge deterministisch an den
+    // jeweiligen groupKey binden, behält jedes Wort auch bei Rangwechseln seine Spiral-Startwerte.
+    const orderedWords = [...words].sort((a, b) => ~~b.size - ~~a.size);
+    const wordRngs = orderedWords.map((word) =>
+      this.createSeededRandom(this.hashSignature(`${baseSeedSignature}|${word.entry.groupKey}`)),
+    );
+    const fallbackRng = this.createSeededRandom(this.hashSignature(baseSeedSignature));
+    let callIndex = 0;
+
+    return () => {
+      const wordIndex = Math.floor(callIndex / 3);
+      callIndex += 1;
+      const wordRng = wordRngs[wordIndex];
+      return wordRng ? wordRng() : fallbackRng();
+    };
   }
 
   private createSeededRandom(seed: number): () => number {
