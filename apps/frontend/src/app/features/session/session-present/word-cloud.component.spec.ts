@@ -1883,4 +1883,78 @@ describe('WordCloudComponent', () => {
     );
     expect(styles).not.toMatch(/color-mix\(in srgb, white /);
   });
+
+  it('hält den d3-cloud-Zufalls-Seed beim Wechsel der Sortiergewichte stabil und animiert Positionsübergänge mit prefers-reduced-motion-Schutz', async () => {
+    const fixture = TestBed.createComponent(WordCloudComponent);
+    fixture.componentRef.setInput('analysisEntries', [
+      {
+        key: 'kapitel-4',
+        label: 'Klausurrelevanz Kapitel 4',
+        count: 74,
+        basisLabel: 'Klausurrelevanz Kapitel 4',
+        confidence: 0.92,
+        variants: [],
+        members: [],
+      },
+      {
+        key: 'folien-moodle',
+        label: 'Folien im Moodle',
+        count: 32,
+        basisLabel: 'Folien im Moodle',
+        confidence: 0.91,
+        variants: [],
+        members: [],
+      },
+    ]);
+    fixture.detectChanges();
+
+    const component = fixture.componentInstance as unknown as {
+      stageWidth: { set: (value: number) => void };
+      layoutStableRandomSeedSignature: () => string;
+      layoutInputSignature: () => string;
+    };
+    component.stageWidth.set(960);
+    fixture.detectChanges();
+
+    const seedBefore = component.layoutStableRandomSeedSignature();
+    const inputSigBefore = component.layoutInputSignature();
+
+    // Sortierwechsel: gleiche Cluster-Keys, aber umgekehrte Gewichte (count)
+    fixture.componentRef.setInput('analysisEntries', [
+      {
+        key: 'folien-moodle',
+        label: 'Folien im Moodle',
+        count: 68,
+        basisLabel: 'Folien im Moodle',
+        confidence: 0.91,
+        variants: [],
+        members: [],
+      },
+      {
+        key: 'kapitel-4',
+        label: 'Klausurrelevanz Kapitel 4',
+        count: 19,
+        basisLabel: 'Klausurrelevanz Kapitel 4',
+        confidence: 0.92,
+        variants: [],
+        members: [],
+      },
+    ]);
+    fixture.detectChanges();
+
+    expect(component.layoutInputSignature()).not.toBe(inputSigBefore);
+    expect(component.layoutStableRandomSeedSignature()).toBe(seedBefore);
+
+    const { readFileSync } = await import('node:fs');
+    const { fileURLToPath } = await import('node:url');
+    const { dirname, join } = await import('node:path');
+    const styles = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), 'word-cloud.component.scss'),
+      'utf8',
+    );
+    expect(styles).toMatch(/\.word-cloud__word--positioned \{[\s\S]*transition:/);
+    expect(styles).toMatch(
+      /@media \(prefers-reduced-motion: reduce\) \{[\s\S]*\.word-cloud__word--positioned \{[\s\S]*transition: none;/,
+    );
+  });
 });
