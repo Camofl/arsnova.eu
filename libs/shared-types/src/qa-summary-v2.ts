@@ -11,7 +11,7 @@ import { QaSummaryLocaleEnum, QaSummaryRuntimeDTOSchema, QaSummaryStatusEnum } f
 /** Versioned, full-context Q&A summary contracts. Legacy summary schemas stay unchanged. */
 export const QA_SUMMARY_V2_SCHEMA_VERSION = 2 as const;
 export const QA_SUMMARY_CONTEXT_V2_CONTRACT_VERSION = 'qa-summary-context-v2' as const;
-export const QA_SUMMARY_MODEL_OUTPUT_V2_CONTRACT_VERSION = 'qa-summary-model-output-v2' as const;
+export const QA_SUMMARY_MODEL_OUTPUT_V2_CONTRACT_VERSION = 'qa-summary-model-output-v3' as const;
 export const QA_SUMMARY_RESULT_V2_CONTRACT_VERSION = 'qa-summary-result-v2' as const;
 export const QA_SUMMARY_CONTEXT_PREVIEW_SCHEMA_VERSION = 1 as const;
 export const QA_SUMMARY_CONTEXT_PREVIEW_CONTRACT_VERSION = 'qa-summary-context-preview-v1' as const;
