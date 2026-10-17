@@ -979,6 +979,8 @@ export class WordCloudComponent implements AfterViewInit, OnDestroy {
       const runId = ++this.layoutRunId;
       const layoutWords = this.createLayoutWords(words);
       const contentSignature = this.layoutContentSignature();
+      const isInitialCloudRender = this.positionedWords().length === 0;
+      const debounceMs = isInitialCloudRender ? 0 : CLOUD_LAYOUT_DEBOUNCE_MS;
       this.layoutTimer = setTimeout(
         () =>
           void this.runCloudLayout(
@@ -990,12 +992,13 @@ export class WordCloudComponent implements AfterViewInit, OnDestroy {
             contentSignature,
             runId,
           ),
-        CLOUD_LAYOUT_DEBOUNCE_MS,
+        debounceMs,
       );
     });
   }
 
   ngAfterViewInit(): void {
+    void this.loadD3Cloud();
     this.observeVisualFrame(this.visualFrame()?.nativeElement ?? null);
     this.observeStage(this.layoutStage()?.nativeElement ?? null);
   }
