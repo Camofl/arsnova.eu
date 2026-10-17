@@ -9,6 +9,7 @@ import {
   shouldCacheWordCloudSnapshot,
 } from './wordCloudAnalysisCache';
 import { analyzeWordCloudSnapshot } from '../routers/wordCloud';
+import { logger } from './logger';
 import {
   geometricEmbeddingForSeedText,
   WORD_CLOUD_SEMANTIC_DE_SEED,
@@ -20,6 +21,7 @@ import {
   analyzeSemanticWordCloudSnapshot,
   invalidateWordCloudSemanticSession,
   resetWordCloudSemanticAnalyzeForTests,
+  scheduleWordCloudSemanticEmbeddingPrewarm,
 } from './wordCloudSemanticAnalyze';
 import { WordCloudEncoderError } from './wordCloudEncoderClient';
 import type { WordCloudSemanticConfig } from './wordCloudSemanticConfig';
@@ -627,4 +629,193 @@ describe('wordCloudSemanticAnalyze', () => {
       expect(result.modelVersion).toBeNull();
     },
   );
+
+  it('verwendet einmal berechnete Embeddings/Cluster beim Sortierwechsel (BEST -> TOP -> TIME) ohne erneuten Encoder-Lauf wieder', async () => {
+    let embedCalls = 0;
+    resetWordCloudSemanticAnalyzeForTests({
+      config: () => enabledConfig,
+      embed: async (input) => {
+        embedCalls += 1;
+        return {
+          modelId: 'intfloat/multilingual-e5-small',
+          modelVersion: 'intfloat/multilingual-e5-small@sha256:metric-reuse',
+          items: input.items.map((item) => ({
+            id: toWordCloudSemanticSourceId(item.id),
+            embedding: geometricEmbeddingForSeedText(item.text),
+          })),
+        };
+      },
+    });
+
+    const base = qaSemanticInput('ABC123');
+    const bestResult = await runSemanticDirect({
+      ...base,
+      metric: 'BEST',
+      items: base.items.map((item, idx) => ({ ...item, weight: idx + 1 })),
+    });
+    const topResult = await runSemanticDirect({
+      ...base,
+      metric: 'TOP',
+      items: base.items.map((item, idx) => ({ ...item, weight: (base.items.length - idx) * 2 })),
+    });
+    const timeResult = await runSemanticDirect({
+      ...base,
+      metric: 'TIME',
+      items: base.items.map((item) => ({ ...item, weight: 1 })),
+    });
+
+    expect(embedCalls).toBe(1);
+    expect(bestResult.status).toBe('ready');
+    expect(topResult.status).toBe('ready');
+    expect(timeResult.status).toBe('ready');
+    expect(topResult.entries[0]?.count).not.toBe(timeResult.entries[0]?.count);
+  });
+
+  it('meldet bei Treffer im Session-Cluster-Cache encoderCalled: false in der Telemetrie', async () => {
+    let embedCalls = 0;
+    resetWordCloudSemanticAnalyzeForTests({
+      config: () => enabledConfig,
+      embed: async (input) => {
+        embedCalls += 1;
+        return {
+          modelId: 'intfloat/multilingual-e5-small',
+          modelVersion: 'intfloat/multilingual-e5-small@sha256:telemetry-reuse',
+          items: input.items.map((item) => ({
+            id: toWordCloudSemanticSourceId(item.id),
+            embedding: geometricEmbeddingForSeedText(item.text),
+          })),
+        };
+      },
+    });
+
+    const infoSpy = vi.spyOn(logger, 'info').mockImplementation(() => logger);
+    const cache = createMemoryWordCloudAnalysisCache();
+    const base = qaSemanticInput('ABC123');
+    await analyzeWordCloudSnapshot(
+      {
+        ...base,
+        metric: 'BEST',
+        items: base.items.map((item, idx) => ({ ...item, weight: idx + 1 })),
+      },
+      { cache, cacheScope: { sessionId: SESSION_ID } },
+    );
+    await analyzeWordCloudSnapshot(
+      {
+        ...base,
+        metric: 'TOP',
+        items: base.items.map((item, idx) => ({ ...item, weight: (base.items.length - idx) * 2 })),
+      },
+      { cache, cacheScope: { sessionId: SESSION_ID } },
+    );
+
+    const analyzeLogs = infoSpy.mock.calls
+      .filter((call) => call[0] === 'wordcloud:analyze')
+      .map(
+        (call) => call[1] as { metric?: string; encoderCalled?: boolean; snapshotCache?: string },
+      );
+    infoSpy.mockRestore();
+
+    expect(embedCalls).toBe(1);
+    expect(analyzeLogs).toEqual([
+      expect.objectContaining({ metric: 'BEST', snapshotCache: 'miss', encoderCalled: true }),
+      expect.objectContaining({ metric: 'TOP', snapshotCache: 'miss', encoderCalled: false }),
+    ]);
+  });
+
+  it('berechnet bei wachsendem Live-Korpus (Freitext/Q&A) nur die neu hinzugekommenen Texte im Encoder nach', async () => {
+    const embeddedBatchSizes: number[] = [];
+    resetWordCloudSemanticAnalyzeForTests({
+      config: () => enabledConfig,
+      embed: async (input) => {
+        embeddedBatchSizes.push(input.items.length);
+        return {
+          modelId: 'intfloat/multilingual-e5-small',
+          modelVersion: 'intfloat/multilingual-e5-small@sha256:incremental-live',
+          items: input.items.map((item) => ({
+            id: toWordCloudSemanticSourceId(item.id),
+            embedding: geometricEmbeddingForSeedText(item.text),
+          })),
+        };
+      },
+    });
+
+    const initialItems = freetextItems(WORD_CLOUD_SEMANTIC_FREETEXT_DE_SEED.slice(0, 6));
+    const grownItems = [
+      ...initialItems,
+      { id: 'ft-new-1', text: 'Kapitel 4 und Klausurstoff sind noch unklar', weight: 1 },
+      { id: 'ft-new-2', text: 'Wann kommt die Klausur zu Kapitel 4?', weight: 1 },
+    ];
+
+    const first = await runSemanticDirect({
+      sessionCode: 'ABC123',
+      mode: 'SEMANTIC',
+      locale: 'de',
+      metric: 'TOP',
+      channel: 'FREETEXT',
+      normalization: 'NONE',
+      items: initialItems,
+    });
+    const second = await runSemanticDirect({
+      sessionCode: 'ABC123',
+      mode: 'SEMANTIC',
+      locale: 'de',
+      metric: 'TOP',
+      channel: 'FREETEXT',
+      normalization: 'NONE',
+      items: grownItems,
+      refresh: true,
+    });
+
+    expect(first.status).toBe('ready');
+    expect(second.status).toBe('ready');
+    expect(embeddedBatchSizes).toEqual([6, 2]);
+  });
+
+  it('wärmt Einzel-Embeddings im Hintergrund vor (scheduleWordCloudSemanticEmbeddingPrewarm), sodass der spätere Host-Aufruf den Encoder nicht mehr benötigt', async () => {
+    vi.useFakeTimers();
+    try {
+      let embedCalls = 0;
+      resetWordCloudSemanticAnalyzeForTests({
+        config: () => enabledConfig,
+        embed: async (input) => {
+          embedCalls += 1;
+          return {
+            modelId: 'intfloat/multilingual-e5-small',
+            modelVersion: 'intfloat/multilingual-e5-small@sha256:prewarm-live',
+            items: input.items.map((item) => ({
+              id: toWordCloudSemanticSourceId(item.id),
+              embedding: geometricEmbeddingForSeedText(item.text),
+            })),
+          };
+        },
+      });
+
+      const items = freetextItems(WORD_CLOUD_SEMANTIC_FREETEXT_DE_SEED.slice(0, 6));
+      for (const item of items) {
+        scheduleWordCloudSemanticEmbeddingPrewarm({
+          sessionId: SESSION_ID,
+          text: item.text,
+        });
+      }
+
+      await vi.advanceTimersByTimeAsync(1_600);
+      expect(embedCalls).toBe(1);
+
+      const result = await runSemanticDirect({
+        sessionCode: 'ABC123',
+        mode: 'SEMANTIC',
+        locale: 'de',
+        metric: 'TOP',
+        channel: 'FREETEXT',
+        normalization: 'NONE',
+        items,
+      });
+
+      expect(result.status).toBe('ready');
+      // Da alle 6 Texte bereits im Hintergrund vorgewärmt wurden, war beim Host-Klick kein weiterer Encoder-Call nötig
+      expect(embedCalls).toBe(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });

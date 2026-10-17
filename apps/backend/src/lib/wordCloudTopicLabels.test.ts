@@ -4,12 +4,16 @@ import type {
   OpenWeightLlmTopicLabelOutput,
   WordCloudAnalysisEntryDTO,
 } from '@arsnova/shared-types';
-import { resetWordCloudSemanticAnalyzeForTests } from './wordCloudSemanticAnalyze';
+import {
+  invalidateWordCloudSemanticSession,
+  resetWordCloudSemanticAnalyzeForTests,
+} from './wordCloudSemanticAnalyze';
 import { geometricEmbeddingForSeedText } from './wordCloudSemanticFixtures';
 import { resolveWordCloudNormalizationMeta } from './wordCloudNormalization';
 import {
   applyWordCloudTopicLabels,
   labelSemanticWordCloudSnapshot,
+  resetWordCloudTopicLabelCacheForTests,
   resolveTopicLabelPhaseBudgetMs,
   WORD_CLOUD_TOPIC_LABEL_PHASE_BUDGET_CAP_MS,
   WORD_CLOUD_TOPIC_LABEL_PHASE_BUDGET_MS,
@@ -92,6 +96,7 @@ describe('resolveTopicLabelPhaseBudgetMs', () => {
 describe('applyWordCloudTopicLabels', () => {
   afterEach(() => {
     resetWordCloudSemanticAnalyzeForTests();
+    resetWordCloudTopicLabelCacheForTests();
   });
 
   it('lässt bei ausgeschalteter Runtime den Mitgliedstext stehen', async () => {
@@ -425,5 +430,228 @@ describe('applyWordCloudTopicLabels', () => {
     expect(result.entries[0]?.label).toBe('Klausurtermine');
     expect(result.entries[0]?.labelOrigin).toBe('model');
     expect(result.entries[0]?.members[0]?.sourceId).toBe('0199e3a4-7b2c-7d8e-9f10-1a2b3c4d5e00');
+  });
+
+  it('cacht bereits benannte Cluster im Default-Labeler über Sortierwechsel und Transienten hinweg', async () => {
+    resetWordCloudSemanticAnalyzeForTests();
+    const clusterEntry = entry('Was ist die Steigung?', [
+      'Was ist die Steigung?',
+      'Wie bestimmt man die Steigung?',
+    ]);
+    let llmCalls = 0;
+    const label = labeler(async (request) => {
+      llmCalls += 1;
+      expect(request.clusterId).toBe('cluster');
+      return {
+        status: 'completed',
+        output: {
+          schemaVersion: 1,
+          taskType: 'topic_label',
+          label: 'Steigung linearer Funktionen',
+          sourceIds: [request.sources[0]!.id],
+        },
+        telemetry: {
+          taskType: 'topic_label',
+          elapsedMs: 1,
+          model: null,
+          promptTokens: null,
+          completionTokens: null,
+        },
+      };
+    });
+    const first = await applyWordCloudTopicLabels(input, output([clusterEntry]), {
+      env: enabledEnv,
+      label,
+      useProcessLabelCache: true,
+    });
+    const second = await applyWordCloudTopicLabels(input, output([clusterEntry]), {
+      env: enabledEnv,
+      label,
+      useProcessLabelCache: true,
+    });
+    expect(llmCalls).toBe(1);
+    expect(first.entries[0]?.label).toBe('Steigung linearer Funktionen');
+    expect(second.entries[0]?.label).toBe('Steigung linearer Funktionen');
+    expect(second.entries[0]?.labelOrigin).toBe('model');
+    expect(second.labelSettlement).toBe('complete');
+  });
+
+  it('isoliert den Prozess-Label-Cache strikt nach sessionId und räumt beim Session-Purge sowie nach Ablauf auf', async () => {
+    resetWordCloudSemanticAnalyzeForTests();
+    const clusterEntry = entry('Was ist die Steigung?', [
+      'Was ist die Steigung?',
+      'Wie bestimmt man die Steigung?',
+    ]);
+    let llmCalls = 0;
+    const label = labeler(async (request) => {
+      llmCalls += 1;
+      return {
+        status: 'completed',
+        output: {
+          schemaVersion: 1,
+          taskType: 'topic_label',
+          label: `Thema Lauf ${llmCalls}`,
+          sourceIds: [request.sources[0]!.id],
+        },
+        telemetry: {
+          taskType: 'topic_label',
+          elapsedMs: 1,
+          model: null,
+          promptTokens: null,
+          completionTokens: null,
+        },
+      };
+    });
+
+    const sessionA = '11111111-1111-4111-8111-111111111111';
+    const sessionB = '22222222-2222-4222-8222-222222222222';
+
+    const firstA = await applyWordCloudTopicLabels(input, output([clusterEntry]), {
+      sessionId: sessionA,
+      env: enabledEnv,
+      label,
+      useProcessLabelCache: true,
+    });
+    const firstB = await applyWordCloudTopicLabels(input, output([clusterEntry]), {
+      sessionId: sessionB,
+      env: enabledEnv,
+      label,
+      useProcessLabelCache: true,
+    });
+    expect(llmCalls).toBe(2);
+    expect(firstA.entries[0]?.label).toBe('Thema Lauf 1');
+    expect(firstB.entries[0]?.label).toBe('Thema Lauf 2');
+
+    invalidateWordCloudSemanticSession(sessionA);
+
+    const afterPurgeB = await applyWordCloudTopicLabels(input, output([clusterEntry]), {
+      sessionId: sessionB,
+      env: enabledEnv,
+      label,
+      useProcessLabelCache: true,
+    });
+    const afterPurgeA = await applyWordCloudTopicLabels(input, output([clusterEntry]), {
+      sessionId: sessionA,
+      env: enabledEnv,
+      label,
+      useProcessLabelCache: true,
+    });
+    expect(llmCalls).toBe(3);
+    expect(afterPurgeB.entries[0]?.label).toBe('Thema Lauf 2');
+    expect(afterPurgeA.entries[0]?.label).toBe('Thema Lauf 3');
+  });
+
+  it('bricht die LLM-Cluster-Schleife sofort ab, wenn der Client die Verbindung trennt (AbortSignal) oder die Session invalidiert wird', async () => {
+    const firstCluster = entry('Was ist die Steigung?', [
+      'Was ist die Steigung?',
+      'Wie bestimmt man die Steigung?',
+    ]);
+    const secondCluster = entry('Was ist die Ableitung?', [
+      'Was ist die Ableitung?',
+      'Wie leitet man ab?',
+    ]);
+    const disconnectController = new AbortController();
+    let llmCalls = 0;
+
+    const label = labeler(async (request, fallback, options) => {
+      llmCalls += 1;
+      // Während der erste Cluster benannt wird, verlässt der Host die Session-Seite
+      disconnectController.abort();
+      if (options.signal?.aborted) {
+        return {
+          status: 'fallback',
+          reason: 'aborted',
+          output: fallback,
+          telemetry: {
+            taskType: 'topic_label',
+            elapsedMs: 1,
+            model: null,
+            promptTokens: null,
+            completionTokens: null,
+          },
+        };
+      }
+      return {
+        status: 'completed',
+        output: {
+          schemaVersion: 1,
+          taskType: 'topic_label',
+          label: 'Steigung linearer Funktionen',
+          sourceIds: [request.sources[0]!.id],
+        },
+        telemetry: {
+          taskType: 'topic_label',
+          elapsedMs: 1,
+          model: null,
+          promptTokens: null,
+          completionTokens: null,
+        },
+      };
+    });
+
+    const result = await applyWordCloudTopicLabels(input, output([firstCluster, secondCluster]), {
+      env: enabledEnv,
+      signal: disconnectController.signal,
+      label,
+    });
+
+    // Der zweite Cluster darf nach dem Abbruch gar nicht mehr bei llama-server angefragt werden
+    expect(llmCalls).toBe(1);
+    expect(result.labelSettlement).toBe('transient');
+    expect(result.entries[1]?.labelOrigin).toBe('extractive');
+  });
+
+  it('bündelt mehrere unbenannte Cluster im Batch-Pfad (schemaVersion 2) in einem einzigen LLM-Aufruf', async () => {
+    const firstCluster = entry('Was ist die Steigung?', [
+      'Was ist die Steigung?',
+      'Wie bestimmt man die Steigung?',
+    ]);
+    const secondCluster = entry('Was ist die Ableitung?', [
+      'Was ist die Ableitung?',
+      'Wie leitet man ab?',
+    ]);
+    let batchCalls = 0;
+
+    const result = await applyWordCloudTopicLabels(input, output([firstCluster, secondCluster]), {
+      env: enabledEnv,
+      labelBatch: async (batchRequest) => {
+        batchCalls += 1;
+        expect(batchRequest.schemaVersion).toBe(2);
+        expect(batchRequest.clusters).toHaveLength(2);
+        return {
+          status: 'completed',
+          output: {
+            schemaVersion: 2,
+            taskType: 'topic_label',
+            labels: [
+              {
+                clusterId: batchRequest.clusters[0]!.clusterId,
+                label: 'Steigung linearer Funktionen',
+                sourceIds: [batchRequest.clusters[0]!.sources[0]!.id],
+              },
+              {
+                clusterId: batchRequest.clusters[1]!.clusterId,
+                label: 'Ableitungsregeln',
+                sourceIds: [batchRequest.clusters[1]!.sources[0]!.id],
+              },
+            ],
+          },
+          telemetry: {
+            taskType: 'topic_label',
+            elapsedMs: 12,
+            model: null,
+            promptTokens: 80,
+            completionTokens: 25,
+          },
+        };
+      },
+    });
+
+    expect(batchCalls).toBe(1);
+    expect(result.labelSettlement).toBe('complete');
+    expect(result.entries[0]?.label).toBe('Steigung linearer Funktionen');
+    expect(result.entries[0]?.labelOrigin).toBe('model');
+    expect(result.entries[1]?.label).toBe('Ableitungsregeln');
+    expect(result.entries[1]?.labelOrigin).toBe('model');
   });
 });

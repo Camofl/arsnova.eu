@@ -2,6 +2,7 @@
  * Host-Themenpfad fuer Q&A und Freitext: Snapshot → Hash → Encoder → Cluster → Zod.
  * Höchstens ein Inflight-Job pro Session; Circuit Breaker bei Encoder-Fehlern.
  */
+import { createHash } from 'node:crypto';
 import {
   AnalyzeWordCloudOutputSchema,
   fromWordCloudSemanticSourceId,
@@ -39,7 +40,12 @@ import {
   rankSemanticClusters,
   semanticClustersToEntries,
   type WordCloudEmbedding,
+  type WordCloudSemanticCluster,
 } from './wordCloudSemanticCluster';
+import {
+  invalidateWordCloudTopicLabelSession,
+  resetWordCloudTopicLabelCacheForTests,
+} from './wordCloudTopicLabels';
 
 export type WordCloudSemanticEmbedder = (
   input: AnalyzeWordCloudInput,
@@ -95,9 +101,48 @@ function createDefaultHooks(): SemanticHooks {
   };
 }
 
+type CachedSessionClusters = {
+  readonly expiresAt: number;
+  readonly modelId: string;
+  readonly modelVersion: string;
+  readonly rawClusters: readonly WordCloudSemanticCluster[];
+};
+
+type CachedItemEmbedding = {
+  readonly expiresAt: number;
+  readonly modelId: string;
+  readonly modelVersion: string;
+  readonly vector: readonly number[];
+};
+
+type PrewarmSessionBuffer = {
+  timer: ReturnType<typeof setTimeout> | null;
+  readonly texts: Set<string>;
+};
+
+const PREWARM_DEBOUNCE_MS = 1_500;
+const prewarmBuffers = new Map<string, PrewarmSessionBuffer>();
+let prewarmInFlight = false;
+const MAX_CACHED_CLUSTER_ENTRIES = 64;
+const MAX_CACHED_ITEM_EMBEDDINGS = 4_096;
 let hooks: SemanticHooks = createDefaultHooks();
 const circuit: CircuitState = { failures: 0, openedAt: null };
 const jobs = new Map<string, SessionJobQueue>();
+const sessionClustersCache = new Map<string, CachedSessionClusters>();
+const sessionItemEmbeddingsCache = new Map<string, CachedItemEmbedding>();
+
+function purgeExpiredSessionClusters(nowMs: number): void {
+  for (const [key, entry] of sessionClustersCache.entries()) {
+    if (entry.expiresAt <= nowMs) {
+      sessionClustersCache.delete(key);
+    }
+  }
+  for (const [key, entry] of sessionItemEmbeddingsCache.entries()) {
+    if (entry.expiresAt <= nowMs) {
+      sessionItemEmbeddingsCache.delete(key);
+    }
+  }
+}
 
 function sessionJobKey(sessionId: string): string {
   return `session:${sessionId.trim()}`;
@@ -109,8 +154,55 @@ function unscopedJobKey(sessionCode: string): string {
   return `unscoped:${sessionCode.trim().toUpperCase()}`;
 }
 
+function buildWeightAgnosticCorpusKey(sessionKey: string, input: AnalyzeWordCloudInput): string {
+  const hash = createHash('sha256')
+    .update(
+      JSON.stringify({
+        locale: input.locale,
+        channel: input.channel ?? null,
+        items: [...input.items]
+          .map((item) => ({ id: item.id, text: item.text }))
+          .sort((left, right) => left.id.localeCompare(right.id)),
+      }),
+      'utf8',
+    )
+    .digest('hex');
+  return `${sessionKey}:${hash}`;
+}
+
+function buildSessionItemEmbeddingKey(
+  sessionKey: string,
+  locale: string,
+  sourceText: string,
+): string {
+  const hash = createHash('sha256')
+    .update(JSON.stringify({ locale, text: sourceText }), 'utf8')
+    .digest('hex');
+  return `${sessionKey}:${hash}`;
+}
+
 export function invalidateWordCloudSemanticSession(sessionId: string): void {
+  const now = hooks.now();
+  purgeExpiredSessionClusters(now);
+  invalidateWordCloudTopicLabelSession(sessionId, now);
   const sessionKey = sessionJobKey(sessionId);
+  for (const key of sessionClustersCache.keys()) {
+    if (key.startsWith(`${sessionKey}:`)) {
+      sessionClustersCache.delete(key);
+    }
+  }
+  for (const key of sessionItemEmbeddingsCache.keys()) {
+    if (key.startsWith(`${sessionKey}:`)) {
+      sessionItemEmbeddingsCache.delete(key);
+    }
+  }
+  const prewarm = prewarmBuffers.get(sessionKey);
+  if (prewarm) {
+    if (prewarm.timer) {
+      clearTimeout(prewarm.timer);
+    }
+    prewarmBuffers.delete(sessionKey);
+  }
   const queue = jobs.get(sessionKey);
   if (!queue) {
     return;
@@ -134,6 +226,16 @@ export function resetWordCloudSemanticAnalyzeForTests(overrides?: Partial<Semant
   };
   circuit.failures = 0;
   circuit.openedAt = null;
+  sessionClustersCache.clear();
+  sessionItemEmbeddingsCache.clear();
+  for (const prewarm of prewarmBuffers.values()) {
+    if (prewarm.timer) {
+      clearTimeout(prewarm.timer);
+    }
+  }
+  prewarmBuffers.clear();
+  prewarmInFlight = false;
+  resetWordCloudTopicLabelCacheForTests();
   for (const queue of jobs.values()) {
     queue.epoch += 1;
     if (queue.latest) {
@@ -219,8 +321,9 @@ export function buildSemanticAnalysisOutput(input: {
   readonly fallbackUsed: boolean;
   readonly modelVersion: string | null;
   readonly modelId?: string | null;
+  readonly encoderCalled?: boolean;
 }): AnalyzeWordCloudOutput {
-  return AnalyzeWordCloudOutputSchema.parse({
+  const output = AnalyzeWordCloudOutputSchema.parse({
     mode: input.request.mode,
     locale: input.request.locale,
     metric: input.request.metric,
@@ -232,6 +335,9 @@ export function buildSemanticAnalysisOutput(input: {
     ...input.meta,
     analysisVersion: WORD_CLOUD_SEMANTIC_ANALYSIS_VERSION,
     modelId: input.modelId ?? (input.modelVersion ? WORD_CLOUD_SEMANTIC_MODEL_ID : null),
+  });
+  return Object.assign(output, {
+    encoderCalled: input.encoderCalled ?? Boolean(input.modelVersion),
   });
 }
 
@@ -250,12 +356,166 @@ function embeddingsFromEncoder(
   });
 }
 
+function writeSessionItemEmbedding(key: string, entry: CachedItemEmbedding): void {
+  if (
+    !sessionItemEmbeddingsCache.has(key) &&
+    sessionItemEmbeddingsCache.size >= MAX_CACHED_ITEM_EMBEDDINGS
+  ) {
+    const oldestKey = sessionItemEmbeddingsCache.keys().next().value;
+    if (oldestKey !== undefined) {
+      sessionItemEmbeddingsCache.delete(oldestKey);
+    }
+  }
+  sessionItemEmbeddingsCache.set(key, entry);
+}
+
+async function resolveIncrementalEmbeddings(
+  sessionKey: string,
+  input: AnalyzeWordCloudInput,
+  snapshotHash: string,
+  config: WordCloudSemanticConfig,
+  nowMs: number,
+  canCache: () => boolean,
+): Promise<{
+  readonly embeddings: WordCloudEmbedding[];
+  readonly modelId: string;
+  readonly modelVersion: string;
+  readonly encoderCalled: boolean;
+}> {
+  const useItemCache = true;
+  const cachedVectorsById = new Map<string, CachedItemEmbedding>();
+  const missingItems: AnalyzeWordCloudInput['items'][number][] = [];
+  const seenMissingTexts = new Set<string>();
+  const sourceTextById = new Map<string, string>();
+
+  for (const item of input.items) {
+    const sourceText = toWordCloudAnalysisSourceText(item.text);
+    if (!sourceText) {
+      continue;
+    }
+    sourceTextById.set(item.id, sourceText);
+    if (useItemCache) {
+      const itemKey = buildSessionItemEmbeddingKey(sessionKey, input.locale, sourceText);
+      const cachedItem = sessionItemEmbeddingsCache.get(itemKey);
+      if (cachedItem && cachedItem.expiresAt > nowMs) {
+        cachedVectorsById.set(item.id, cachedItem);
+        continue;
+      }
+      if (cachedItem) {
+        sessionItemEmbeddingsCache.delete(itemKey);
+      }
+    }
+    if (!seenMissingTexts.has(sourceText)) {
+      seenMissingTexts.add(sourceText);
+      missingItems.push(item);
+    }
+  }
+
+  const freshByText = new Map<string, readonly number[]>();
+  let modelId: string | null = null;
+  let modelVersion: string | null = null;
+  let encoderCalled = false;
+
+  if (missingItems.length > 0) {
+    encoderCalled = true;
+    const partialInput: AnalyzeWordCloudInput =
+      missingItems.length === input.items.length ? input : { ...input, items: missingItems };
+    const response = await hooks.embed(partialInput, snapshotHash, config);
+    recordCircuitSuccess();
+    modelId = response.modelId;
+    modelVersion = response.modelVersion;
+    const freshById = new Map(
+      response.items.map((entry) => [fromWordCloudSemanticSourceId(entry.id), entry.embedding]),
+    );
+
+    const expiresAt = hooks.now() + config.cacheTtlSeconds * 1_000;
+    for (const item of missingItems) {
+      const vector = freshById.get(item.id);
+      const sourceText = sourceTextById.get(item.id);
+      if (!vector || !sourceText) {
+        continue;
+      }
+      freshByText.set(sourceText, vector);
+      if (canCache()) {
+        const itemKey = buildSessionItemEmbeddingKey(sessionKey, input.locale, sourceText);
+        writeSessionItemEmbedding(itemKey, {
+          expiresAt,
+          modelId: response.modelId,
+          modelVersion: response.modelVersion,
+          vector,
+        });
+      }
+    }
+  }
+
+  // Falls sich die Modell-Version gegenüber gecachten Einzel-Embeddings geändert hat,
+  // einmalig den vollen Batch anfordern, damit keine gemischten Vektorräume geclustert werden.
+  if (
+    modelVersion !== null &&
+    cachedVectorsById.size > 0 &&
+    Array.from(cachedVectorsById.values()).some((entry) => entry.modelVersion !== modelVersion)
+  ) {
+    const fullResponse = await hooks.embed(input, snapshotHash, config);
+    recordCircuitSuccess();
+    if (canCache()) {
+      const expiresAt = hooks.now() + config.cacheTtlSeconds * 1_000;
+      for (const entry of fullResponse.items) {
+        const originalId = fromWordCloudSemanticSourceId(entry.id);
+        const sourceText = sourceTextById.get(originalId);
+        if (!sourceText) continue;
+        const itemKey = buildSessionItemEmbeddingKey(sessionKey, input.locale, sourceText);
+        writeSessionItemEmbedding(itemKey, {
+          expiresAt,
+          modelId: fullResponse.modelId,
+          modelVersion: fullResponse.modelVersion,
+          vector: entry.embedding,
+        });
+      }
+    }
+    return {
+      embeddings: embeddingsFromEncoder(input, fullResponse),
+      modelId: fullResponse.modelId,
+      modelVersion: fullResponse.modelVersion,
+      encoderCalled: true,
+    };
+  }
+
+  const firstCached = cachedVectorsById.values().next().value;
+  const resolvedModelId = modelId ?? firstCached?.modelId ?? WORD_CLOUD_SEMANTIC_MODEL_ID;
+  const resolvedModelVersion = modelVersion ?? firstCached?.modelVersion ?? '';
+
+  const embeddings: WordCloudEmbedding[] = [];
+  for (const item of input.items) {
+    const sourceText = sourceTextById.get(item.id);
+    const vector =
+      (sourceText ? freshByText.get(sourceText) : undefined) ??
+      cachedVectorsById.get(item.id)?.vector;
+    if (!vector) {
+      continue;
+    }
+    embeddings.push({
+      id: item.id,
+      text: item.text,
+      vector,
+    });
+  }
+
+  return {
+    embeddings,
+    modelId: resolvedModelId,
+    modelVersion: resolvedModelVersion,
+    encoderCalled,
+  };
+}
+
 async function runSemanticEncoderJob(
+  sessionKey: string,
   input: AnalyzeWordCloudInput,
   meta: WordCloudNormalizationMeta,
   tokensByItemId:
     ReadonlyMap<string, readonly import('./wordCloudAnalysis').WordCloudRawToken[]> | undefined,
   env: NodeJS.ProcessEnv,
+  canCacheClusters: () => boolean,
 ): Promise<AnalyzeWordCloudOutput> {
   const fallbackEntries = buildLexicalSemanticFallbackEntries(input, tokensByItemId);
   const config = hooks.config(env);
@@ -305,6 +565,41 @@ async function runSemanticEncoderJob(
       modelId: null,
     });
   }
+
+  purgeExpiredSessionClusters(now);
+  const corpusKey = buildWeightAgnosticCorpusKey(sessionKey, input);
+  const cachedClusters = input.refresh === true ? undefined : sessionClustersCache.get(corpusKey);
+  if (cachedClusters && cachedClusters.expiresAt > now) {
+    const clusters = rankSemanticClusters(cachedClusters.rawClusters, input.items);
+    if (!hasReliableSemanticCluster(clusters)) {
+      return buildSemanticAnalysisOutput({
+        request: input,
+        entries: fallbackEntries,
+        meta,
+        status: 'fallback',
+        fallbackUsed: true,
+        modelVersion: cachedClusters.modelVersion,
+        modelId: cachedClusters.modelId,
+        encoderCalled: false,
+      });
+    }
+    const entries = semanticClustersToEntries(clusters, input.items);
+    const uncertain = clusters.every((cluster) => cluster.confidence < 0.85);
+    return buildSemanticAnalysisOutput({
+      request: input,
+      entries,
+      meta,
+      status: uncertain ? 'uncertain' : 'ready',
+      fallbackUsed: false,
+      modelVersion: cachedClusters.modelVersion,
+      modelId: cachedClusters.modelId,
+      encoderCalled: false,
+    });
+  }
+  if (cachedClusters) {
+    sessionClustersCache.delete(corpusKey);
+  }
+
   if (isCircuitOpen(now)) {
     return buildSemanticAnalysisOutput({
       request: input,
@@ -318,12 +613,34 @@ async function runSemanticEncoderJob(
   }
 
   try {
-    const response = await hooks.embed(input, meta.snapshotHash, config);
-    recordCircuitSuccess();
-    const clusters = rankSemanticClusters(
-      clusterWordCloudEmbeddings(embeddingsFromEncoder(input, response)),
-      input.items,
+    const resolved = await resolveIncrementalEmbeddings(
+      sessionKey,
+      input,
+      meta.snapshotHash,
+      config,
+      now,
+      canCacheClusters,
     );
+    const rawClusters = clusterWordCloudEmbeddings(resolved.embeddings);
+    if (canCacheClusters()) {
+      purgeExpiredSessionClusters(hooks.now());
+      if (
+        !sessionClustersCache.has(corpusKey) &&
+        sessionClustersCache.size >= MAX_CACHED_CLUSTER_ENTRIES
+      ) {
+        const oldestKey = sessionClustersCache.keys().next().value;
+        if (oldestKey !== undefined) {
+          sessionClustersCache.delete(oldestKey);
+        }
+      }
+      sessionClustersCache.set(corpusKey, {
+        expiresAt: hooks.now() + config.cacheTtlSeconds * 1_000,
+        modelId: resolved.modelId,
+        modelVersion: resolved.modelVersion,
+        rawClusters,
+      });
+    }
+    const clusters = rankSemanticClusters(rawClusters, input.items);
     if (!hasReliableSemanticCluster(clusters)) {
       return buildSemanticAnalysisOutput({
         request: input,
@@ -331,8 +648,9 @@ async function runSemanticEncoderJob(
         meta,
         status: 'fallback',
         fallbackUsed: true,
-        modelVersion: response.modelVersion,
-        modelId: response.modelId,
+        modelVersion: resolved.modelVersion,
+        modelId: resolved.modelId,
+        encoderCalled: resolved.encoderCalled,
       });
     }
     const entries = semanticClustersToEntries(clusters, input.items);
@@ -343,8 +661,9 @@ async function runSemanticEncoderJob(
       meta,
       status: uncertain ? 'uncertain' : 'ready',
       fallbackUsed: false,
-      modelVersion: response.modelVersion,
-      modelId: response.modelId,
+      modelVersion: resolved.modelVersion,
+      modelId: resolved.modelId,
+      encoderCalled: resolved.encoderCalled,
     });
   } catch (error) {
     recordCircuitFailure(now);
@@ -426,10 +745,12 @@ function startSessionJob(sessionKey: string, queue: SessionJobQueue, job: Sessio
       return buildQueueFallback(job);
     }
     const output = await runSemanticEncoderJob(
+      sessionKey,
       job.input,
       job.meta,
       job.options.tokensByItemId,
       job.options.env ?? process.env,
+      () => job.epoch === queue.epoch,
     );
     return job.epoch === queue.epoch ? output : buildQueueFallback(job);
   })();
@@ -473,4 +794,148 @@ export async function analyzeSemanticWordCloudSnapshot(
   }
   queue.latest = job;
   return job.promise;
+}
+
+async function flushPrewarmBuffer(sessionId: string): Promise<void> {
+  const sessionKey = sessionJobKey(sessionId);
+  const buffer = prewarmBuffers.get(sessionKey);
+  if (!buffer || buffer.texts.size === 0) {
+    return;
+  }
+  const config = hooks.config();
+  if (!config.enabled || isCircuitOpen(hooks.now())) {
+    buffer.texts.clear();
+    return;
+  }
+  // Solange ein interaktiver Host-Job läuft oder bereits ein Prewarm aktiv ist,
+  // kurz zurückstellen, damit der single-inflight Encoder-Sidecar frei bleibt.
+  const activeQueue = jobs.get(sessionKey);
+  if (prewarmInFlight || activeQueue?.active) {
+    if (!buffer.timer) {
+      buffer.timer = setTimeout(() => {
+        buffer.timer = null;
+        void flushPrewarmBuffer(sessionId);
+      }, PREWARM_DEBOUNCE_MS);
+      buffer.timer.unref?.();
+    }
+    return;
+  }
+
+  const now = hooks.now();
+  purgeExpiredSessionClusters(now);
+  const pendingTexts = Array.from(buffer.texts).slice(0, 64);
+  for (const text of pendingTexts) {
+    buffer.texts.delete(text);
+  }
+  // Die E5-Embeddings hängen nur von `"query: " + sourceText` ab (nicht von `locale`).
+  // Wir wärmen den Standard-Locale-Schlüssel ('de') vor und spiegeln ihn auf ('en'),
+  // damit unabhängig von der späteren Host-Sprache sofort ein Cache-Hit vorliegt.
+  const missingTexts = pendingTexts.filter((sourceText) => {
+    const deKey = buildSessionItemEmbeddingKey(sessionKey, 'de', sourceText);
+    const hit = sessionItemEmbeddingsCache.get(deKey);
+    return !hit || hit.expiresAt <= now;
+  });
+  if (missingTexts.length === 0) {
+    return;
+  }
+
+  const syntheticItems = missingTexts.map((text, idx) => ({
+    id: `prewarm-${idx + 1}`,
+    text,
+    weight: 1,
+  }));
+  const syntheticInput: AnalyzeWordCloudInput = {
+    sessionCode: 'PREWRM',
+    mode: 'SEMANTIC',
+    locale: 'de',
+    metric: 'TOP',
+    channel: 'QA',
+    normalization: 'NONE',
+    items: syntheticItems,
+    maxEntries: 40,
+  };
+  const snapshotHash = createHash('sha256')
+    .update(JSON.stringify({ sessionKey, missingTexts }), 'utf8')
+    .digest('hex');
+
+  prewarmInFlight = true;
+  try {
+    const response = await hooks.embed(syntheticInput, snapshotHash, config);
+    // Nur schreiben, wenn die Session während des Laufs nicht gepurget wurde
+    if (!prewarmBuffers.has(sessionKey)) {
+      return;
+    }
+    const expiresAt = hooks.now() + config.cacheTtlSeconds * 1_000;
+    const vectorById = new Map(
+      response.items.map((entry) => [fromWordCloudSemanticSourceId(entry.id), entry.embedding]),
+    );
+    for (let idx = 0; idx < missingTexts.length; idx += 1) {
+      const sourceText = missingTexts[idx]!;
+      const vector = vectorById.get(`prewarm-${idx + 1}`);
+      if (!vector) continue;
+      for (const locale of ['de', 'en'] as const) {
+        const key = buildSessionItemEmbeddingKey(sessionKey, locale, sourceText);
+        writeSessionItemEmbedding(key, {
+          expiresAt,
+          modelId: response.modelId,
+          modelVersion: response.modelVersion,
+          vector,
+        });
+      }
+    }
+  } catch {
+    // Stilles Pre-Warming: Fehler beeinflussen niemals den Teilnehmer-Submit oder den Circuit Breaker.
+  } finally {
+    prewarmInFlight = false;
+    if (buffer.texts.size > 0 && !buffer.timer && prewarmBuffers.has(sessionKey)) {
+      buffer.timer = setTimeout(() => {
+        buffer.timer = null;
+        void flushPrewarmBuffer(sessionId);
+      }, PREWARM_DEBOUNCE_MS);
+      buffer.timer.unref?.();
+    }
+  }
+}
+
+/**
+ * Wärmt im Hintergrund die semantischen Einzel-Text-Embeddings für neu eingegangene
+ * Q&A-Fragen oder Freitext-Antworten vor, solange der Encoder-Sidecar frei ist.
+ */
+export function scheduleWordCloudSemanticEmbeddingPrewarm(input: {
+  readonly sessionId: string;
+  readonly text: string;
+}): void {
+  const trimmedSessionId = input.sessionId.trim();
+  if (!trimmedSessionId) {
+    return;
+  }
+  const config = hooks.config();
+  if (!config.enabled) {
+    return;
+  }
+  const sourceText = toWordCloudAnalysisSourceText(input.text);
+  if (!sourceText) {
+    return;
+  }
+  const sessionKey = sessionJobKey(trimmedSessionId);
+  const now = hooks.now();
+  const existing = sessionItemEmbeddingsCache.get(
+    buildSessionItemEmbeddingKey(sessionKey, 'de', sourceText),
+  );
+  if (existing && existing.expiresAt > now) {
+    return;
+  }
+  let buffer = prewarmBuffers.get(sessionKey);
+  if (!buffer) {
+    buffer = { timer: null, texts: new Set() };
+    prewarmBuffers.set(sessionKey, buffer);
+  }
+  buffer.texts.add(sourceText);
+  if (!buffer.timer) {
+    buffer.timer = setTimeout(() => {
+      buffer.timer = null;
+      void flushPrewarmBuffer(trimmedSessionId);
+    }, PREWARM_DEBOUNCE_MS);
+    buffer.timer.unref?.();
+  }
 }
