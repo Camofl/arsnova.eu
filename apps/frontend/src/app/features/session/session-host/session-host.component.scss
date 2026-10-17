@@ -5801,8 +5801,10 @@ button.session-host__btn-discussion {
   min-height: 0;
 }
 
-.session-host__extra--maximized .session-host__word-cloud-status {
+.session-host__extra--maximized
+  .session-host__word-cloud-status:not(.session-host__word-cloud-status--cover) {
   left: 50%;
+  right: auto;
   transform: translateX(-50%);
   text-align: center;
 }
@@ -5975,6 +5977,23 @@ button.session-host__btn-discussion {
   backdrop-filter: blur(14px) saturate(1.2);
 }
 
+.session-host__word-cloud-status--cover {
+  inset: 0;
+  top: 0;
+  right: 0;
+  left: 0;
+  width: auto;
+  justify-content: center;
+  padding: 1.25rem;
+  pointer-events: auto;
+  text-align: center;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: color-mix(in srgb, var(--mat-sys-surface) 94%, transparent);
+  backdrop-filter: blur(22px) saturate(1.12);
+}
+
 .session-host__extra-note {
   margin: 0;
   text-align: inherit;
@@ -5988,7 +6007,8 @@ button.session-host__btn-discussion {
   align-items: stretch;
   gap: 0.4rem;
   width: 100%;
-  margin: 0;
+  max-width: 22rem;
+  margin: 0 auto;
   text-align: inherit;
 }
 
@@ -6047,7 +6067,7 @@ button.session-host__btn-discussion {
     max-width: 100%;
   }
 
-  .session-host__word-cloud-status {
+  .session-host__word-cloud-status:not(.session-host__word-cloud-status--cover) {
     right: auto;
     left: 0.75rem;
     text-align: left;

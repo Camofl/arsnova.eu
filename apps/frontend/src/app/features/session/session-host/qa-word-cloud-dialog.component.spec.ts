@@ -152,6 +152,7 @@ describe('QaWordCloudDialogComponent', () => {
     const progress = status?.querySelector('.qa-word-cloud-dialog__progress') as HTMLElement | null;
     expect(stage).not.toBeNull();
     expect(status).not.toBeNull();
+    expect(status?.classList.contains('qa-word-cloud-dialog__status--cover')).toBe(true);
     expect(progress).not.toBeNull();
     expect(progress?.getAttribute('aria-busy')).toBe('true');
     expect(progress?.textContent).toContain('Themen werden vorbereitet.');
@@ -253,8 +254,9 @@ describe('QaWordCloudDialogComponent', () => {
     const panelStyles = readFileSync(join(componentDir, '../../../../styles.scss'), 'utf8');
 
     expect(dialogStyles).toMatch(/:host \{[^}]*display:\s*flex/);
-    expect(dialogStyles).toMatch(/\.qa-word-cloud-dialog__cloud \{[^}]*flex:\s*1 1 0%/);
-    expect(dialogStyles).toMatch(/\.qa-word-cloud-dialog__cloud \{[^}]*height:\s*0/);
+    expect(dialogStyles).toMatch(/\.qa-word-cloud-dialog__stage \{[^}]*flex:\s*1 1 0%/);
+    expect(dialogStyles).toMatch(/\.qa-word-cloud-dialog__stage \{[^}]*height:\s*0/);
+    expect(dialogStyles).toMatch(/\.qa-word-cloud-dialog__status--cover \{[^}]*inset:\s*0/);
     expect(panelStyles).toMatch(
       /\.cdk-overlay-pane\.word-cloud-dialog-panel \.mat-mdc-dialog-surface > \* \{[^}]*height:\s*100%/,
     );

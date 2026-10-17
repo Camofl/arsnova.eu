@@ -180,6 +180,22 @@
   backdrop-filter: blur(14px) saturate(1.2);
 }
 
+.qa-word-cloud-dialog__status--cover {
+  inset: 0;
+  top: 0;
+  left: 0;
+  width: auto;
+  justify-content: center;
+  padding: 1.25rem;
+  pointer-events: auto;
+  transform: none;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: color-mix(in srgb, var(--mat-sys-surface) 94%, transparent);
+  backdrop-filter: blur(22px) saturate(1.12);
+}
+
 .qa-word-cloud-dialog__mode-note {
   margin: 0;
   text-align: center;
@@ -193,7 +209,8 @@
   align-items: stretch;
   gap: 0.45rem;
   width: 100%;
-  margin: 0;
+  max-width: 22rem;
+  margin: 0 auto;
   text-align: center;
 }
 

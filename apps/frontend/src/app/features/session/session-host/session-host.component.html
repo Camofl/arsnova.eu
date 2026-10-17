@@ -3840,7 +3840,12 @@
                         freetextWordCloudSemanticHint() ||
                         freetextWordCloudSmoothingHint()
                       ) {
-                        <div class="session-host__word-cloud-status">
+                        <div
+                          class="session-host__word-cloud-status"
+                          [class.session-host__word-cloud-status--cover]="
+                            freetextWordCloudSemanticAnalysisPending()
+                          "
+                        >
                           @if (freetextWordCloudSemanticAnalysisPending()) {
                             <div
                               class="session-host__word-cloud-progress"

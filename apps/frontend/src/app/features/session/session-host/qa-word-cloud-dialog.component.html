@@ -103,7 +103,10 @@
       (themeFallbackHint() && !themesRefreshing() && !showThemeRefresh()) ||
       (smoothingHint() && showSmoothingControls())
     ) {
-      <div class="qa-word-cloud-dialog__status">
+      <div
+        class="qa-word-cloud-dialog__status"
+        [class.qa-word-cloud-dialog__status--cover]="themesPending()"
+      >
         @if (themesPending()) {
           <div
             class="qa-word-cloud-dialog__progress"
