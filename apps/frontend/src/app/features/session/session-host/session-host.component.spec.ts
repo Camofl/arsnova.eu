@@ -8532,6 +8532,16 @@ describe('SessionHostComponent', { timeout: 60_000 }, () => {
       timeout: 5000,
       interval: 25,
     });
+    fixture.detectChanges();
+
+    const stage = fixture.nativeElement.querySelector(
+      '.session-host__word-cloud-stage',
+    ) as HTMLElement | null;
+    const status = stage?.querySelector('.session-host__word-cloud-status') as HTMLElement | null;
+    expect(status).not.toBeNull();
+    expect(status?.classList.contains('session-host__word-cloud-status--cover')).toBe(true);
+    expect(stage?.querySelector('.session-host__word-cloud-progress')).not.toBeNull();
+    expect(stage?.querySelector('app-word-cloud')).not.toBeNull();
 
     component.freetextResponses.set([
       'Lineare Regression im Projekt',

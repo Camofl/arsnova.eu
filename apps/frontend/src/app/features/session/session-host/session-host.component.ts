@@ -11177,15 +11177,33 @@ export class SessionHostComponent implements OnInit, OnDestroy {
     this.qaSortMode.set(mode);
     this.publishQaPresenterSortMode(mode);
     this.ensureQaSubscription();
+
+    // Wenn die Q&A-Wortwolke im Themenmodus geöffnet ist, sofort den Backend-Reweight-Aufruf
+    // anstoßen (analyzeQa lädt den kanonischen Korpus selbst aus der DB), statt erst auf
+    // refreshQaQuestionsAndResetHero() zu warten.
+    const startedImmediateSemanticSort = untracked(() => {
+      if (this.qaWordCloudEffectiveAnalysisVariant() !== 'SEMANTIC') {
+        return false;
+      }
+      const request = this.buildQaWordCloudAnalysisRequest();
+      if (!request) {
+        return false;
+      }
+      this.queueQaWordCloudSemanticAnalysis(request);
+      return true;
+    });
+
     await this.refreshQaQuestionsAndResetHero();
     if (options?.scrollToTop !== false) {
       this.scrollHostQaAfterListCriteriaChange();
     }
 
     if (untracked(() => this.qaWordCloudEffectiveAnalysisVariant() === 'SEMANTIC')) {
-      const request = this.buildQaWordCloudAnalysisRequest();
-      if (request) {
-        this.queueQaWordCloudSemanticAnalysis(request);
+      if (!startedImmediateSemanticSort) {
+        const request = this.buildQaWordCloudAnalysisRequest();
+        if (request) {
+          this.queueQaWordCloudSemanticAnalysis(request);
+        }
       }
       return;
     }
@@ -13713,6 +13731,9 @@ export class SessionHostComponent implements OnInit, OnDestroy {
     options: { readonly keepPrevious?: boolean } = {},
   ): Promise<void> {
     const runId = ++this.qaWordCloudThemeAnalysisRunId;
+    const hadPreviousSemanticCloud =
+      request.mode === 'SEMANTIC' &&
+      isSemanticTopicCloudResult(this.qaWordCloudThemeAnalysisResult());
     if (!options.keepPrevious) {
       this.qaWordCloudThemeAnalysisResult.set(null);
     }
@@ -13730,9 +13751,15 @@ export class SessionHostComponent implements OnInit, OnDestroy {
       }
 
       if (request.mode === 'SEMANTIC') {
-        await holdSemanticPendingProgress(pendingStartedAt);
-        if (runId !== this.qaWordCloudThemeAnalysisRunId) {
-          return;
+        const elapsedMs = Date.now() - pendingStartedAt;
+        // Wenn bereits eine Themenwolke sichtbar ist und der Sortierwechsel
+        // aus dem Backend-Cluster-Cache schnell (< 250 ms) beantwortet wurde,
+        // sofort weich überblenden statt künstlich 1 s zu blockieren.
+        if (!hadPreviousSemanticCloud || elapsedMs >= 250) {
+          await holdSemanticPendingProgress(pendingStartedAt);
+          if (runId !== this.qaWordCloudThemeAnalysisRunId) {
+            return;
+          }
         }
       }
 

@@ -97,53 +97,77 @@
     }
   </div>
 
-  @if (themesPending()) {
-    <div
-      class="qa-word-cloud-dialog__progress"
-      role="status"
-      aria-live="polite"
-      aria-busy="true"
-      [attr.aria-label]="themeProgressAria()"
-    >
-      <p class="qa-word-cloud-dialog__progress-label">{{ themeProgressLabel }}</p>
-      @if (themeWaitHint(); as waitHint) {
-        <p class="qa-word-cloud-dialog__progress-wait">{{ waitHint }}</p>
-      }
-      <mat-progress-bar class="qa-word-cloud-dialog__progress-bar" mode="indeterminate" />
-      <p class="qa-word-cloud-dialog__progress-fallback">{{ themeProgressFallback }}</p>
-    </div>
-  } @else if (themeFallbackHint() && !showThemeRefresh()) {
-    <p class="qa-word-cloud-dialog__mode-note">{{ themeFallbackHint() }}</p>
-  }
-  @if (smoothingHint() && showSmoothingControls()) {
-    <p class="qa-word-cloud-dialog__mode-note" aria-live="polite">{{ smoothingHint() }}</p>
-  }
+  <div class="qa-word-cloud-dialog__stage">
+    @if (
+      themesPending() ||
+      (themeFallbackHint() && !themesRefreshing() && !showThemeRefresh()) ||
+      (smoothingHint() && showSmoothingControls())
+    ) {
+      <div
+        class="qa-word-cloud-dialog__status"
+        [class.qa-word-cloud-dialog__status--cover]="themesPending()"
+      >
+        @if (themesPending()) {
+          <div
+            class="qa-word-cloud-dialog__progress"
+            role="status"
+            aria-live="polite"
+            aria-busy="true"
+            [attr.aria-label]="themeProgressAria()"
+          >
+            <p class="qa-word-cloud-dialog__progress-label">{{ themeProgressLabel }}</p>
+            @if (themeWaitHint(); as waitHint) {
+              <p class="qa-word-cloud-dialog__progress-wait">{{ waitHint }}</p>
+            }
+            <mat-progress-bar class="qa-word-cloud-dialog__progress-bar" mode="indeterminate" />
+            <p class="qa-word-cloud-dialog__progress-fallback">{{ themeProgressFallback }}</p>
+          </div>
+        } @else if (themeFallbackHint() && !themesRefreshing() && !showThemeRefresh()) {
+          <p class="qa-word-cloud-dialog__mode-note">{{ themeFallbackHint() }}</p>
+        }
+        @if (smoothingHint() && showSmoothingControls()) {
+          <p class="qa-word-cloud-dialog__mode-note" aria-live="polite">{{ smoothingHint() }}</p>
+        }
+      </div>
+    }
+    @if (themesRefreshing() && !themesPending()) {
+      <p
+        class="qa-word-cloud-dialog__sr-status sr-only"
+        role="status"
+        aria-live="polite"
+        aria-busy="true"
+        [attr.aria-label]="themeProgressAria()"
+      >
+        {{ themeProgressLabel }}
+      </p>
+    }
 
-  <app-word-cloud
-    class="qa-word-cloud-dialog__cloud"
-    [responses]="responses()"
-    [weightedResponses]="weightedResponses()"
-    [terms]="terms()"
-    [analysisEntries]="analysisEntries()"
-    [analysisMode]="'qa'"
-    [title]="title()"
-    [eyebrow]="data.eyebrow"
-    [description]="description()"
-    [itemLabelSingular]="data.itemLabelSingular"
-    [itemLabelPlural]="data.itemLabelPlural"
-    [itemCount]="analyzedQuestionCount()"
-    [wordLabelSingular]="wordLabelSingular()"
-    [wordLabelPlural]="wordLabelPlural()"
-    [showConfidenceFilter]="analysisVariant() === 'SEMANTIC'"
-    [showResponsesPanel]="false"
-    [weightingHint]="null"
-    [tooltipMetricLabel]="tooltipMetricLabel()"
-    [analysisModelVersion]="analysisModelVersion()"
-    [labelModelId]="labelModelId()"
-    [labelModelVersion]="labelModelVersion()"
-    [showReleaseNote]="false"
-    [showMaximizeAction]="false"
-    [presentationMode]="true"
-    [focusedTermLabel]="focusedTermLabel()"
-  />
+    <app-word-cloud
+      class="qa-word-cloud-dialog__cloud"
+      [responses]="responses()"
+      [weightedResponses]="weightedResponses()"
+      [terms]="terms()"
+      [analysisEntries]="analysisEntries()"
+      [analysisMode]="'qa'"
+      [title]="title()"
+      [eyebrow]="data.eyebrow"
+      [description]="description()"
+      [itemLabelSingular]="data.itemLabelSingular"
+      [itemLabelPlural]="data.itemLabelPlural"
+      [itemCount]="analyzedQuestionCount()"
+      [wordLabelSingular]="wordLabelSingular()"
+      [wordLabelPlural]="wordLabelPlural()"
+      [showConfidenceFilter]="analysisVariant() === 'SEMANTIC'"
+      [showResponsesPanel]="false"
+      [weightingHint]="null"
+      [tooltipMetricLabel]="tooltipMetricLabel()"
+      [analysisModelVersion]="analysisModelVersion()"
+      [labelModelId]="labelModelId()"
+      [labelModelVersion]="labelModelVersion()"
+      [showReleaseNote]="false"
+      [showMaximizeAction]="false"
+      [presentationMode]="true"
+      [focusedTermLabel]="focusedTermLabel()"
+    />
+  </div>
 </section>

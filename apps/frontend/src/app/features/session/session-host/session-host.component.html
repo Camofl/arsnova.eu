@@ -3831,77 +3831,92 @@
                         </button>
                       }
                     </div>
-                    @if (freetextWordCloudSemanticAnalysisPending()) {
-                      <div
-                        class="session-host__word-cloud-progress"
-                        role="status"
-                        aria-live="polite"
-                        aria-busy="true"
-                        [attr.aria-label]="freetextWordCloudSemanticProgressAria()"
-                      >
-                        <p
-                          class="session-host__word-cloud-progress-label"
-                          i18n="@@sessionQa.wordCloudSemanticPendingLabel"
-                        >
-                          Themen werden vorbereitet.
-                        </p>
-                        @if (freetextWordCloudSemanticWaitHint(); as waitHint) {
-                          <p class="session-host__word-cloud-progress-wait">{{ waitHint }}</p>
-                        }
-                        <mat-progress-bar
-                          class="session-host__word-cloud-progress-bar"
-                          mode="indeterminate"
-                        />
-                        <p
-                          class="session-host__word-cloud-progress-fallback"
-                          i18n="@@sessionQa.wordCloudSemanticPendingFallback"
-                        >
-                          Es gelten Wörter und Phrasen.
-                        </p>
-                      </div>
-                    } @else if (
-                      freetextWordCloudSemanticHint() && !freetextWordCloudShowThemeRefresh()
-                    ) {
-                      <p class="session-host__extra-note" role="status" aria-live="polite">
-                        {{ freetextWordCloudSemanticHint() }}
-                      </p>
-                    }
-                    @if (freetextWordCloudSmoothingHint()) {
-                      <p class="session-host__extra-note" role="status" aria-live="polite">
-                        {{ freetextWordCloudSmoothingHint() }}
-                      </p>
-                    }
                     @if (exportStatus()) {
                       <p class="session-host__export-status" role="status">{{ exportStatus() }}</p>
                     }
-                    <app-word-cloud
-                      #freetextWordCloud
-                      [responses]="displayedFreetextResponses()"
-                      [terms]="displayedFreetextVisibleTerms()"
-                      [analysisEntries]="displayedFreetextAnalysisEntries()"
-                      [selectionScopeKey]="displayedCurrentQuestionForHost()?.questionId ?? null"
-                      [eyebrow]="freetextWordCloudEyebrow"
-                      [description]="freetextWordCloudDescription()"
-                      [wordLabelSingular]="freetextWordCloudWordLabelSingular()"
-                      [wordLabelPlural]="freetextWordCloudWordLabelPlural()"
-                      [showConfidenceFilter]="freetextWordCloudMode() === 'SEMANTIC'"
-                      [weightingHint]="null"
-                      [presentationMode]="freetextWordCloudMaximized()"
-                      [showMaximizeAction]="!freetextWordCloudMaximized()"
-                      [showResponsesPanel]="!freetextWordCloudMaximized()"
-                      [maximizeActionHandler]="maximizeFreetextWordCloud"
-                      [showReleaseNote]="false"
-                      [focusedTermLabel]="moderationCompassFocusedTerm()"
-                      [analysisModelVersion]="
-                        freetextWordCloudSemanticAnalysisResult()?.modelVersion ?? null
-                      "
-                      [labelModelId]="
-                        freetextWordCloudSemanticAnalysisResult()?.labelModelId ?? null
-                      "
-                      [labelModelVersion]="
-                        freetextWordCloudSemanticAnalysisResult()?.labelModelVersion ?? null
-                      "
-                    />
+                    <div class="session-host__word-cloud-stage">
+                      @if (
+                        freetextWordCloudSemanticAnalysisPending() ||
+                        freetextWordCloudSemanticHint() ||
+                        freetextWordCloudSmoothingHint()
+                      ) {
+                        <div
+                          class="session-host__word-cloud-status"
+                          [class.session-host__word-cloud-status--cover]="
+                            freetextWordCloudSemanticAnalysisPending()
+                          "
+                        >
+                          @if (freetextWordCloudSemanticAnalysisPending()) {
+                            <div
+                              class="session-host__word-cloud-progress"
+                              role="status"
+                              aria-live="polite"
+                              aria-busy="true"
+                              [attr.aria-label]="freetextWordCloudSemanticProgressAria()"
+                            >
+                              <p
+                                class="session-host__word-cloud-progress-label"
+                                i18n="@@sessionQa.wordCloudSemanticPendingLabel"
+                              >
+                                Themen werden vorbereitet.
+                              </p>
+                              @if (freetextWordCloudSemanticWaitHint(); as waitHint) {
+                                <p class="session-host__word-cloud-progress-wait">{{ waitHint }}</p>
+                              }
+                              <mat-progress-bar
+                                class="session-host__word-cloud-progress-bar"
+                                mode="indeterminate"
+                              />
+                              <p
+                                class="session-host__word-cloud-progress-fallback"
+                                i18n="@@sessionQa.wordCloudSemanticPendingFallback"
+                              >
+                                Es gelten Wörter und Phrasen.
+                              </p>
+                            </div>
+                          } @else if (
+                            freetextWordCloudSemanticHint() && !freetextWordCloudShowThemeRefresh()
+                          ) {
+                            <p class="session-host__extra-note" role="status" aria-live="polite">
+                              {{ freetextWordCloudSemanticHint() }}
+                            </p>
+                          }
+                          @if (freetextWordCloudSmoothingHint()) {
+                            <p class="session-host__extra-note" role="status" aria-live="polite">
+                              {{ freetextWordCloudSmoothingHint() }}
+                            </p>
+                          }
+                        </div>
+                      }
+                      <app-word-cloud
+                        #freetextWordCloud
+                        [responses]="displayedFreetextResponses()"
+                        [terms]="displayedFreetextVisibleTerms()"
+                        [analysisEntries]="displayedFreetextAnalysisEntries()"
+                        [selectionScopeKey]="displayedCurrentQuestionForHost()?.questionId ?? null"
+                        [eyebrow]="freetextWordCloudEyebrow"
+                        [description]="freetextWordCloudDescription()"
+                        [wordLabelSingular]="freetextWordCloudWordLabelSingular()"
+                        [wordLabelPlural]="freetextWordCloudWordLabelPlural()"
+                        [showConfidenceFilter]="freetextWordCloudMode() === 'SEMANTIC'"
+                        [weightingHint]="null"
+                        [presentationMode]="freetextWordCloudMaximized()"
+                        [showMaximizeAction]="!freetextWordCloudMaximized()"
+                        [showResponsesPanel]="!freetextWordCloudMaximized()"
+                        [maximizeActionHandler]="maximizeFreetextWordCloud"
+                        [showReleaseNote]="false"
+                        [focusedTermLabel]="moderationCompassFocusedTerm()"
+                        [analysisModelVersion]="
+                          freetextWordCloudSemanticAnalysisResult()?.modelVersion ?? null
+                        "
+                        [labelModelId]="
+                          freetextWordCloudSemanticAnalysisResult()?.labelModelId ?? null
+                        "
+                        [labelModelVersion]="
+                          freetextWordCloudSemanticAnalysisResult()?.labelModelVersion ?? null
+                        "
+                      />
+                    </div>
                   </div>
                 </details>
               }
