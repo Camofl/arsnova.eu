@@ -61,7 +61,10 @@ const fr: Messages = {
         title: 'D’abord pour le téléphone',
         text: 'Crée tous les formats et anime en direct — pensé pour le téléphone, sans se limiter à une interface pour ordinateur réduite',
       },
-      { title: 'Q&A avec mur de questions', text: 'Modération, votes et nuage thématique' },
+      {
+        title: 'Q&A avec mur de questions',
+        text: 'Modération, votes, nuage de mots et boussole de modération',
+      },
       {
         title: 'Autoévaluation et suivi',
         text: 'Repérer les idées fausses, exporter le rapport PDF',
@@ -155,8 +158,8 @@ const fr: Messages = {
         text: 'Mots et phrases sont pondérés selon le soutien, l’accord ou la controverse.',
       },
       {
-        label: 'À venir : boussole de modération',
-        text: 'Les signaux déterministes viennent d’abord ; l’analyse linguistique optionnelle et la synthèse restent des extensions.',
+        label: 'Boussole de modération',
+        text: 'Un coup d’œil, et tu vois le prochain geste — à partir des questions, du nuage, du quiz et du rythme.',
       },
     ],
     docsLink: 'Ouvrir la notation Q&A et la controverse sur GitHub',
@@ -198,7 +201,48 @@ const fr: Messages = {
       { label: 'Besoin de clarification', className: 'text-xl text-landing-status-violet' },
     ],
     nextStep:
-      'Prochaine étape : une boussole de modération déterministe, éventuellement complétée par des signaux d’analyse linguistique asynchrones et des synthèses fondées sur les questions soumises.',
+      'À suivre dans la boussole : porter la question controversée en plénière — un tap, et tu y es.',
+  },
+  compass: {
+    eyebrow: 'Dès maintenant, en session',
+    title: 'La boussole de modération te dit où en est la salle',
+    lead: 'En plein cours, un coup d’œil suffit : tu vois le prochain geste utile — à partir des questions ouvertes, du nuage, du quiz et du rythme. Pas un tableau de bord à décortiquer : une suggestion à tester tout de suite dans la salle.',
+    summary: [
+      'Touche « Boussole » dans n’importe quelle vue en direct.',
+      'En haut : « À suivre », un geste clair.',
+      'En dessous : rythme, questions controversées et points à éclaircir.',
+      'Saute directement à la question, au nuage ou au résultat.',
+      'C’est toi qui décides. La boussole ne pilote jamais la session toute seule.',
+    ],
+    docsLink: 'Comment travaille la boussole',
+    tryLink: 'L’essayer dans l’application',
+    demoAria: 'Exemple de boussole de modération avec prochaine étape et signaux en direct',
+    hostView: 'Vue de l’animateur',
+    demoTitle: 'Boussole de modération',
+    nextLabel: 'À suivre',
+    nextTitle: 'Porter la question controversée en plénière',
+    nextText:
+      '« Faut-il vraiment masquer les résultats avant la discussion ? » divise la salle. Éclaire-la maintenant, avant d’avancer.',
+    cards: [
+      {
+        label: 'Questions controversées',
+        text: 'Le groupe est partagé — beaucoup de voix pour et contre.',
+        tone: 'rose',
+      },
+      {
+        label: 'Retour sur le rythme de l’exposé',
+        text: 'Plusieurs perdent le fil. Une courte pause vaut le coup.',
+        tone: 'amber',
+      },
+      {
+        label: 'À éclaircir',
+        text: 'Une question très soutenue attend encore ta réponse.',
+        tone: 'violet',
+      },
+    ],
+    sourcesLabel: 'Aller directement à',
+    sources: ['Q&A', 'Nuage de mots', 'Quiz', 'Sondage express'],
+    note: 'La boussole ne lit que ce que tu vois déjà comme animateur. Elle n’évalue jamais les personnes.',
   },
   workflow: {
     eyebrow: 'Pour l’enseignement, la formation et les ateliers',
@@ -228,7 +272,7 @@ const fr: Messages = {
         number: '04',
         title: 'Animer en direct',
         description:
-          'Tu circules dans la salle et animes la session en direct depuis le téléphone. La vue d’animation est faite pour ça — sans se limiter à une interface pour ordinateur réduite. Les participants votent, posent des questions et définissent ensemble les priorités. L’animateur et le présentateur affichent le quiz, le Q&A, le sondage express, le nuage de mots, la phase de lecture, le compte à rebours, le second tour et les résultats dans un seul déroulement.',
+          'Tu circules dans la salle et animes la session en direct depuis le téléphone. La vue d’animation est faite pour ça — sans se limiter à une interface pour ordinateur réduite. Les participants votent, posent des questions et définissent ensemble les priorités. La boussole de modération indique le prochain geste. L’animateur et le présentateur affichent le quiz, le Q&A, le sondage express, le nuage de mots, la phase de lecture, le compte à rebours, le second tour et les résultats dans un seul déroulement.',
       },
       {
         number: '05',
@@ -316,6 +360,12 @@ const fr: Messages = {
         description:
           'Texte libre et Q&A sont condensés en mots et phrases ; le mur pondère selon l’accord, une majorité claire ou la controverse.',
         icon: 'cloud',
+      },
+      {
+        title: 'Boussole de modération en session',
+        description:
+          'Un coup d’œil, et tu sais ce dont la salle a besoin maintenant : le rythme, une question controversée ou un résultat de quiz encore ouvert. Touche « Boussole » et teste le prochain geste tout de suite.',
+        icon: 'compass',
       },
       {
         title: 'Pour des contextes variés',
@@ -490,7 +540,7 @@ const fr: Messages = {
       {
         title: 'Plus de formats d’interaction',
         description:
-          'Outre le quiz : association, mise en ordre, classement, estimation numérique, phase de lecture, Peer Instruction, sondage express, mur de questions et nuage de mots pondéré sur la même plateforme.',
+          'Outre le quiz : association, mise en ordre, classement, estimation numérique, phase de lecture, Peer Instruction, sondage express, mur de questions, nuage de mots pondéré et boussole de modération sur la même plateforme.',
       },
       {
         title: 'Plus de contrôle sur les données et l’accès',
@@ -564,6 +614,11 @@ const fr: Messages = {
           'Il condense les questions visibles en mots et phrases et reprend la logique de tri active. Il montre ainsi non seulement des termes fréquents, mais des regroupements thématiques issus de questions soutenues, clairement bien notées ou controversées.',
       },
       {
+        question: 'Que fait la boussole de modération ?',
+        answer:
+          'Pendant la session, elle te montre le prochain geste utile — à partir des questions ouvertes, du nuage, des résultats de quiz et du retour sur le rythme. « À suivre » est en haut, les signaux en dessous. Tu sautes à la source et tu décides ; la boussole ne lance aucune action toute seule. Touche « Boussole » dans la vue en direct et teste-la avec quelques votes.',
+      },
+      {
         question: 'À qui s’adresse la plateforme ?',
         answer:
           'Pour l’interaction en direct dans l’éducation et les organisations : école, université, formation continue, formation, atelier, événement ou réunion.',
@@ -578,7 +633,7 @@ const fr: Messages = {
   },
   ctaSection: {
     title: 'Prêt·e pour la prochaine session en direct ?',
-    lead: 'Teste le déroulement en direct directement dans l’application, ou jette un œil au code source ouvert, à la logique Q&A, au traitement du nuage de mots et aux bases techniques pour le déploiement et l’exploitation.',
+    lead: 'Teste le déroulement en direct et la boussole de modération dans l’application — ou jette un œil au code source ouvert, à la logique Q&A, au traitement du nuage de mots et aux bases techniques pour le déploiement et l’exploitation.',
   },
   jsonLd: {
     websiteName: 'arsnova.eu – Informations',
@@ -590,6 +645,7 @@ const fr: Messages = {
       'Rapport de résultats (PDF) et bilan après la session',
       'Questions d’estimation numérique avec deux tours et statistiques',
       'Mur de questions avec modération, votes pour et contre',
+      'Boussole de modération avec prochaine étape à partir des signaux en direct',
       'Salle d’attente, présentateur, QR/code',
       'Création de quiz et animation conçues pour le smartphone — tous les formats, mode productif pour enseigner et présenter',
       'Pilotage de la session en direct depuis un téléphone ou une tablette (couplage hôte)',

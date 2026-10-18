@@ -63,7 +63,7 @@ const it: Messages = {
       },
       {
         title: 'Q&A con bacheca delle domande',
-        text: 'Moderazione, voti e nuvola di parole tematica',
+        text: 'Moderazione, voti, nuvola di parole e bussola di moderazione',
       },
       {
         title: 'Autovalutazione e analisi successiva',
@@ -157,8 +157,8 @@ const it: Messages = {
         text: 'Parole e frasi sono pesate in base al sostegno, al consenso o alla controversia.',
       },
       {
-        label: 'In arrivo: bussola di moderazione',
-        text: 'Prima arrivano i segnali deterministici; l’analisi linguistica opzionale e la sintesi restano estensioni.',
+        label: 'Bussola di moderazione',
+        text: 'Un’occhiata, e vedi la prossima mossa — da domande, nuvola, quiz e ritmo.',
       },
     ],
     docsLink: 'Apri la valutazione Q&A e la controversia su GitHub',
@@ -200,7 +200,48 @@ const it: Messages = {
       { label: 'Bisogno di chiarimento', className: 'text-xl text-landing-status-violet' },
     ],
     nextStep:
-      'Prossimo passo: una bussola di moderazione deterministica, opzionalmente integrata da segnali di analisi linguistica asincroni e sintesi fondate sulle domande inviate.',
+      'A seguire nella bussola: portare la domanda controversa in plenaria — un tocco, e ci sei.',
+  },
+  compass: {
+    eyebrow: 'Ora, in sessione',
+    title: 'La bussola di moderazione ti mostra dove è la sala',
+    lead: 'A metà sessione, un’occhiata e vedi la prossima mossa utile — da domande aperte, nuvola, quiz e ritmo. Non un cruscotto da studiare: un suggerimento da provare subito in aula.',
+    summary: [
+      'Tocca «Bussola» in qualsiasi vista in diretta.',
+      'In alto c’è «A seguire»: un gesto chiaro.',
+      'Sotto: ritmo, domande controverse e punti da chiarire.',
+      'Salta subito alla domanda, alla nuvola o al risultato.',
+      'Decidi tu. La bussola non conduce mai la sessione da sola.',
+    ],
+    docsLink: 'Come lavora la bussola',
+    tryLink: 'Provala nell’app',
+    demoAria: 'Esempio della bussola di moderazione con prossimo passo e segnali in diretta',
+    hostView: 'Vista di chi conduce',
+    demoTitle: 'Bussola di moderazione',
+    nextLabel: 'A seguire',
+    nextTitle: 'Portare la domanda controversa in plenaria',
+    nextText:
+      '«Dobbiamo davvero nascondere i risultati prima della discussione?» divide la sala. Chiariscila ora, prima di andare avanti.',
+    cards: [
+      {
+        label: 'Domande controverse',
+        text: 'Il gruppo è spaccato — tanti voti a favore e contro.',
+        tone: 'rose',
+      },
+      {
+        label: 'Feedback sul ritmo della presentazione',
+        text: 'Diverse persone non stanno al passo. Vale la pena fare una breve pausa.',
+        tone: 'amber',
+      },
+      {
+        label: 'Da chiarire',
+        text: 'Una domanda molto sostenuta aspetta ancora la tua risposta.',
+        tone: 'violet',
+      },
+    ],
+    sourcesLabel: 'Vai direttamente a',
+    sources: ['Q&A', 'Nuvola di parole', 'Quiz', 'Sondaggio rapido'],
+    note: 'La bussola legge solo ciò che vedi già come chi conduce. Non valuta mai le persone.',
   },
   workflow: {
     eyebrow: 'Per didattica, formazione e workshop',
@@ -230,7 +271,7 @@ const it: Messages = {
         number: '04',
         title: 'Modera in diretta',
         description:
-          'Ti muovi in sala e conduci la sessione in diretta dal telefono. La vista di chi conduce è fatta per questo — senza limitarsi a una versione ridotta dell’interfaccia per computer. I partecipanti votano, pongono domande e definiscono insieme le priorità. Chi conduce e il presentatore mostrano il quiz, la bacheca delle domande, il Sondaggio rapido, la nuvola di parole, la fase di lettura, il conto alla rovescia, il secondo turno e i risultati in un unico percorso.',
+          'Ti muovi in sala e conduci la sessione in diretta dal telefono. La vista di chi conduce è fatta per questo — senza limitarsi a una versione ridotta dell’interfaccia per computer. I partecipanti votano, pongono domande e definiscono insieme le priorità. La bussola di moderazione indica la prossima mossa. Chi conduce e il presentatore mostrano il quiz, la bacheca delle domande, il Sondaggio rapido, la nuvola di parole, la fase di lettura, il conto alla rovescia, il secondo turno e i risultati in un unico percorso.',
       },
       {
         number: '05',
@@ -317,6 +358,12 @@ const it: Messages = {
         description:
           'Testo libero e Q&A vengono condensati in parole e frasi; la bacheca pesa in base al consenso, a una maggioranza chiara o alla controversia.',
         icon: 'cloud',
+      },
+      {
+        title: 'Bussola di moderazione in sessione',
+        description:
+          'Un’occhiata, e sai di cosa ha bisogno la sala adesso: il ritmo, una domanda controversa o un risultato di quiz ancora aperto. Tocca «Bussola» e prova subito il passo successivo.',
+        icon: 'compass',
       },
       {
         title: 'Per contesti diversi',
@@ -483,7 +530,7 @@ const it: Messages = {
       {
         title: 'Più formati di interazione',
         description:
-          'Oltre al quiz: abbinamento, ordinamento, classificazione, stima numerica, fase di lettura, Peer Instruction, sondaggio rapido, bacheca delle domande e nuvola di parole pesata in un’unica piattaforma.',
+          'Oltre al quiz: abbinamento, ordinamento, classificazione, stima numerica, fase di lettura, Peer Instruction, sondaggio rapido, bacheca delle domande, nuvola di parole pesata e bussola di moderazione in un’unica piattaforma.',
       },
       {
         title: 'Più controllo su dati e accesso',
@@ -556,6 +603,11 @@ const it: Messages = {
           'Condensa le domande visibili in parole e frasi e segue la logica di ordinamento attiva. Così mostra non solo termini frequenti, ma raggruppamenti tematici da domande sostenute, chiaramente ben valutate o controverse.',
       },
       {
+        question: 'Cosa fa la bussola di moderazione?',
+        answer:
+          'Durante la sessione ti mostra la prossima mossa utile — da domande aperte, nuvola, risultati del quiz e feedback sul ritmo. «A seguire» sta in alto, i segnali sotto. Salti alla fonte e decidi tu; la bussola non avvia nessuna azione da sola. Tocca «Bussola» nella vista in diretta e provala con qualche voto.',
+      },
+      {
         question: 'Per chi è pensata la piattaforma?',
         answer:
           'Per l’interazione in diretta in istruzione e organizzazioni: scuola, università, formazione continua, formazione, workshop, evento o riunione.',
@@ -570,7 +622,7 @@ const it: Messages = {
   },
   ctaSection: {
     title: 'Pronto per la prossima sessione in diretta?',
-    lead: 'Prova il percorso in diretta direttamente nell’app, oppure dai un’occhiata al codice sorgente aperto, alla logica Q&A, all’elaborazione della nuvola di parole e alle basi tecniche per distribuzione e gestione della piattaforma.',
+    lead: 'Prova il percorso in diretta e la bussola di moderazione nell’app — oppure dai un’occhiata al codice sorgente aperto, alla logica Q&A, all’elaborazione della nuvola di parole e alle basi tecniche per distribuzione e gestione della piattaforma.',
   },
   jsonLd: {
     websiteName: 'arsnova.eu – Informazioni',
@@ -582,6 +634,7 @@ const it: Messages = {
       'Rapporto dei risultati (PDF) e discussione dei risultati a fine sessione',
       'Domande di stima numerica con due turni e statistica',
       'Bacheca delle domande con moderazione, voti a favore e contro',
+      'Bussola di moderazione con prossimo passo dai segnali in diretta',
       'Sala d’attesa, presentatore, QR/codice',
       'Creazione del quiz e vista di chi conduce pensate per il telefono — tutti i formati, modalità produttiva per chi insegna o presenta',
       'Controllo della sessione in diretta da telefono o tablet (accoppiamento host)',

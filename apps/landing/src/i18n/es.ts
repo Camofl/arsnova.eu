@@ -62,7 +62,10 @@ const es: Messages = {
         title: 'Primero para el móvil',
         text: 'Crea todos los formatos y dirige en directo — nace en el móvil, no es un escritorio encogido',
       },
-      { title: 'Q&A con muro de preguntas', text: 'Moderación, votos y nube temática' },
+      {
+        title: 'Q&A con muro de preguntas',
+        text: 'Moderación, votos, nube de palabras y brújula de moderación',
+      },
       {
         title: 'Autoevaluación y análisis posterior',
         text: 'Detecta conceptos erróneos, exporta el informe PDF',
@@ -156,8 +159,8 @@ const es: Messages = {
         text: 'Palabras y frases se ponderan según apoyo, acuerdo o controversia.',
       },
       {
-        label: 'Próximamente: brújula de moderación',
-        text: 'Primero llegan las señales deterministas; el análisis lingüístico opcional y el resumen siguen siendo extensiones.',
+        label: 'Brújula de moderación',
+        text: 'Una mirada, y ves el siguiente paso — a partir de las preguntas, la nube, el cuestionario y el ritmo.',
       },
     ],
     docsLink: 'Abrir la valoración Q&A y la controversia en GitHub',
@@ -200,7 +203,48 @@ const es: Messages = {
       { label: 'Necesidad de aclaración', className: 'text-xl text-landing-status-violet' },
     ],
     nextStep:
-      'Siguiente paso: una brújula de moderación determinista, opcionalmente complementada con señales de análisis lingüístico asíncronas y resúmenes basados en las preguntas enviadas.',
+      'Lo siguiente en la brújula: llevar la pregunta controvertida al plenario — un toque, y saltas allí.',
+  },
+  compass: {
+    eyebrow: 'Ya en la sesión en directo',
+    title: 'La brújula de moderación te muestra cómo está la sala',
+    lead: 'En mitad de la sesión, una mirada y ves el siguiente paso útil — a partir de las preguntas abiertas, la nube, el cuestionario y el ritmo. No es un panel para estudiar: es una sugerencia que puedes probar ahora mismo en el aula.',
+    summary: [
+      'Toca «Brújula» en cualquier vista en directo.',
+      'Arriba está «Lo siguiente»: un gesto claro.',
+      'Debajo: ritmo, preguntas controvertidas y lo que aún hay que aclarar.',
+      'Salta directo a la pregunta, a la nube o al resultado.',
+      'Tú decides. La brújula no dirige la sesión por su cuenta.',
+    ],
+    docsLink: 'Así trabaja la brújula',
+    tryLink: 'Pruébala en la aplicación',
+    demoAria: 'Ejemplo de la brújula de moderación con el siguiente paso y señales en directo',
+    hostView: 'Vista de anfitrión',
+    demoTitle: 'Brújula de moderación',
+    nextLabel: 'Lo siguiente',
+    nextTitle: 'Llevar la pregunta controvertida al plenario',
+    nextText:
+      '«¿Debemos ocultar realmente los resultados antes del debate?» divide al grupo. Aclárala ahora, antes de seguir.',
+    cards: [
+      {
+        label: 'Preguntas controvertidas',
+        text: 'El grupo está dividido — muchos votos a favor y en contra.',
+        tone: 'rose',
+      },
+      {
+        label: 'Feedback sobre el ritmo de la exposición',
+        text: 'Varias personas se quedan atrás. Vale la pena una pausa breve.',
+        tone: 'amber',
+      },
+      {
+        label: 'Por aclarar',
+        text: 'Una pregunta muy apoyada sigue esperando tu respuesta.',
+        tone: 'violet',
+      },
+    ],
+    sourcesLabel: 'Saltar directamente a',
+    sources: ['Q&A', 'Nube de palabras', 'Cuestionario', 'Sondeo rápido'],
+    note: 'La brújula solo lee lo que ya ves como anfitrión. No valora a personas concretas.',
   },
   workflow: {
     eyebrow: 'Para docencia, formación y talleres',
@@ -230,7 +274,7 @@ const es: Messages = {
         number: '04',
         title: 'Moderar en directo',
         description:
-          'Te mueves por la sala y diriges la sesión en directo desde el teléfono. La vista de anfitrión está hecha para eso — sin limitarse a una versión reducida de la interfaz para ordenador. Los participantes votan, formulan preguntas y priorizan juntos. El anfitrión y el presentador muestran el cuestionario, el Q&A, el sondeo rápido, la nube de palabras, la fase de lectura, la cuenta atrás, la segunda ronda y los resultados en un solo recorrido.',
+          'Te mueves por la sala y diriges la sesión en directo desde el teléfono. La vista de anfitrión está hecha para eso — sin limitarse a una versión reducida de la interfaz para ordenador. Los participantes votan, formulan preguntas y priorizan juntos. La brújula de moderación indica el siguiente paso. El anfitrión y el presentador muestran el cuestionario, el Q&A, el sondeo rápido, la nube de palabras, la fase de lectura, la cuenta atrás, la segunda ronda y los resultados en un solo recorrido.',
       },
       {
         number: '05',
@@ -318,6 +362,12 @@ const es: Messages = {
         description:
           'Texto libre y Q&A se condensan en palabras y frases; el muro pondera por acuerdo, mayoría clara o controversia.',
         icon: 'cloud',
+      },
+      {
+        title: 'Brújula de moderación en la sesión',
+        description:
+          'Una mirada, y sabes qué necesita ahora la sala: el ritmo, una pregunta controvertida o un resultado de cuestionario aún abierto. Toca «Brújula» y prueba el siguiente paso al momento.',
+        icon: 'compass',
       },
       {
         title: 'Para distintos contextos',
@@ -485,7 +535,7 @@ const es: Messages = {
       {
         title: 'Más formatos de interacción',
         description:
-          'Además del cuestionario: relacionar, ordenar, clasificar, estimación numérica, fase de lectura, Peer Instruction, sondeo rápido, muro de preguntas y nube de palabras ponderada en una sola plataforma.',
+          'Además del cuestionario: relacionar, ordenar, clasificar, estimación numérica, fase de lectura, Peer Instruction, sondeo rápido, muro de preguntas, nube de palabras ponderada y brújula de moderación en una sola plataforma.',
       },
       {
         title: 'Más control sobre datos y acceso',
@@ -557,6 +607,11 @@ const es: Messages = {
           'Condensa las preguntas visibles en palabras y frases y sigue la lógica de ordenación activa. Así muestra no solo términos frecuentes, sino agrupaciones temáticas de preguntas apoyadas, claramente bien valoradas o controvertidas.',
       },
       {
+        question: '¿Qué hace la brújula de moderación?',
+        answer:
+          'Durante la sesión te muestra el siguiente paso útil — a partir de las preguntas abiertas, la nube, los resultados del cuestionario y el feedback de ritmo. «Lo siguiente» va arriba, las señales debajo. Saltas a la fuente y decides; la brújula no inicia ninguna acción por su cuenta. Toca «Brújula» en la vista en directo y pruébala con unos pocos votos.',
+      },
+      {
         question: '¿Para quién está pensada la plataforma?',
         answer:
           'Para la interacción en directo en educación y organizaciones: escuela, universidad, formación continua, formación, taller, evento o reunión.',
@@ -571,7 +626,7 @@ const es: Messages = {
   },
   ctaSection: {
     title: '¿Listo para la próxima sesión en directo?',
-    lead: 'Prueba el recorrido en directo directamente en la aplicación, o echa un vistazo al código fuente abierto, a la lógica Q&A, al procesamiento de la nube de palabras y a la infraestructura de despliegue y operación de la plataforma.',
+    lead: 'Prueba el recorrido en directo y la brújula de moderación en la aplicación — o echa un vistazo al código fuente abierto, a la lógica Q&A, al procesamiento de la nube de palabras y a la infraestructura de despliegue y operación de la plataforma.',
   },
   jsonLd: {
     websiteName: 'arsnova.eu – Información',
@@ -583,6 +638,7 @@ const es: Messages = {
       'Informe de resultados (PDF) y puesta en común al terminar la sesión',
       'Preguntas de estimación numérica con dos rondas y estadística',
       'Muro de preguntas con moderación, votos a favor y en contra',
+      'Brújula de moderación con el siguiente paso a partir de señales en directo',
       'Sala de espera, presentador, QR/código',
       'Creación del cuestionario y vista de anfitrión pensadas para el móvil — todos los formatos, modo productivo para quien enseña o presenta',
       'Control de la sesión en directo desde un teléfono o una tableta (emparejamiento de anfitrión)',

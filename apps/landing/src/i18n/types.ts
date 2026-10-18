@@ -130,6 +130,25 @@ export interface QaWallMessages {
   nextStep: string;
 }
 
+export interface CompassMessages {
+  eyebrow: string;
+  title: string;
+  lead: string;
+  summary: string[];
+  docsLink: string;
+  tryLink: string;
+  demoAria: string;
+  hostView: string;
+  demoTitle: string;
+  nextLabel: string;
+  nextTitle: string;
+  nextText: string;
+  cards: Array<{ label: string; text: string; tone: 'rose' | 'amber' | 'violet' }>;
+  sourcesLabel: string;
+  sources: string[];
+  note: string;
+}
+
 export interface WorkflowMessages {
   eyebrow: string;
   title: string;
@@ -235,6 +254,7 @@ export interface Messages {
   estimate: EstimateMessages;
   confidence: ConfidenceMessages;
   qaWall: QaWallMessages;
+  compass: CompassMessages;
   workflow: WorkflowMessages;
   pairing: PairingMessages;
   features: FeaturesMessages;
