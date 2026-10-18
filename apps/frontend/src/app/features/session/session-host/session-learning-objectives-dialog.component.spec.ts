@@ -411,6 +411,11 @@ describe('SessionLearningObjectivesDialogComponent', () => {
       fixture.nativeElement.querySelector('.session-objectives__audience-edit-btn'),
     ).not.toBeNull();
     expect(fixture.nativeElement.querySelector('.session-objectives__origin-intro')).toBeNull();
+    expect(fixture.nativeElement.textContent).toContain('Lernziel zur Frage');
+    expect(fixture.nativeElement.textContent).not.toContain(
+      'Kompetenzziel der aktuell gezeigten Frage',
+    );
+    expect(fixture.nativeElement.querySelector('.dialog-title-header__sub')).toBeNull();
   });
 
   it('zeigt Entwürfe im Live-Quiz nicht in der publikumsfreundlichen Darstellung', async () => {

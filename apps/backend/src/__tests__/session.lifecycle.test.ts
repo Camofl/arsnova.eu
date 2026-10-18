@@ -529,6 +529,117 @@ describe('session absolute lifecycle', () => {
     },
   );
 
+  it('plant eine bestehende Q&A-Frist nach Quiz-FINISHED neu', async () => {
+    const finished = qaConfigurationRow({
+      status: 'FINISHED',
+      endedAt: new Date('2026-09-15T06:30:00.000Z'),
+      qaEnabled: true,
+      qaOpen: true,
+      qaClosesAt: new Date('2026-09-16T06:00:00.000Z'),
+      expiresAt: new Date('2026-09-16T06:00:00.000Z'),
+      qaTitle: 'Fragenwand',
+      preferredChannel: 'qa',
+    });
+    prismaMock.session.findUnique.mockResolvedValue(finished);
+    prismaMock.session.update.mockResolvedValue({
+      ...finished,
+      status: 'LOBBY',
+      endedAt: null,
+      qaClosesAt: new Date('2026-09-17T07:00:00.000Z'),
+      expiresAt: new Date('2026-09-17T07:00:00.000Z'),
+      sessionLifecycleRevision: 3,
+    });
+
+    await expect(
+      caller.previewQaConfiguration({
+        code: 'ABC123',
+        mode: 'REPLAN',
+        selection: { kind: 'ABSOLUTE', closesAt: '2026-09-17T07:00:00.000Z' },
+      }),
+    ).resolves.toMatchObject({
+      newQaClosesAt: '2026-09-17T07:00:00.000Z',
+      newExpiresAt: '2026-09-17T07:00:00.000Z',
+      requiresSessionExtension: true,
+    });
+
+    await expect(
+      caller.configureQaChannel({
+        code: 'ABC123',
+        mode: 'REPLAN',
+        selection: { kind: 'ABSOLUTE', closesAt: '2026-09-17T07:00:00.000Z' },
+        expectedLifecycleRevision: 2,
+        previewServerNow: '2026-09-15T07:00:00.000Z',
+        confirmedQaClosesAt: '2026-09-17T07:00:00.000Z',
+        confirmedExpiresAt: '2026-09-17T07:00:00.000Z',
+        confirmSessionExtension: true,
+        qaTitle: 'Fragenwand',
+        moderationMode: false,
+      }),
+    ).resolves.toMatchObject({
+      qaClosesAt: '2026-09-17T07:00:00.000Z',
+    });
+    expect(prismaMock.session.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          qaClosesAt: new Date('2026-09-17T07:00:00.000Z'),
+          status: 'LOBBY',
+          endedAt: null,
+        }),
+      }),
+    );
+  });
+
+  it('lehnt Q&A-Neuplanung nach globalem Sessionende ab, solange expiresAt in der Zukunft liegt', async () => {
+    prismaMock.session.findUnique.mockResolvedValue(
+      qaConfigurationRow({
+        status: 'FINISHED',
+        endedAt: new Date('2026-09-15T06:30:00.000Z'),
+        hostEnded: true,
+        qaEnabled: true,
+        qaOpen: true,
+        qaClosesAt: new Date('2026-09-16T06:00:00.000Z'),
+        expiresAt: new Date('2026-09-16T06:00:00.000Z'),
+        preferredChannel: 'qa',
+      }),
+    );
+
+    await expect(
+      caller.previewQaConfiguration({
+        code: 'ABC123',
+        mode: 'REPLAN',
+        selection: { kind: 'ABSOLUTE', closesAt: '2026-09-17T07:00:00.000Z' },
+      }),
+    ).rejects.toMatchObject({
+      code: 'BAD_REQUEST',
+      message: 'Die Session ist bereits beendet.',
+    });
+  });
+
+  it('lehnt Q&A-Neuplanung nach abgelaufenem Sessionende ab', async () => {
+    prismaMock.session.findUnique.mockResolvedValue(
+      qaConfigurationRow({
+        status: 'FINISHED',
+        endedAt: new Date('2026-09-15T06:30:00.000Z'),
+        qaEnabled: true,
+        qaOpen: true,
+        qaClosesAt: new Date('2026-09-15T06:40:00.000Z'),
+        expiresAt: new Date('2026-09-15T06:50:00.000Z'),
+        preferredChannel: 'qa',
+      }),
+    );
+
+    await expect(
+      caller.previewQaConfiguration({
+        code: 'ABC123',
+        mode: 'REPLAN',
+        selection: { kind: 'ABSOLUTE', closesAt: '2026-09-16T07:00:00.000Z' },
+      }),
+    ).rejects.toMatchObject({
+      code: 'BAD_REQUEST',
+      message: 'Die Session ist bereits beendet.',
+    });
+  });
+
   it('öffnet Q&A nach Quiz-FINISHED, wenn noch keine Frist eingerichtet war', async () => {
     const finished = qaConfigurationRow({
       status: 'FINISHED',

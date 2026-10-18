@@ -452,16 +452,6 @@ async function addHostChannels(host, code, hostTrpc) {
   await host.getByTestId('add-channel-qa').press('Enter');
   await waitForVisible(qaDialog);
   await qaDialog.locator('input[maxlength="200"]').fill('Unified Session Smoke');
-  const moderationSwitch = qaDialog.getByRole('switch').first();
-  if ((await moderationSwitch.getAttribute('aria-checked')) === 'true') {
-    await moderationSwitch.press('Space');
-  }
-  await host.waitForFunction(
-    () =>
-      document
-        .querySelector('app-qa-channel-configuration-dialog [role="switch"]')
-        ?.getAttribute('aria-checked') === 'false',
-  );
   await qaDialog.locator('.qa-config__actions button').last().click();
   await qaDialog.waitFor({ state: 'hidden', timeout: 20_000 });
   await waitForChannelTabs(host, 2);
@@ -567,7 +557,7 @@ async function submitParticipantQuestions(participant, hardFailures, hostTrpc, c
   await clickChannelTab(participant, 1);
   await waitForVisible(participant.locator('#qa-draft'));
   const tools = participant.locator('.session-qa-tools');
-  assert.equal(await tools.getAttribute('open'), null, 'Q&A tools start collapsed');
+  assert.equal(await tools.count(), 0, 'Q&A tools stay hidden until more than three questions');
   await participant.locator('#qa-draft').fill(SMOKE_QUESTIONS.participantFirst);
   await hostTrpc.session.setPreferredLiveChannel.mutate({ code, channel: 'quiz' });
   await participant.waitForTimeout(600);

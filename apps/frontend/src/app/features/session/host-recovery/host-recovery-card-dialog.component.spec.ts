@@ -36,13 +36,20 @@ describe('HostRecoveryCardDialogComponent', () => {
     );
     expect(host.textContent).toContain('Host-Zugang sichern');
     expect(host.textContent).not.toContain('Schritt 2 von 2');
-    expect(host.textContent).toContain('in diesem Browser gespeichert');
-    expect(host.textContent).toContain('anderen Browser');
-    expect(host.textContent).toContain('Wiederherstellungsseite');
+    expect(host.querySelector('.dialog-title-header__sub')).toBeNull();
+    expect(host.textContent).not.toContain('Lade die Zugangskarte');
+    const details = host.querySelector('.recovery-card__details') as HTMLDetailsElement | null;
+    expect(details?.open).toBe(false);
+    expect(details?.querySelector('summary')?.textContent).toContain(
+      'Wiederherstellung und Support',
+    );
+    expect(details?.textContent).toContain('in diesem Browser gespeichert');
+    expect(details?.textContent).toContain('anderen Browser');
+    expect(details?.textContent).toContain('Wiederherstellungsseite');
     expect(host.textContent).toContain('Session-Kennung');
-    expect(host.textContent).toContain('sechsstelligen Teilnahme-Code');
-    expect(host.textContent).toContain('Berechtigung für diese Session prüfen');
-    expect(host.textContent).toContain('Kontaktdaten im Impressum');
+    expect(details?.textContent).toContain('sechsstelligen Teilnahme-Code');
+    expect(details?.textContent).toContain('Berechtigung für diese Session prüfen');
+    expect(details?.textContent).toContain('Kontaktdaten im Impressum');
     const imprintLink = host.querySelector('a[href*="/legal/imprint"]') as HTMLAnchorElement | null;
     expect(imprintLink?.textContent?.trim()).toBe('Kontaktdaten im Impressum');
     expect(imprintLink?.getAttribute('href') ?? '').not.toContain('host-recovery');

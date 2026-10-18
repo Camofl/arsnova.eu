@@ -9,49 +9,22 @@
       </span>
     }
     <span class="dialog-title-header__heading">{{ dialogTitle() }}</span>
-    <span class="dialog-title-header__sub" i18n="@@qaConfig.intro">
-      Lege fest, bis wann Teilnehmende den Q&A-Kanal nutzen können und bis wann du die Fragen danach
-      noch einsehen kannst.
-    </span>
   </span>
 </h2>
 
 <mat-dialog-content class="qa-config__content">
-  <fieldset class="qa-config__group" [disabled]="pending()">
-    <legend i18n="@@qaConfig.contentLegend">Inhalt</legend>
-    <mat-form-field appearance="outline" subscriptSizing="dynamic">
-      <mat-label i18n="@@qaConfig.qaTitleLabel">Titel der Fragenwand</mat-label>
-      <input matInput maxlength="200" [(ngModel)]="qaTitle" />
+  @if (showTitleField()) {
+    <mat-form-field class="qa-config__title" appearance="outline" subscriptSizing="dynamic">
+      <input
+        matInput
+        maxlength="200"
+        [(ngModel)]="qaTitle"
+        [disabled]="pending()"
+        i18n-aria-label="@@qaConfig.contentLegend"
+        aria-label="Überschrift zum Forum"
+      />
       <mat-hint align="end">{{ qaTitle.length }}/200</mat-hint>
     </mat-form-field>
-    <mat-slide-toggle [(ngModel)]="moderationMode" i18n="@@qaConfig.moderationLabel">
-      Neue Fragen vor Veröffentlichung prüfen
-    </mat-slide-toggle>
-  </fieldset>
-
-  @if (!data.omitParticipationProfile) {
-    <fieldset class="qa-config__group" [disabled]="pending() || profileLocked()">
-      <legend i18n="@@qaConfig.profileLegend">Teilnahmeprofil</legend>
-      <mat-form-field appearance="outline" subscriptSizing="dynamic">
-        <mat-label i18n="@@qaConfig.identityModeLabel">Sichtbarer Name</mat-label>
-        <mat-select [(ngModel)]="identityMode">
-          <mat-option value="PRESET_PSEUDONYM" i18n="@@qaConfig.identityPreset">
-            Automatisches Pseudonym
-          </mat-option>
-          <mat-option value="CUSTOM_NICKNAME" i18n="@@qaConfig.identityCustom">
-            Eigener Nickname
-          </mat-option>
-          <mat-option value="ANONYMOUS" i18n="@@qaConfig.identityAnonymous">
-            Anonym ohne Verfassername
-          </mat-option>
-        </mat-select>
-      </mat-form-field>
-      @if (profileLocked()) {
-        <p class="qa-config__notice" role="status" i18n="@@qaConfig.profileLocked">
-          Diese Einstellungen können nach dem ersten Beitritt nicht mehr geändert werden.
-        </p>
-      }
-    </fieldset>
   }
 
   <fieldset class="qa-config__group" [disabled]="pending()">
@@ -138,6 +111,60 @@
       </mat-slide-toggle>
     }
   </fieldset>
+
+  @if (showParticipationProfile()) {
+    <details class="qa-config__details">
+      <summary i18n="@@qaConfig.profileLegend">Teilnahmeprofil</summary>
+      <div class="qa-config__details-body">
+        <fieldset
+          class="qa-config__group qa-config__profile"
+          [disabled]="pending() || profileLocked()"
+        >
+          <legend class="sr-only" i18n="@@qaConfig.profileLegend">Teilnahmeprofil</legend>
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label i18n="@@qaConfig.identityModeLabel">Sichtbarer Name</mat-label>
+            <mat-select [(ngModel)]="identityMode">
+              <mat-option value="PRESET_PSEUDONYM" i18n="@@qaConfig.identityPreset">
+                Automatisches Pseudonym
+              </mat-option>
+              <mat-option value="CUSTOM_NICKNAME" i18n="@@qaConfig.identityCustom">
+                Eigener Nickname
+              </mat-option>
+              <mat-option value="ANONYMOUS" i18n="@@qaConfig.identityAnonymous">
+                Anonym ohne Verfassername
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+          @if (identityMode === 'PRESET_PSEUDONYM') {
+            <mat-form-field appearance="outline" subscriptSizing="dynamic">
+              <mat-label i18n="@@sessionParticipation.themeLabel">Pseudonymgruppe</mat-label>
+              <mat-select
+                [(ngModel)]="nicknameTheme"
+                i18n-aria-label="@@sessionParticipation.themeAria"
+                aria-label="Pseudonymgruppe wählen"
+              >
+                <mat-option value="KINDERGARTEN" i18n="@@sessionParticipation.themeKindergarten">
+                  Bunte Tier-Icons
+                </mat-option>
+                <mat-option value="PRIMARY_SCHOOL" i18n="@@sessionParticipation.themePrimary">
+                  Märchenfiguren
+                </mat-option>
+                <mat-option value="MIDDLE_SCHOOL" i18n="@@sessionParticipation.themeMiddle">
+                  Entdecker und Superhelden
+                </mat-option>
+                <mat-option value="HIGH_SCHOOL" i18n="@@sessionParticipation.themeHigh">
+                  Philosophen und Forscher
+                </mat-option>
+                <mat-option value="NOBEL_LAUREATES" i18n="@@sessionParticipation.themeNobel">
+                  Nobelpreisträger:innen
+                </mat-option>
+              </mat-select>
+            </mat-form-field>
+          }
+        </fieldset>
+      </div>
+    </details>
+  }
 
   @if (error()) {
     <p class="qa-config__error" role="alert">{{ error() }}</p>

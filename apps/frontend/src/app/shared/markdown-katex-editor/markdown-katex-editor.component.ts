@@ -158,6 +158,7 @@ export class MarkdownKatexEditorComponent implements AfterViewInit, OnChanges, O
     );
   });
   readonly previewKatexError = computed(() => this.previewResult().katexError);
+  readonly hasPreviewableInput = computed(() => this.rawValue().trim().length > 0);
   readonly hasMarkdownOrKatexFormatting = computed(() => {
     const value = this.rawValue().trim();
     return (

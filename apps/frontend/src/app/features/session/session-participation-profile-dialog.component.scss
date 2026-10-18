@@ -7,26 +7,6 @@
   gap: 1rem;
   width: min(34rem, calc(100vw - 3rem));
 
-  > p {
-    margin: 0;
-    line-height: 1.5;
-  }
-
-  fieldset {
-    display: grid;
-    gap: 0.65rem;
-    min-width: 0;
-    margin: 0;
-    padding: 0;
-    border: 0;
-  }
-
-  legend {
-    margin-bottom: 0.45rem;
-    color: var(--mat-sys-on-surface);
-    font: var(--mat-sys-title-medium);
-  }
-
   mat-radio-group {
     display: grid;
     gap: 0.65rem;

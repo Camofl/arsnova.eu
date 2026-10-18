@@ -161,7 +161,7 @@
 }
 
 @media (min-width: 900px) {
-  .mk-editor__split {
+  .mk-editor__split:has(.mk-editor__preview) {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     /* Gleiche Zeilenhöhe: Quelle und Vorschau so hoch wie die jeweils höhere Spalte */
     align-items: stretch;

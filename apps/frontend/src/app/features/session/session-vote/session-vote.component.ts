@@ -1386,6 +1386,19 @@ export class SessionVoteComponent implements OnInit, OnDestroy {
   readonly isQaChannelOpen = computed(
     () => this.channelOpenState().qa && !this.qaDeadlineExpired() && !this.isQaDeadlineExpired(),
   );
+  readonly showQaFindSortTools = computed(() => {
+    if (!this.isQaChannelOpen()) {
+      return false;
+    }
+    if (Math.max(this.qaForumVisibleCount(), this.qaQuestions().length) > 3) {
+      return true;
+    }
+    return (
+      this.qaSearch().trim().length > 0 ||
+      this.qaSearchDraft().trim().length > 0 ||
+      this.qaSortMode() !== 'BEST'
+    );
+  });
   readonly isQaDeadlineExpired = computed(
     () => this.sessionSettings().channels?.qa.state === 'DEADLINE_EXPIRED',
   );

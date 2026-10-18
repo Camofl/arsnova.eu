@@ -659,8 +659,8 @@ export class SessionPresentComponent implements OnInit, OnDestroy {
       this.qaWordCloudModePill(projection.mode),
       this.qaWordCloudMetricPill(projection.metric),
       projection.smoothingActive
-        ? $localize`:@@sessionPresent.wordCloudSmoothingOn:Glättung an`
-        : $localize`:@@sessionPresent.wordCloudSmoothingOff:ohne Glättung`,
+        ? $localize`:@@sessionPresent.wordCloudSmoothingOn:Wort-Glättung an`
+        : $localize`:@@sessionPresent.wordCloudSmoothingOff:ohne Wort-Glättung`,
     ];
   });
 

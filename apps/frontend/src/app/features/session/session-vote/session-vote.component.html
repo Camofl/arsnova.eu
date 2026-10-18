@@ -2624,7 +2624,7 @@
               class="session-vote__qa-assignment-title"
               i18n="@@sessionVote.qaAssignmentHeading"
             >
-              Auftrag für dieses Forum
+              Dein Auftrag in diesem Forum
             </h3>
             <ul class="session-vote__qa-assignment-list">
               @for (assignment of qaForumAssignments(); track $index) {
@@ -2798,93 +2798,98 @@
           }
         }
         @if (isQaChannelOpen()) {
-          <details class="session-qa-tools" (toggle)="onQaToolsToggle($any($event.currentTarget))">
-            <summary id="qa-tools-summary" i18n="@@participantQa.findSort">
-              Fragen finden &amp; sortieren
-            </summary>
-            <div class="session-qa-search-row">
-              <mat-form-field
-                class="session-qa-search"
-                appearance="outline"
-                subscriptSizing="dynamic"
-              >
-                <mat-label i18n="@@sessionQa.searchLabel">Fragen durchsuchen</mat-label>
-                <input
-                  matInput
-                  type="search"
-                  maxlength="100"
-                  [value]="qaSearchDraft()"
-                  (input)="onQaSearchInput($any($event.target).value)"
-                  i18n-aria-label="@@sessionQa.searchAria"
-                  aria-label="Q&A-Fragen durchsuchen"
-                />
-              </mat-form-field>
-              @if (qaSearchDraft()) {
-                <button
-                  mat-icon-button
-                  type="button"
-                  (click)="clearQaSearch()"
-                  i18n-aria-label="@@sessionQa.searchClearAria"
-                  aria-label="Q&A-Suche leeren"
-                >
-                  <mat-icon>close</mat-icon>
-                </button>
-              }
-            </div>
-
-            <mat-button-toggle-group
-              class="session-qa-sort-toggle"
-              [value]="qaSortMode()"
-              (valueChange)="setQaSortMode($any($event))"
-              hideSingleSelectionIndicator
-              aria-label="Q&A-Sortierung"
-              i18n-aria-label="@@sessionQa.sortAria"
+          @if (showQaFindSortTools()) {
+            <details
+              class="session-qa-tools"
+              (toggle)="onQaToolsToggle($any($event.currentTarget))"
             >
-              <mat-button-toggle value="CONTROVERSIAL">
-                <span class="session-qa-sort-toggle__label">
-                  <span i18n="@@sessionQa.sortControversial">Kontroverse</span>
-                  <span
-                    class="session-qa-sort-help"
-                    role="button"
-                    tabindex="0"
-                    data-testid="qa-sort-help-controversial"
-                    i18n-aria-label="@@sessionQa.sortHelpControversialAria"
-                    aria-label="Hilfe zu »Kontroverse«"
-                    (click)="openQaSortHelp($event, 'CONTROVERSIAL')"
-                    (keydown.enter)="openQaSortHelp($event, 'CONTROVERSIAL')"
-                    (keydown.space)="openQaSortHelp($event, 'CONTROVERSIAL')"
-                    (mousedown)="$event.stopPropagation()"
+              <summary id="qa-tools-summary" i18n="@@participantQa.findSort">
+                Fragen finden &amp; sortieren
+              </summary>
+              <div class="session-qa-search-row">
+                <mat-form-field
+                  class="session-qa-search"
+                  appearance="outline"
+                  subscriptSizing="dynamic"
+                >
+                  <mat-label i18n="@@sessionQa.searchLabel">Fragen durchsuchen</mat-label>
+                  <input
+                    matInput
+                    type="search"
+                    maxlength="100"
+                    [value]="qaSearchDraft()"
+                    (input)="onQaSearchInput($any($event.target).value)"
+                    i18n-aria-label="@@sessionQa.searchAria"
+                    aria-label="Q&A-Fragen durchsuchen"
+                  />
+                </mat-form-field>
+                @if (qaSearchDraft()) {
+                  <button
+                    mat-icon-button
+                    type="button"
+                    (click)="clearQaSearch()"
+                    i18n-aria-label="@@sessionQa.searchClearAria"
+                    aria-label="Q&A-Suche leeren"
                   >
-                    <mat-icon aria-hidden="true">help_outline</mat-icon>
-                  </span>
-                </span>
-              </mat-button-toggle>
-              <mat-button-toggle value="BEST">
-                <span class="session-qa-sort-toggle__label">
-                  <span i18n="@@sessionQa.sortBest">Beste Fragen</span>
-                  <span
-                    class="session-qa-sort-help"
-                    role="button"
-                    tabindex="0"
-                    data-testid="qa-sort-help-best"
-                    i18n-aria-label="@@sessionQa.sortHelpBestAria"
-                    aria-label="Hilfe zu »Beste Fragen«"
-                    (click)="openQaSortHelp($event, 'BEST')"
-                    (keydown.enter)="openQaSortHelp($event, 'BEST')"
-                    (keydown.space)="openQaSortHelp($event, 'BEST')"
-                    (mousedown)="$event.stopPropagation()"
-                  >
-                    <mat-icon aria-hidden="true">help_outline</mat-icon>
-                  </span>
-                </span>
-              </mat-button-toggle>
-              <mat-button-toggle value="TOP" i18n="@@sessionQa.sortTop"
-                >Stimmensaldo</mat-button-toggle
+                    <mat-icon>close</mat-icon>
+                  </button>
+                }
+              </div>
+
+              <mat-button-toggle-group
+                class="session-qa-sort-toggle"
+                [value]="qaSortMode()"
+                (valueChange)="setQaSortMode($any($event))"
+                hideSingleSelectionIndicator
+                aria-label="Q&A-Sortierung"
+                i18n-aria-label="@@sessionQa.sortAria"
               >
-              <mat-button-toggle value="TIME" i18n="@@sessionQa.sortTime">Zeit</mat-button-toggle>
-            </mat-button-toggle-group>
-            <p class="session-qa-sort-hint">{{ qaSortHint() }}</p>
-          </details>
+                <mat-button-toggle value="CONTROVERSIAL">
+                  <span class="session-qa-sort-toggle__label">
+                    <span i18n="@@sessionQa.sortControversial">Kontroverse</span>
+                    <span
+                      class="session-qa-sort-help"
+                      role="button"
+                      tabindex="0"
+                      data-testid="qa-sort-help-controversial"
+                      i18n-aria-label="@@sessionQa.sortHelpControversialAria"
+                      aria-label="Hilfe zu »Kontroverse«"
+                      (click)="openQaSortHelp($event, 'CONTROVERSIAL')"
+                      (keydown.enter)="openQaSortHelp($event, 'CONTROVERSIAL')"
+                      (keydown.space)="openQaSortHelp($event, 'CONTROVERSIAL')"
+                      (mousedown)="$event.stopPropagation()"
+                    >
+                      <mat-icon aria-hidden="true">help_outline</mat-icon>
+                    </span>
+                  </span>
+                </mat-button-toggle>
+                <mat-button-toggle value="BEST">
+                  <span class="session-qa-sort-toggle__label">
+                    <span i18n="@@sessionQa.sortBest">Beste Fragen</span>
+                    <span
+                      class="session-qa-sort-help"
+                      role="button"
+                      tabindex="0"
+                      data-testid="qa-sort-help-best"
+                      i18n-aria-label="@@sessionQa.sortHelpBestAria"
+                      aria-label="Hilfe zu »Beste Fragen«"
+                      (click)="openQaSortHelp($event, 'BEST')"
+                      (keydown.enter)="openQaSortHelp($event, 'BEST')"
+                      (keydown.space)="openQaSortHelp($event, 'BEST')"
+                      (mousedown)="$event.stopPropagation()"
+                    >
+                      <mat-icon aria-hidden="true">help_outline</mat-icon>
+                    </span>
+                  </span>
+                </mat-button-toggle>
+                <mat-button-toggle value="TOP" i18n="@@sessionQa.sortTop"
+                  >Stimmensaldo</mat-button-toggle
+                >
+                <mat-button-toggle value="TIME" i18n="@@sessionQa.sortTime">Zeit</mat-button-toggle>
+              </mat-button-toggle-group>
+              <p class="session-qa-sort-hint">{{ qaSortHint() }}</p>
+            </details>
+          }
 
           @if (visibleQaQuestions().length === 0 && qaSearch()) {
             <div

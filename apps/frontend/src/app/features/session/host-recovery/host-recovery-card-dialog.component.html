@@ -11,32 +11,15 @@
     <span class="dialog-title-header__heading" i18n="@@hostRecovery.cardTitle">
       Host-Zugang sichern
     </span>
-    <span class="dialog-title-header__sub" i18n="@@hostRecovery.cardSubtitle">
-      Lade die Zugangskarte herunter oder kopiere die Angaben in eine sichere Notiz.
-    </span>
   </span>
 </h2>
 
 <mat-dialog-content class="recovery-card__content" id="host-recovery-card-description">
-  <p class="recovery-card__intro" i18n="@@hostRecovery.cardWhy">
-    Dein Host-Zugang ist in diesem Browser gespeichert. Für ein anderes Gerät oder einen anderen
-    Browser brauchst du diese beiden Angaben.
-  </p>
-  <p class="recovery-card__recovery-url">
-    <span class="recovery-card__hint" i18n="@@hostRecovery.recoveryPageLabel"
-      >Wiederherstellungsseite</span
-    >
-    <a [href]="recoveryUrl" rel="noopener noreferrer">{{ recoveryUrl }}</a>
-  </p>
-
   <dl class="recovery-card__secrets">
     <div class="recovery-card__secret">
       <div class="recovery-card__secret-text">
         <dt i18n="@@hostRecovery.supportIdLabel">Session-Kennung</dt>
         <dd>{{ data.supportId }}</dd>
-        <p class="recovery-card__hint" i18n="@@hostRecovery.supportIdHint">
-          Beginnt mit ARS-. Den sechsstelligen Teilnahme-Code brauchst du hier nicht.
-        </p>
       </div>
       <button
         matIconButton
@@ -90,19 +73,6 @@
     }
   </p>
 
-  <p class="recovery-card__notice" role="note">
-    <mat-icon aria-hidden="true">info</mat-icon>
-    <span>
-      <span i18n="@@hostRecovery.cardWarning">
-        Wenn dir der Browserzugang und die gespeicherten Zugangsdaten fehlen, wende dich an den
-        Support. Er muss deine Berechtigung für diese Session prüfen.
-      </span>
-      <a [routerLink]="imprintPath" i18n="@@hostRecovery.supportContactLink">
-        Kontaktdaten im Impressum
-      </a>
-    </span>
-  </p>
-
   <div class="recovery-card__secondary-actions">
     <button matButton="tonal" type="button" (click)="copyAll()">
       <mat-icon aria-hidden="true">content_copy</mat-icon>
@@ -113,6 +83,37 @@
       <span i18n="@@hostRecovery.downloadCard">Zugangskarte herunterladen</span>
     </button>
   </div>
+
+  <details class="recovery-card__details">
+    <summary i18n="@@hostRecovery.moreDetails">Wiederherstellung und Support</summary>
+    <div class="recovery-card__details-body">
+      <p class="recovery-card__intro" i18n="@@hostRecovery.cardWhy">
+        Dein Host-Zugang ist in diesem Browser gespeichert. Für ein anderes Gerät oder einen anderen
+        Browser brauchst du diese beiden Angaben.
+      </p>
+      <p class="recovery-card__recovery-url">
+        <span class="recovery-card__hint" i18n="@@hostRecovery.recoveryPageLabel"
+          >Wiederherstellungsseite</span
+        >
+        <a [href]="recoveryUrl" rel="noopener noreferrer">{{ recoveryUrl }}</a>
+      </p>
+      <p class="recovery-card__hint" i18n="@@hostRecovery.supportIdHint">
+        Beginnt mit ARS-. Den sechsstelligen Teilnahme-Code brauchst du hier nicht.
+      </p>
+      <p class="recovery-card__notice" role="note">
+        <mat-icon aria-hidden="true">info</mat-icon>
+        <span>
+          <span i18n="@@hostRecovery.cardWarning">
+            Wenn dir der Browserzugang und die gespeicherten Zugangsdaten fehlen, wende dich an den
+            Support. Er muss deine Berechtigung für diese Session prüfen.
+          </span>
+          <a [routerLink]="imprintPath" i18n="@@hostRecovery.supportContactLink">
+            Kontaktdaten im Impressum
+          </a>
+        </span>
+      </p>
+    </div>
+  </details>
 
   <mat-checkbox [checked]="saved()" (change)="saved.set($event.checked)">
     <span i18n="@@hostRecovery.cardSavedConfirmation">

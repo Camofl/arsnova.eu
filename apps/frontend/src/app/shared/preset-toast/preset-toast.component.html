@@ -113,7 +113,11 @@
             </mat-chip-set>
             @if (group.categoryId === 'participation' && nameMode() === 'nicknameTheme') {
               <div class="preset-toast__nickname-theme">
-                <span class="preset-toast__nickname-theme-label" i18n>Altersgruppe:</span>
+                <span
+                  class="preset-toast__nickname-theme-label"
+                  i18n="@@sessionParticipation.themeLabel"
+                  >Pseudonymgruppe</span
+                >
                 <mat-form-field
                   appearance="outline"
                   class="preset-toast__nickname-theme-select"
@@ -121,8 +125,8 @@
                 >
                   <mat-select
                     [(ngModel)]="nicknameThemeSelectValue"
-                    i18n-aria-label="@@presetToast.nicknameThemeAria"
-                    aria-label="Altersgruppe wählen"
+                    i18n-aria-label="@@sessionParticipation.themeAria"
+                    aria-label="Pseudonymgruppe wählen"
                   >
                     <mat-select-trigger>
                       <mat-icon class="preset-toast__option-icon">{{

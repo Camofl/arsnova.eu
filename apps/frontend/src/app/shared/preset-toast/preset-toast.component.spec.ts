@@ -260,7 +260,7 @@ describe('PresetToastComponent', () => {
       const comp = createToast();
       comp.nicknameThemeValue.set('PRIMARY_SCHOOL');
       const opt = comp.selectedNicknameTheme();
-      expect(opt.label).toBe('Grundschule');
+      expect(opt.label).toBe('Märchenfiguren');
       expect(opt.icon).toBe('abc');
     });
 
@@ -268,7 +268,7 @@ describe('PresetToastComponent', () => {
       const comp = createToast();
       (comp.nicknameThemeValue as unknown as { set(v: string): void }).set('UNKNOWN');
       const opt = comp.selectedNicknameTheme();
-      expect(opt.value).toBe('NOBEL_LAUREATES');
+      expect(opt.value).toBe('KINDERGARTEN');
     });
 
     it('liefert passendes Label für aktuellen Team-Wert', () => {
@@ -501,15 +501,15 @@ describe('PresetToastComponent', () => {
       expect(ids).toContain('readingPhaseEnabled');
     });
 
-    it('nicknameThemeOptions enthält alle Altersgruppen', () => {
+    it('nicknameThemeOptions enthält alle Pseudonymgruppen', () => {
       const comp = createToast();
       const values = comp.nicknameThemeOptions.map((o) => o.value);
       expect(values).toEqual([
-        'NOBEL_LAUREATES',
         'KINDERGARTEN',
         'PRIMARY_SCHOOL',
         'MIDDLE_SCHOOL',
         'HIGH_SCHOOL',
+        'NOBEL_LAUREATES',
       ]);
     });
 

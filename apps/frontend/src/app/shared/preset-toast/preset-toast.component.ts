@@ -100,15 +100,31 @@ export const PRESET_OPTION_IDS = [
 ] as const;
 
 export const NICKNAME_THEME_OPTIONS: { value: NicknameTheme; label: string; icon: string }[] = [
-  { value: 'NOBEL_LAUREATES', label: $localize`Nobelpreis`, icon: 'military_tech' },
   {
     value: 'KINDERGARTEN',
-    label: $localize`:@@quiz.nicknameTheme.kindergarten:Kindergarten (Tier-Emojis)`,
+    label: $localize`:@@sessionParticipation.themeKindergarten:Bunte Tier-Icons`,
     icon: 'child_care',
   },
-  { value: 'PRIMARY_SCHOOL', label: $localize`Grundschule`, icon: 'abc' },
-  { value: 'MIDDLE_SCHOOL', label: $localize`Mittelstufe`, icon: 'calculate' },
-  { value: 'HIGH_SCHOOL', label: $localize`Oberstufe`, icon: 'school' },
+  {
+    value: 'PRIMARY_SCHOOL',
+    label: $localize`:@@sessionParticipation.themePrimary:Märchenfiguren`,
+    icon: 'abc',
+  },
+  {
+    value: 'MIDDLE_SCHOOL',
+    label: $localize`:@@sessionParticipation.themeMiddle:Entdecker und Superhelden`,
+    icon: 'calculate',
+  },
+  {
+    value: 'HIGH_SCHOOL',
+    label: $localize`:@@sessionParticipation.themeHigh:Philosophen und Forscher`,
+    icon: 'school',
+  },
+  {
+    value: 'NOBEL_LAUREATES',
+    label: $localize`:@@sessionParticipation.themeNobel:Nobelpreisträger:innen`,
+    icon: 'military_tech',
+  },
 ];
 
 export const TEAM_COUNT_OPTIONS = [2, 3, 4, 5, 6, 7, 8].map((n) => ({

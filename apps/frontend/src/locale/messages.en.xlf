@@ -10284,23 +10284,7 @@
           <context context-type="linenumber">82</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="join.nicknameSelectLabelKita" datatype="html">
-        <source>Tier-Icons</source>
-        <target>Animal icons</target>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/features/join/join.component.html</context>
-          <context context-type="linenumber">196</context>
-        </context-group>
-      </trans-unit>
-      <trans-unit id="join.nicknameSelectLabelFromList" datatype="html">
-        <source>Name aus Liste</source>
-        <target>Name from list</target>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/features/join/join.component.html</context>
-          <context context-type="linenumber">198</context>
-        </context-group>
-      </trans-unit>
-      <trans-unit id="1342587625788309343" datatype="html">
+                  <trans-unit id="1342587625788309343" datatype="html">
         <source>— Bitte wählen —</source>
         <target>— Please choose —</target>
         <context-group purpose="location">
@@ -12412,31 +12396,7 @@
           <context context-type="linenumber">310</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="quizForm.nicknameThemePseudonymLabel" datatype="html">
-        <source>Altersgruppe für Pseudonyme</source>
-        <target>Age group for pseudonyms</target>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/features/quiz/quiz-edit/quiz-edit.component.html</context>
-          <context context-type="linenumber">365</context>
-        </context-group>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/features/quiz/quiz-new/quiz-new.component.html</context>
-          <context context-type="linenumber">316</context>
-        </context-group>
-      </trans-unit>
-      <trans-unit id="quizForm.nicknameThemePseudonymAria" datatype="html">
-        <source>Altersgruppe für Pseudonyme wählen</source>
-        <target>Choose age group for pseudonyms</target>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/features/quiz/quiz-edit/quiz-edit.component.html</context>
-          <context context-type="linenumber">370</context>
-        </context-group>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/features/quiz/quiz-new/quiz-new.component.html</context>
-          <context context-type="linenumber">321</context>
-        </context-group>
-      </trans-unit>
-      <trans-unit id="3305022433902109133" datatype="html">
+                  <trans-unit id="3305022433902109133" datatype="html">
         <source>Ablauf &amp; Zeit</source>
         <target>Pacing &amp; timing</target>
         <context-group purpose="location">
@@ -14657,87 +14617,7 @@
           <context context-type="linenumber">1010</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="3898616236407170196" datatype="html">
-        <source>Nobelpreis</source>
-        <target>Nobel Prize</target>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/features/quiz/quiz-edit/quiz-edit.component.ts</context>
-          <context context-type="linenumber">600</context>
-        </context-group>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/features/quiz/quiz-new/quiz-new.component.ts</context>
-          <context context-type="linenumber">102</context>
-        </context-group>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/shared/preset-toast/preset-toast.component.ts</context>
-          <context context-type="linenumber">103</context>
-        </context-group>
-      </trans-unit>
-      <trans-unit id="quiz.nicknameTheme.kindergarten" datatype="html">
-        <source>Kindergarten (Tier-Emojis)</source>
-        <target>Kindergarten (animal emojis)</target>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/features/quiz/quiz-edit/quiz-edit.component.ts</context>
-          <context context-type="linenumber">603</context>
-        </context-group>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/features/quiz/quiz-new/quiz-new.component.ts</context>
-          <context context-type="linenumber">105</context>
-        </context-group>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/shared/preset-toast/preset-toast.component.ts</context>
-          <context context-type="linenumber">106</context>
-        </context-group>
-      </trans-unit>
-      <trans-unit id="3750722582864738355" datatype="html">
-        <source>Grundschule</source>
-        <target>Primary school</target>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/features/quiz/quiz-edit/quiz-edit.component.ts</context>
-          <context context-type="linenumber">605</context>
-        </context-group>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/features/quiz/quiz-new/quiz-new.component.ts</context>
-          <context context-type="linenumber">107</context>
-        </context-group>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/shared/preset-toast/preset-toast.component.ts</context>
-          <context context-type="linenumber">109</context>
-        </context-group>
-      </trans-unit>
-      <trans-unit id="7176543650453804262" datatype="html">
-        <source>Mittelstufe</source>
-        <target>Middle school</target>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/features/quiz/quiz-edit/quiz-edit.component.ts</context>
-          <context context-type="linenumber">606</context>
-        </context-group>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/features/quiz/quiz-new/quiz-new.component.ts</context>
-          <context context-type="linenumber">108</context>
-        </context-group>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/shared/preset-toast/preset-toast.component.ts</context>
-          <context context-type="linenumber">110</context>
-        </context-group>
-      </trans-unit>
-      <trans-unit id="4290010202262796761" datatype="html">
-        <source>Oberstufe</source>
-        <target>Upper secondary</target>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/features/quiz/quiz-edit/quiz-edit.component.ts</context>
-          <context context-type="linenumber">607</context>
-        </context-group>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/features/quiz/quiz-new/quiz-new.component.ts</context>
-          <context context-type="linenumber">109</context>
-        </context-group>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/shared/preset-toast/preset-toast.component.ts</context>
-          <context context-type="linenumber">111</context>
-        </context-group>
-      </trans-unit>
-      <trans-unit id="quiz.edit.questionTimerQuizDefault" datatype="html">
+                                    <trans-unit id="quiz.edit.questionTimerQuizDefault" datatype="html">
         <source>Quiz-Standard</source>
         <target>Quiz standard</target>
         <context-group purpose="location">
@@ -18018,12 +17898,12 @@
           <context context-type="linenumber">11,13</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="hostRecovery.cardSubtitle" datatype="html">
-        <source> Lade die Zugangskarte herunter oder kopiere die Angaben in eine sichere Notiz.</source>
-        <target>Download the access card or copy the details into a secure note.</target>
+      <trans-unit id="hostRecovery.moreDetails" datatype="html">
+        <source>Wiederherstellung und Support</source>
+        <target>Recovery and support</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/features/session/host-recovery/host-recovery-card-dialog.component.html</context>
-          <context context-type="linenumber">14,16</context>
+          <context context-type="linenumber">88</context>
         </context-group>
       </trans-unit>
       <trans-unit id="hostRecovery.cardWhy" datatype="html">
@@ -19226,36 +19106,12 @@
           <context context-type="linenumber">347</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="qaConfig.intro" datatype="html">
-        <source> Lege fest, bis wann Teilnehmende den Q&amp;A-Kanal nutzen können und bis wann du die Fragen danach noch einsehen kannst.</source>
-        <target>Set when participants can no longer use the Q&amp;A channel and until when you can still view the questions afterwards.</target>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/features/session/session-host/qa-channel-configuration-dialog.component.html</context>
-          <context context-type="linenumber">12,15</context>
-        </context-group>
-      </trans-unit>
       <trans-unit id="qaConfig.contentLegend" datatype="html">
-        <source>Inhalt</source>
-        <target>Contents</target>
+        <source>Überschrift zum Forum</source>
+        <target>Forum heading</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/features/session/session-host/qa-channel-configuration-dialog.component.html</context>
-          <context context-type="linenumber">21</context>
-        </context-group>
-      </trans-unit>
-      <trans-unit id="qaConfig.qaTitleLabel" datatype="html">
-        <source>Titel der Fragenwand</source>
-        <target>Title of the question wall</target>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/features/session/session-host/qa-channel-configuration-dialog.component.html</context>
-          <context context-type="linenumber">23</context>
-        </context-group>
-      </trans-unit>
-      <trans-unit id="qaConfig.moderationLabel" datatype="html">
-        <source> Neue Fragen vor Veröffentlichung prüfen</source>
-        <target>Review new questions before publishing</target>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/features/session/session-host/qa-channel-configuration-dialog.component.html</context>
-          <context context-type="linenumber">27,29</context>
+          <context context-type="linenumber">17</context>
         </context-group>
       </trans-unit>
       <trans-unit id="qaConfig.profileLegend" datatype="html">
@@ -19296,14 +19152,6 @@
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/features/session/session-host/qa-channel-configuration-dialog.component.html</context>
           <context context-type="linenumber">44,46</context>
-        </context-group>
-      </trans-unit>
-      <trans-unit id="qaConfig.profileLocked" datatype="html">
-        <source> Diese Einstellungen können nach dem ersten Beitritt nicht mehr geändert werden.</source>
-        <target>These settings can&apos;t be changed once the first participant joins.</target>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/features/session/session-host/qa-channel-configuration-dialog.component.html</context>
-          <context context-type="linenumber">50,52</context>
         </context-group>
       </trans-unit>
       <trans-unit id="qaConfig.deadlineLegend" datatype="html">
@@ -22024,14 +21872,6 @@
           <context context-type="linenumber">3960</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="sessionHost.qaTitleFieldLabel" datatype="html">
-        <source>Titel für Q&amp;A</source>
-        <target>Q&amp;A title</target>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/features/session/session-host/session-host.component.html</context>
-          <context context-type="linenumber">3974</context>
-        </context-group>
-      </trans-unit>
       <trans-unit id="sessionTabs.qaTitleDefault" datatype="html">
         <source>Fragen zur Veranstaltung...</source>
         <target>Ask something about this session...</target>
@@ -23605,8 +23445,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="sessionQa.wordCloudSmoothActive" datatype="html">
-        <source>Glättung ist an</source>
-        <target>Smoothing is on</target>
+        <source>Wort-Glättung ist an</source>
+        <target>Word smoothing is on</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/features/session/session-host/session-host.component.ts</context>
           <context context-type="linenumber">1536</context>
@@ -23657,16 +23497,16 @@
         </context-group>
       </trans-unit>
       <trans-unit id="sessionHost.wordCloudSmoothStale" datatype="html">
-        <source>Neue Antworten seit letzter Glättung</source>
-        <target>New answers since last smoothing</target>
+        <source>Neue Antworten seit letzter Wort-Glättung</source>
+        <target>New answers since last word smoothing</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/features/session/session-host/session-host.component.ts</context>
           <context context-type="linenumber">1553</context>
         </context-group>
       </trans-unit>
       <trans-unit id="sessionQa.wordCloudSmoothFailed" datatype="html">
-        <source>Glättung fehlgeschlagen</source>
-        <target>Smoothing failed</target>
+        <source>Wort-Glättung fehlgeschlagen</source>
+        <target>Word smoothing failed</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/features/session/session-host/session-host.component.ts</context>
           <context context-type="linenumber">1558</context>
@@ -23677,8 +23517,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="sessionQa.wordCloudSmoothUnavailable" datatype="html">
-        <source>Glättung nicht verfügbar</source>
-        <target>Smoothing unavailable</target>
+        <source>Wort-Glättung nicht verfügbar</source>
+        <target>Word smoothing unavailable</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/features/session/session-host/session-host.component.ts</context>
           <context context-type="linenumber">1567</context>
@@ -23897,8 +23737,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="sessionQa.wordCloudSmoothStale" datatype="html">
-        <source>Neue Fragen seit letzter Glättung</source>
-        <target>New questions since last smoothing</target>
+        <source>Neue Fragen seit letzter Wort-Glättung</source>
+        <target>New questions since last word smoothing</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/features/session/session-host/session-host.component.ts</context>
           <context context-type="linenumber">2389</context>
@@ -26919,22 +26759,6 @@
           <context context-type="linenumber">14621</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="sessionParticipation.title" datatype="html">
-        <source> Teilnahme für Q&amp;A</source>
-        <target>Q&amp;A participation</target>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/features/session/session-participation-profile-dialog.component.ts</context>
-          <context context-type="linenumber">58,60</context>
-        </context-group>
-      </trans-unit>
-      <trans-unit id="sessionParticipation.description" datatype="html">
-        <source> Lege fest, wie Personen in dieser Session beitreten und wie Verfasserangaben bei Q&amp;A erscheinen.</source>
-        <target>Control how people join this session and how bylines appear in Q&amp;A.</target>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/features/session/session-participation-profile-dialog.component.ts</context>
-          <context context-type="linenumber">65,68</context>
-        </context-group>
-      </trans-unit>
       <trans-unit id="sessionParticipation.modeLegend" datatype="html">
         <source>Namensdarstellung</source>
         <target>Name display</target>
@@ -26976,19 +26800,19 @@
         </context-group>
       </trans-unit>
       <trans-unit id="sessionParticipation.anonymousLabel" datatype="html">
-        <source>Anonymmodus</source>
-        <target>Anonymous mode</target>
+        <source>Anonym</source>
+        <target>Anonymous</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/features/session/session-participation-profile-dialog.component.ts</context>
           <context context-type="linenumber">96</context>
         </context-group>
       </trans-unit>
       <trans-unit id="sessionParticipation.anonymousHint" datatype="html">
-        <source> Beiträge erscheinen ohne sichtbare Verfasserangabe. Technische Session- und Sicherheitsdaten können weiterhin verarbeitet werden; dies ist keine vollständige Anonymisierung.</source>
-        <target>Posts appear without visible author information. Technical session and security data can still be processed; this is not complete anonymization.</target>
+        <source> Beiträge erscheinen ohne sichtbare Verfasserangabe.</source>
+        <target>Contributions appear without a visible name.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/features/session/session-participation-profile-dialog.component.ts</context>
-          <context context-type="linenumber">97,101</context>
+          <context context-type="linenumber">97,99</context>
         </context-group>
       </trans-unit>
       <trans-unit id="sessionParticipation.themeLabel" datatype="html">
@@ -27008,32 +26832,32 @@
         </context-group>
       </trans-unit>
       <trans-unit id="sessionParticipation.themeKindergarten" datatype="html">
-        <source>Tier-Icons</source>
-        <target>Animal icons</target>
+        <source>Bunte Tier-Icons</source>
+        <target>Colorful animal icons</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/features/session/session-participation-profile-dialog.component.ts</context>
           <context context-type="linenumber">117</context>
         </context-group>
       </trans-unit>
       <trans-unit id="sessionParticipation.themePrimary" datatype="html">
-        <source>Grundschule</source>
-        <target>Primary school</target>
+        <source>Märchenfiguren</source>
+        <target>Fairy-tale characters</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/features/session/session-participation-profile-dialog.component.ts</context>
           <context context-type="linenumber">120</context>
         </context-group>
       </trans-unit>
       <trans-unit id="sessionParticipation.themeMiddle" datatype="html">
-        <source>Mittelstufe</source>
-        <target>Middle school</target>
+        <source>Entdecker und Superhelden</source>
+        <target>Explorers and superheroes</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/features/session/session-participation-profile-dialog.component.ts</context>
           <context context-type="linenumber">123</context>
         </context-group>
       </trans-unit>
       <trans-unit id="sessionParticipation.themeHigh" datatype="html">
-        <source>Oberstufe</source>
-        <target>Upper secondary</target>
+        <source>Philosophen und Forscher</source>
+        <target>Philosophers and scientists</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/features/session/session-participation-profile-dialog.component.ts</context>
           <context context-type="linenumber">126</context>
@@ -27041,7 +26865,7 @@
       </trans-unit>
       <trans-unit id="sessionParticipation.themeNobel" datatype="html">
         <source>Nobelpreisträger:innen</source>
-        <target>Nobel Prize winners</target>
+        <target>Nobel laureates</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/features/session/session-participation-profile-dialog.component.ts</context>
           <context context-type="linenumber">129</context>
@@ -27294,16 +27118,16 @@
         </context-group>
       </trans-unit>
       <trans-unit id="sessionPresent.wordCloudSmoothingOn" datatype="html">
-        <source>Glättung an</source>
-        <target>Smoothing on</target>
+        <source>Wort-Glättung an</source>
+        <target>Word smoothing on</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/features/session/session-present/session-present.component.ts</context>
           <context context-type="linenumber">635</context>
         </context-group>
       </trans-unit>
       <trans-unit id="sessionPresent.wordCloudSmoothingOff" datatype="html">
-        <source>ohne Glättung</source>
-        <target>no smoothing</target>
+        <source>ohne Wort-Glättung</source>
+        <target>no word smoothing</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/features/session/session-present/session-present.component.ts</context>
           <context context-type="linenumber">636</context>
@@ -32422,23 +32246,7 @@
           <context context-type="linenumber">76</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="7618679767641874671" datatype="html">
-        <source>Altersgruppe:</source>
-        <target>Age group:</target>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/shared/preset-toast/preset-toast.component.html</context>
-          <context context-type="linenumber">116</context>
-        </context-group>
-      </trans-unit>
-      <trans-unit id="presetToast.nicknameThemeAria" datatype="html">
-        <source>Altersgruppe wählen</source>
-        <target>Choose age group</target>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/shared/preset-toast/preset-toast.component.html</context>
-          <context context-type="linenumber">125</context>
-        </context-group>
-      </trans-unit>
-      <trans-unit id="5445788768283993956" datatype="html">
+                  <trans-unit id="5445788768283993956" datatype="html">
         <source>Anzahl der Teams:</source>
         <target>Number of teams:</target>
         <context-group purpose="location">
@@ -36091,10 +35899,6 @@
         <source>Lernziel zur Frage</source>
         <target>Learning objective for this question</target>
       </trans-unit>
-      <trans-unit id="sessionLearningObjectives.questionSubtitle" datatype="html">
-        <source>Kompetenzziel der aktuell gezeigten Frage</source>
-        <target>Competency goal of the currently displayed question</target>
-      </trans-unit>
       <trans-unit id="sessionQaAssignments.loading" datatype="html">
         <source>Auftrag wird geladen …</source>
         <target>Task is loading...</target>
@@ -36172,8 +35976,8 @@
         <target>Task</target>
       </trans-unit>
       <trans-unit id="sessionVote.qaAssignmentHeading" datatype="html">
-        <source>Auftrag für dieses Forum</source>
-        <target>Task for this forum</target>
+        <source>Dein Auftrag in diesem Forum</source>
+        <target>Your task in this forum</target>
       </trans-unit>
     </body>
   </file>

@@ -3681,19 +3681,29 @@ function assertSessionAllowsInitialQaConfiguration(
     endedAt?: Date | null;
     expiresAt?: Date | null;
     qaClosesAt?: Date | null;
+    hostEnded?: boolean;
   },
   now: Date,
   mode: 'INITIAL' | 'REPLAN',
 ): void {
+  if (session.hostEnded === true) {
+    throw new TRPCError({
+      code: 'BAD_REQUEST',
+      message: 'Die Session ist bereits beendet.',
+    });
+  }
   if (!isSessionEffectivelyFinished(session, now)) {
     return;
   }
-  if (
-    mode === 'INITIAL' &&
-    (session.qaClosesAt === null || session.qaClosesAt === undefined) &&
-    !(session.expiresAt instanceof Date && now.getTime() >= session.expiresAt.getTime())
-  ) {
-    return;
+  const globallyExpired =
+    session.expiresAt instanceof Date && now.getTime() >= session.expiresAt.getTime();
+  if (!globallyExpired) {
+    if (mode === 'INITIAL' && (session.qaClosesAt === null || session.qaClosesAt === undefined)) {
+      return;
+    }
+    if (mode === 'REPLAN') {
+      return;
+    }
   }
   assertSessionEffectivelyActive(session, now);
 }
@@ -6035,6 +6045,7 @@ const sessionCoreRouter = router({
         select: {
           status: true,
           endedAt: true,
+          hostEnded: true,
           createdAt: true,
           expiresAt: true,
           timeZone: true,
@@ -6113,6 +6124,7 @@ const sessionCoreRouter = router({
               id: true,
               status: true,
               endedAt: true,
+              hostEnded: true,
               createdAt: true,
               expiresAt: true,
               timeZone: true,

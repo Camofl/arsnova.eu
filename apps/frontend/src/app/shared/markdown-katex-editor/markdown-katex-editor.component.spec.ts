@@ -106,8 +106,29 @@ describe('MarkdownKatexEditorComponent', () => {
     expect(previewBody?.innerHTML).toContain('src="/assets/demo/9_konzeptfragen_panorama.svg"');
   });
 
+  it('zeigt die Vorschau nicht, solange das Feld leer ist', () => {
+    const { fixture } = setup();
+
+    expect(fixture.nativeElement.querySelector('.mk-editor__preview')).toBeNull();
+  });
+
+  it('zeigt die Vorschau, sobald Text eingegeben wurde', () => {
+    const { fixture, component } = setup();
+
+    component.onInput('Kurze Frage');
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('.mk-editor__preview')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('.mk-editor__preview-body')).not.toBeNull();
+  });
+
   it('klappt die Mobile-Vorschau ohne Markdown- oder KaTeX-Syntax zu', () => {
-    const { fixture } = setup({ mobile: true });
+    const { fixture, component } = setup({ mobile: true });
+
+    expect(fixture.nativeElement.querySelector('.mk-editor__preview')).toBeNull();
+
+    component.onInput('Nur Text');
+    fixture.detectChanges();
 
     const preview = fixture.nativeElement.querySelector('.mk-editor__preview') as HTMLElement;
     const toggle = fixture.nativeElement.querySelector(
@@ -254,7 +275,12 @@ describe('MarkdownKatexEditorComponent', () => {
     });
     vi.stubGlobal('cancelAnimationFrame', vi.fn());
 
-    const { component, textarea, previewBody } = setup();
+    const { fixture, component, textarea } = setup();
+    component.onInput('Langer Text für die Vorschau');
+    fixture.detectChanges();
+    const previewBody = fixture.nativeElement.querySelector(
+      '.mk-editor__preview-body',
+    ) as HTMLElement;
 
     Object.defineProperty(textarea, 'scrollHeight', { configurable: true, value: 1000 });
     Object.defineProperty(textarea, 'clientHeight', { configurable: true, value: 100 });
@@ -345,6 +371,14 @@ describe('MarkdownKatexEditorComponent', () => {
     const component = fixture.componentInstance;
     component.fieldId = 'md-wide-math';
     component.value = '$\\underbrace{a+a+a+a+a+a+a+a}_{\\text{lange Summe}}$';
+    component.ngOnChanges({
+      value: {
+        previousValue: '',
+        currentValue: component.value,
+        firstChange: true,
+        isFirstChange: () => true,
+      },
+    });
     fixture.detectChanges();
     const previewBody = fixture.nativeElement.querySelector(
       '.mk-editor__preview-body',

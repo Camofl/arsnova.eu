@@ -4022,9 +4022,6 @@
                           subscriptSizing="dynamic"
                           class="session-host__qa-title-field"
                         >
-                          <mat-label i18n="@@sessionHost.qaTitleFieldLabel"
-                            >Titel für Q&amp;A</mat-label
-                          >
                           <input
                             #qaTitleInput
                             matInput
@@ -4033,9 +4030,12 @@
                             [value]="qaTitleDraft()"
                             (input)="qaTitleDraft.set($any($event.target).value)"
                             (keydown)="onQaTitleInputKeydown($event)"
+                            i18n-aria-label="@@qaConfig.contentLegend"
+                            aria-label="Überschrift zum Forum"
                             i18n-placeholder="@@sessionTabs.qaTitleDefault"
                             placeholder="Fragen zur Veranstaltung..."
                           />
+                          <mat-hint align="end">{{ qaTitleDraft().length }}/200</mat-hint>
                         </mat-form-field>
                         <div class="session-host__qa-title-icon-actions">
                           <button
@@ -4082,16 +4082,15 @@
                         <span>{{ hostRead }}</span>
                       }
                     </span>
-                    @if (effectiveStatus() !== 'FINISHED') {
-                      <button
-                        mat-stroked-button
-                        type="button"
-                        (click)="openQaConfigurationDialog()"
-                      >
-                        <mat-icon aria-hidden="true">tune</mat-icon>
-                        <span i18n="@@sessionQa.changeDeadline">Q&A-Einstellungen</span>
-                      </button>
-                    }
+                    <button
+                      mat-stroked-button
+                      type="button"
+                      data-testid="qa-settings"
+                      (click)="openQaConfigurationDialog()"
+                    >
+                      <mat-icon aria-hidden="true">tune</mat-icon>
+                      <span i18n="@@sessionQa.changeDeadline">Q&A-Einstellungen</span>
+                    </button>
                   </div>
                 }
 

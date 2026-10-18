@@ -23,17 +23,18 @@ nicht den PostgreSQL-basierten Wiederzugang. Ist Redis nicht erreichbar, bleibt
 der Zugriff fail-closed, bis Redis wieder verfügbar ist.
 
 Besitzt der Browser aktivierte Host-Capabilities, zeigt die Live-Karte eine
-Reihe: Lookup bis 32 Codes, Anzeige höchstens 8, offene Foren zuerst
-(zuletzt gehostete, sonst frühestes Offen-bis), danach geschlossene
-(frühestes Zugang-bis). Gefüllt ist nur das erste noch offene Forum; der
-Rest ist outlined wie »Quiz-Sammlung öffnen«. Jeder öffnet
+Reihe: paralleles öffentliches `getInfo` bis 32 Codes, Anzeige höchstens 8,
+offene Foren zuerst (zuletzt gehostete, sonst frühestes Offen-bis), danach
+geschlossene (frühestes Zugang-bis). Gefüllt ist nur das erste noch offene
+Forum; der Rest ist outlined wie »Quiz-Sammlung öffnen«. Jeder öffnet
 die Host-Session direkt im Q&A-Kanal. Die erste Zeile nennt **Q&A-Session** und
 den sechsstelligen Sessioncode. Die zweite Zeile zeigt die Host-Zugangsfrist
 (`postProcessingEndsAt`, sonst `expiresAt`) als »Zugang bis …« mit lokalem
 Datum und Uhrzeit. Die dritte Zeile zeigt die Q&A-Offen-Frist (`qaClosesAt`,
 sonst `expiresAt`) als »Offen bis …« oder »Forum geschlossen«. Die vierte Zeile
 zeigt bei wartenden Moderationsfragen (`PENDING` > 0 aus
-`getInfo.qaPendingQuestionCount`, nur mit Host-Token) »In Moderation: {n}«,
+`getInfo.qaPendingQuestionCount`, nur mit Host-Token, nachgezogen sobald ein
+gespeichertes oder frisch ausgestelltes Token liegt) »In Moderation: {n}«,
 sonst die sichtbaren Fragen als
 »1 Frage« oder »{n} Fragen«; bei 0 entfällt die Zeile. Der Guard stellt den
 kurzlebigen Host-Token aus der Capability aus. Die Wiederherstellungsseite
