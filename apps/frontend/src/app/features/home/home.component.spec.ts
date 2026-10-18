@@ -1231,6 +1231,51 @@ describe('HomeComponent', () => {
       restoreDefaultSessionGetInfo(vi.mocked(trpc.session.getInfo.query));
     });
 
+    it('stellt ein frisches Host-Token aus, wenn das gespeicherte Token keine Moderationszahl liefert', async () => {
+      const { trpc, setHostToken: setHostTokenFromTrpc } = await import('../../core/trpc.client');
+      seedHostCapability();
+      setHostToken('ABC123', 'stale-host-token');
+      vi.mocked(trpc.session.issueHostAccessToken.mutate).mockClear();
+      vi.mocked(setHostTokenFromTrpc).mockClear();
+      let issued = false;
+      vi.mocked(trpc.session.issueHostAccessToken.mutate).mockImplementation(async () => {
+        issued = true;
+        return { hostToken: 'fresh-host-token' };
+      });
+      vi.mocked(trpc.session.getInfo.query).mockImplementation(async () =>
+        hostSessionGetInfo('ABC123', true, {
+          qaQuestionCount: 2,
+          ...(issued ? { qaPendingQuestionCount: 1 } : {}),
+        }),
+      );
+
+      const fixture = createHomeFixture();
+      fixture.detectChanges();
+      await fixture.whenStable();
+      fixture.detectChanges();
+      await vi.waitUntil(
+        () => {
+          fixture.detectChanges();
+          return (
+            Array.from(
+              fixture.nativeElement.querySelectorAll<HTMLElement>(
+                '.home-host-session-cta-row__item .home-host-session-cta__fact',
+              ),
+            ).some((line) => line.textContent?.trim() === 'In Moderation: 1') === true
+          );
+        },
+        { timeout: 1000, interval: 10 },
+      );
+
+      expect(trpc.session.issueHostAccessToken.mutate).toHaveBeenCalledWith({
+        code: 'ABC123',
+        browserCapability: 'browser-capability-abcdefghijklmnopqrstuvwxyz',
+      });
+      expect(setHostTokenFromTrpc).toHaveBeenCalledWith('ABC123', 'fresh-host-token');
+      clearHostToken('ABC123');
+      restoreDefaultSessionGetInfo(vi.mocked(trpc.session.getInfo.query));
+    });
+
     it('lädt mehrere Host-Sessions parallel per getInfo, bevor ein Token ausgestellt wird', async () => {
       const { trpc } = await import('../../core/trpc.client');
       storeHostBrowserCapability('AAA111', 'older-browser-capability-abcdefghijklmnopqrstuvwxyz');

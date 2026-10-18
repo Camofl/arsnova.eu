@@ -589,6 +589,32 @@ describe('session absolute lifecycle', () => {
     );
   });
 
+  it('lehnt Q&A-Neuplanung nach globalem Sessionende ab, solange expiresAt in der Zukunft liegt', async () => {
+    prismaMock.session.findUnique.mockResolvedValue(
+      qaConfigurationRow({
+        status: 'FINISHED',
+        endedAt: new Date('2026-09-15T06:30:00.000Z'),
+        hostEnded: true,
+        qaEnabled: true,
+        qaOpen: true,
+        qaClosesAt: new Date('2026-09-16T06:00:00.000Z'),
+        expiresAt: new Date('2026-09-16T06:00:00.000Z'),
+        preferredChannel: 'qa',
+      }),
+    );
+
+    await expect(
+      caller.previewQaConfiguration({
+        code: 'ABC123',
+        mode: 'REPLAN',
+        selection: { kind: 'ABSOLUTE', closesAt: '2026-09-17T07:00:00.000Z' },
+      }),
+    ).rejects.toMatchObject({
+      code: 'BAD_REQUEST',
+      message: 'Die Session ist bereits beendet.',
+    });
+  });
+
   it('lehnt Q&A-Neuplanung nach abgelaufenem Sessionende ab', async () => {
     prismaMock.session.findUnique.mockResolvedValue(
       qaConfigurationRow({

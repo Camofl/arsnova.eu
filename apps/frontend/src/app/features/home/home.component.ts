@@ -312,6 +312,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   readonly showHostRecoveryCta = computed(() => this.hostSessionCtas().length > 0);
   readonly hostSessionCtaBusy = signal(false);
   private hostSessionCtaLoadGeneration = 0;
+  private hostSessionCodeOwner: 'none' | 'enrichment' | 'action' = 'none';
   private readonly forgottenHostSessionCodes = new Set<string>();
   private readonly document = inject(DOCUMENT);
   private readonly platformId = inject(PLATFORM_ID);
@@ -474,6 +475,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.hostSessionCtaLoadGeneration += 1;
+    this.releaseHostSessionCode('enrichment');
     this.focusService.registerInput(undefined);
     this.clearToolbarMotdDefer();
     this.motdHeaderState.setOverlayOpen(false);
@@ -785,7 +787,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private async endHostedSessionFromHome(code: string): Promise<boolean> {
-    setPendingHostSessionCode(code);
+    this.claimHostSessionCode('action', code);
     try {
       const capability = getHostBrowserCapability(code);
       if (capability) {
@@ -815,7 +817,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
       );
       return false;
     } finally {
-      setPendingHostSessionCode(null);
+      this.releaseHostSessionCode('action');
     }
   }
 
@@ -831,13 +833,16 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
       .slice(0, limit);
   }
 
-  /** Stellt ein Host-Token aus der Capability aus, falls noch keines liegt. */
-  private async ensureHostTokenForHomeCta(code: string): Promise<boolean> {
-    if (hasHostToken(code)) {
-      return true;
-    }
+  /**
+   * Stellt ein Host-Token aus der Capability aus. `refresh` holt ein neues Token,
+   * weil gespeicherte Tokens nach kurzer TTL ungültig sein können.
+   */
+  private async ensureHostTokenForHomeCta(
+    code: string,
+    options?: { refresh?: boolean },
+  ): Promise<boolean> {
     const capability = getHostBrowserCapability(code);
-    if (capability) {
+    if (capability && (options?.refresh === true || !hasHostToken(code))) {
       try {
         const issued = await trpc.session.issueHostAccessToken.mutate({
           code,
@@ -849,7 +854,24 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
         return hasHostToken(code);
       }
     }
-    return false;
+    return hasHostToken(code);
+  }
+
+  private claimHostSessionCode(owner: 'enrichment' | 'action', code: string): boolean {
+    if (owner === 'enrichment' && this.hostSessionCodeOwner === 'action') {
+      return false;
+    }
+    this.hostSessionCodeOwner = owner;
+    setPendingHostSessionCode(code);
+    return true;
+  }
+
+  private releaseHostSessionCode(owner: 'enrichment' | 'action'): void {
+    if (this.hostSessionCodeOwner !== owner) {
+      return;
+    }
+    setPendingHostSessionCode(null);
+    this.hostSessionCodeOwner = 'none';
   }
 
   private resolveHostSessionCtaFromInfo(
@@ -936,19 +958,35 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
         continue;
       }
       try {
-        const hostReady = await this.ensureHostTokenForHomeCta(item.code);
+        let hostReady = await this.ensureHostTokenForHomeCta(item.code);
         if (!hostReady) {
           continue;
         }
-        setPendingHostSessionCode(item.code);
-        const session = await trpc.session.getInfo.query({
+        if (!this.claimHostSessionCode('enrichment', item.code)) {
+          continue;
+        }
+        let session = await trpc.session.getInfo.query({
           code: item.code,
           anonymousClientId,
         });
-        const pendingQuestionCount =
+        let pendingQuestionCount =
           typeof session.qaPendingQuestionCount === 'number'
             ? session.qaPendingQuestionCount
             : null;
+        if (pendingQuestionCount === null) {
+          hostReady = await this.ensureHostTokenForHomeCta(item.code, { refresh: true });
+          if (!hostReady || !this.claimHostSessionCode('enrichment', item.code)) {
+            continue;
+          }
+          session = await trpc.session.getInfo.query({
+            code: item.code,
+            anonymousClientId,
+          });
+          pendingQuestionCount =
+            typeof session.qaPendingQuestionCount === 'number'
+              ? session.qaPendingQuestionCount
+              : null;
+        }
         if (pendingQuestionCount === null) {
           continue;
         }
@@ -963,7 +1001,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
       } catch {
         // Öffentliche CTA bleibt stehen; Moderationszahl ist optional.
       } finally {
-        setPendingHostSessionCode(null);
+        this.releaseHostSessionCode('enrichment');
       }
     }
   }

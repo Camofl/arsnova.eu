@@ -3681,10 +3681,17 @@ function assertSessionAllowsInitialQaConfiguration(
     endedAt?: Date | null;
     expiresAt?: Date | null;
     qaClosesAt?: Date | null;
+    hostEnded?: boolean;
   },
   now: Date,
   mode: 'INITIAL' | 'REPLAN',
 ): void {
+  if (session.hostEnded === true) {
+    throw new TRPCError({
+      code: 'BAD_REQUEST',
+      message: 'Die Session ist bereits beendet.',
+    });
+  }
   if (!isSessionEffectivelyFinished(session, now)) {
     return;
   }
@@ -6038,6 +6045,7 @@ const sessionCoreRouter = router({
         select: {
           status: true,
           endedAt: true,
+          hostEnded: true,
           createdAt: true,
           expiresAt: true,
           timeZone: true,
@@ -6116,6 +6124,7 @@ const sessionCoreRouter = router({
               id: true,
               status: true,
               endedAt: true,
+              hostEnded: true,
               createdAt: true,
               expiresAt: true,
               timeZone: true,

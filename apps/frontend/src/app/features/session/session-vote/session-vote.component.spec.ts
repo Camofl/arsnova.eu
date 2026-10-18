@@ -10505,6 +10505,13 @@ describe('SessionVoteComponent', { timeout: 30_000 }, () => {
       expect(host.querySelector('.session-qa-tools')).toBeNull();
       expect(host.querySelectorAll('[data-qa-id]')).toHaveLength(3);
 
+      c.qaSearch.set('Prüfung');
+      fixture.detectChanges();
+      expect(host.querySelector('.session-qa-tools')).not.toBeNull();
+      c.qaSearch.set('');
+      fixture.detectChanges();
+      expect(host.querySelector('.session-qa-tools')).toBeNull();
+
       c.qaQuestions.set([
         { id: 'q1', text: 'Eins', status: 'ACTIVE' } as never,
         { id: 'q2', text: 'Zwei', status: 'ACTIVE' } as never,
