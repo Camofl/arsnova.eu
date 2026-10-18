@@ -2592,9 +2592,50 @@
           </span>
           <div class="session-channel-card__header-main">
             <p class="session-channel-card__eyebrow" i18n="@@sessionTabs.forumEyebrow">Forum</p>
-            <h2 class="session-channel-card__title" id="vote-qa-heading">{{ qaHeading() }}</h2>
+            <h2 class="session-channel-card__title" id="vote-qa-heading" tabindex="-1">
+              {{ qaHeading() }}
+            </h2>
           </div>
+          @if (qaForumAssignments().length > 0) {
+            <button
+              mat-stroked-button
+              type="button"
+              class="session-vote__qa-assignment-toggle"
+              data-testid="vote-qa-assignment-toggle"
+              [attr.aria-expanded]="qaAssignmentExpanded()"
+              aria-controls="vote-qa-assignment-panel"
+              (click)="toggleQaAssignmentExpanded()"
+            >
+              <mat-icon aria-hidden="true">campaign</mat-icon>
+              <span i18n="@@sessionVote.qaAssignmentButton">Auftrag</span>
+            </button>
+          }
         </div>
+
+        @if (qaForumAssignments().length > 0 && qaAssignmentExpanded()) {
+          <section
+            id="vote-qa-assignment-panel"
+            class="session-vote__qa-assignment-panel"
+            data-testid="vote-qa-assignment-panel"
+            aria-labelledby="vote-qa-assignment-heading"
+          >
+            <h3
+              id="vote-qa-assignment-heading"
+              class="session-vote__qa-assignment-title"
+              i18n="@@sessionVote.qaAssignmentHeading"
+            >
+              Auftrag für dieses Forum
+            </h3>
+            <ul class="session-vote__qa-assignment-list">
+              @for (assignment of qaForumAssignments(); track $index) {
+                <li
+                  class="session-vote__qa-assignment-text markdown-body"
+                  [innerHTML]="renderQaAssignmentMarkdown(assignment)"
+                ></li>
+              }
+            </ul>
+          </section>
+        }
 
         @if (qaDeadlineAbsoluteLabel(); as absoluteDeadline) {
           <div

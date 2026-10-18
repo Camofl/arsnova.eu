@@ -10455,5 +10455,81 @@ describe('SessionVoteComponent', { timeout: 30_000 }, () => {
       expect(c.showSessionEndGate()).toBe(false);
       fixture.destroy();
     });
+
+    it('zeigt im Q&A-Forum den Button »Auftrag« nur, wenn ein Forumsauftrag hinterlegt ist', async () => {
+      const { fixture, c } = await setup();
+      c.selectChannel('qa');
+      fixture.detectChanges();
+
+      const host = fixture.nativeElement as HTMLElement;
+      expect(host.querySelector('[data-testid="vote-qa-assignment-toggle"]')).toBeNull();
+
+      c.qaForumAssignments.set(['Sammelt zentrale Fragen zum Fallbeispiel.']);
+      fixture.detectChanges();
+
+      const toggleBtn = host.querySelector(
+        '[data-testid="vote-qa-assignment-toggle"]',
+      ) as HTMLButtonElement | null;
+      expect(toggleBtn).not.toBeNull();
+      expect(toggleBtn?.textContent).toContain('Auftrag');
+      expect(host.querySelector('[data-testid="vote-qa-assignment-panel"]')).toBeNull();
+
+      toggleBtn?.click();
+      fixture.detectChanges();
+
+      const panel = host.querySelector(
+        '[data-testid="vote-qa-assignment-panel"]',
+      ) as HTMLElement | null;
+      expect(panel).not.toBeNull();
+      expect(panel?.textContent).toContain('Sammelt zentrale Fragen zum Fallbeispiel.');
+      expect(panel?.textContent).not.toContain('Lernziel');
+      fixture.destroy();
+    });
+
+    it('setzt den Fokus auf die Q&A-Überschrift, wenn der letzte Auftrag verschwindet', async () => {
+      const { fixture, c } = await setup();
+      c.selectChannel('qa');
+      c.qaForumAssignments.set(['Sammelt zentrale Fragen zum Fallbeispiel.']);
+      fixture.detectChanges();
+
+      const host = fixture.nativeElement as HTMLElement;
+      const toggleBtn = host.querySelector(
+        '[data-testid="vote-qa-assignment-toggle"]',
+      ) as HTMLButtonElement;
+      toggleBtn.focus();
+      expect(document.activeElement).toBe(toggleBtn);
+
+      (
+        c as unknown as {
+          applyQaQuestionsSnapshot(snapshot: {
+            questions: unknown[];
+            state: 'ACTIVE';
+            forumAssignments: string[];
+            sessionLifecycleRevision: number;
+            serverNow: string;
+            expiresAt: string;
+            qaClosesAt: string;
+            endedAt: null;
+            postProcessingEndsAt: null;
+          }): boolean;
+        }
+      ).applyQaQuestionsSnapshot({
+        questions: [],
+        state: 'ACTIVE',
+        forumAssignments: [],
+        sessionLifecycleRevision: 1,
+        serverNow: new Date().toISOString(),
+        expiresAt: '2099-09-15T12:00:00.000Z',
+        qaClosesAt: '2099-09-15T11:00:00.000Z',
+        endedAt: null,
+        postProcessingEndsAt: null,
+      });
+      fixture.detectChanges();
+
+      expect(c.qaForumAssignments()).toEqual([]);
+      expect(host.querySelector('[data-testid="vote-qa-assignment-toggle"]')).toBeNull();
+      expect(document.activeElement).toBe(host.querySelector('#vote-qa-heading'));
+      fixture.destroy();
+    });
   });
 });

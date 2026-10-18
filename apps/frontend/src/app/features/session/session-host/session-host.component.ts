@@ -2874,6 +2874,12 @@ export class SessionHostComponent implements OnInit, OnDestroy {
     });
   };
 
+  learningObjectivesControlAriaLabel(): string {
+    return this.activeChannel() === 'qa'
+      ? $localize`:@@sessionHost.qaAssignmentAria:Auftrag für das Q&A-Forum öffnen`
+      : $localize`:@@sessionHost.learningObjectivesAria:Lernziele für diese Session öffnen`;
+  }
+
   readonly openLearningObjectivesDialog = async (): Promise<void> => {
     const { SessionLearningObjectivesDialogComponent } =
       await import('./session-learning-objectives-dialog.component');
@@ -2881,6 +2887,13 @@ export class SessionHostComponent implements OnInit, OnDestroy {
       data: {
         code: this.code.toUpperCase(),
         hasQuiz: () => this.channels().quiz,
+        mode: () => (this.activeChannel() === 'qa' ? 'qa' : 'quiz'),
+        focusedQuestionId: () =>
+          this.activeChannel() === 'quiz'
+            ? (this.displayedCurrentQuestionForHost()?.questionId ?? null)
+            : null,
+        focusedQuestionEligibleForDerivation: () =>
+          isScoredQuestionType(this.displayedCurrentQuestionForHost()?.type),
       },
       autoFocus: 'dialog',
       restoreFocus: true,

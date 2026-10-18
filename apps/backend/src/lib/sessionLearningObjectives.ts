@@ -2,12 +2,21 @@ import { createHash, randomUUID } from 'node:crypto';
 import { Prisma } from '@prisma/client';
 import { TRPCError } from '@trpc/server';
 import {
+  LEARNING_OBJECTIVE_DERIVATION_SCHEMA_VERSION,
   LEARNING_OBJECTIVE_MAX_OBJECTIVES,
   LEARNING_OBJECTIVE_REVISION_MAX,
   SESSION_LEARNING_OBJECTIVE_QA_TASK_CATALOG_MAX,
   SESSION_LEARNING_OBJECTIVE_SCHEMA_VERSION,
+  DeriveSessionLearningObjectivesResultSchema,
+  LearningObjectiveDerivationQuestionSchema,
   SessionLearningObjectivesSnapshotSchema,
+  isNumericToleranceMode,
+  questionSupportsConfidence,
+  resolveNumericEstimateToleranceMode,
+  type DeriveSessionLearningObjectivesInput,
+  type DeriveSessionLearningObjectivesResult,
   type LearningObjectiveConfirmation,
+  type LearningObjectiveDerivationQuestion,
   type QuizLearningObjectiveBundleV1,
   type SaveSessionLearningObjectivesInput,
   type SessionLearningObjectiveDTO,
@@ -15,6 +24,7 @@ import {
   type SessionLearningObjectivesSnapshot,
 } from '@arsnova/shared-types';
 import { prisma } from '../db';
+import { deriveLearningObjectiveDrafts } from './learningObjectiveDerivation';
 import { buildSessionRetentionTimeline, isSessionEffectivelyFinished } from './sessionLifecycle';
 
 type LearningObjectiveDb = Prisma.TransactionClient;
@@ -34,6 +44,13 @@ const learningSourceQuestionSelect = {
   sourceQuestionId: true,
   text: true,
   type: true,
+  difficulty: true,
+  order: true,
+  timer: true,
+  skipReadingPhase: true,
+  confidenceEnabled: true,
+  confidenceLabelLow: true,
+  confidenceLabelHigh: true,
   ratingMin: true,
   ratingMax: true,
   ratingLabelMin: true,
@@ -294,6 +311,7 @@ function objectiveFromRow(row: SessionObjectiveRow): SessionLearningObjectiveDTO
         : row.projection === 'SESSION_OVERRIDE'
           ? 'session-override'
           : 'session-manual',
+    purpose: row.purpose === 'FORUM_ASSIGNMENT' ? 'forum-assignment' : 'learning-objective',
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   };
@@ -344,6 +362,167 @@ async function loadAvailableQaTaskCatalog(db: LearningObjectiveDb, sessionId: st
   };
 }
 
+function persistedPurpose(
+  purpose: 'LEARNING_OBJECTIVE' | 'FORUM_ASSIGNMENT' | null | undefined,
+): 'LEARNING_OBJECTIVE' | 'FORUM_ASSIGNMENT' {
+  return purpose === 'FORUM_ASSIGNMENT' ? 'FORUM_ASSIGNMENT' : 'LEARNING_OBJECTIVE';
+}
+
+function purposeToDb(
+  purpose: 'learning-objective' | 'forum-assignment' | undefined,
+  existingPurpose?: 'LEARNING_OBJECTIVE' | 'FORUM_ASSIGNMENT' | null,
+): 'LEARNING_OBJECTIVE' | 'FORUM_ASSIGNMENT' {
+  if (purpose === 'forum-assignment') return 'FORUM_ASSIGNMENT';
+  if (purpose === 'learning-objective') return 'LEARNING_OBJECTIVE';
+  return persistedPurpose(existingPurpose);
+}
+
+function assertForumAssignmentWrite(input: {
+  purpose: 'LEARNING_OBJECTIVE' | 'FORUM_ASSIGNMENT';
+  scope: SessionLearningObjectiveWriteScope;
+  existing?: Pick<SessionObjectiveRow, 'purpose' | 'origin' | 'projection' | 'scope'>;
+}): void {
+  if (input.existing && persistedPurpose(input.existing.purpose) !== input.purpose) {
+    throw new TRPCError({
+      code: 'BAD_REQUEST',
+      message: 'Lernziele und Q&A-Aufträge können nicht ineinander umgewandelt werden.',
+    });
+  }
+  if (input.purpose !== 'FORUM_ASSIGNMENT') return;
+  if (input.scope.kind !== 'session') {
+    throw new TRPCError({
+      code: 'BAD_REQUEST',
+      message: 'Q&A-Aufträge gelten für die gesamte Session.',
+    });
+  }
+  if (
+    input.existing &&
+    (input.existing.origin !== 'MANUAL' ||
+      input.existing.projection !== 'SESSION_MANUAL' ||
+      input.existing.scope !== 'SESSION')
+  ) {
+    throw new TRPCError({
+      code: 'BAD_REQUEST',
+      message: 'Q&A-Aufträge müssen als sessionmanuelle Forumsaufträge persistiert sein.',
+    });
+  }
+}
+
+function isStoredQuestionEligibleForDerivation(question: {
+  type: string;
+  answers?: { isCorrect: boolean }[] | null;
+}): boolean {
+  switch (question.type) {
+    case 'MULTIPLE_CHOICE':
+    case 'SINGLE_CHOICE':
+      return (question.answers ?? []).some((answer) => answer.isCorrect);
+    case 'SHORT_TEXT':
+    case 'NUMERIC_ESTIMATE':
+    case 'MATCHING':
+    case 'ORDERING':
+    case 'CATEGORIZATION':
+      return true;
+    case 'FREETEXT':
+    case 'SURVEY':
+    case 'RATING':
+    default:
+      return false;
+  }
+}
+
+function mapStoredQuestionToDerivationQuestion(
+  question: LearningSourceQuestion,
+): LearningObjectiveDerivationQuestion | null {
+  if (!isStoredQuestionEligibleForDerivation(question)) return null;
+  const parsed = LearningObjectiveDerivationQuestionSchema.safeParse({
+    sourceQuestionId: question.id,
+    enabled: true,
+    text: question.text,
+    type: question.type,
+    difficulty: question.difficulty,
+    order: question.order,
+    timer: question.timer ?? null,
+    answers: (question.answers ?? []).map(({ text, isCorrect }) => ({ text, isCorrect })),
+    skipReadingPhase: question.skipReadingPhase ?? false,
+    ...(question.type === 'SHORT_TEXT'
+      ? {
+          shortTextEvaluationKind:
+            (question.shortTextEvaluationKind as
+              LearningObjectiveDerivationQuestion['shortTextEvaluationKind'] | null) ?? undefined,
+          shortTextMaxLength: question.shortTextMaxLength ?? undefined,
+          shortTextCaseSensitive: question.shortTextCaseSensitive ?? undefined,
+          shortTextEvaluationMode:
+            (question.shortTextEvaluationMode as
+              LearningObjectiveDerivationQuestion['shortTextEvaluationMode'] | null) ?? undefined,
+          shortTextToleranceLevel:
+            (question.shortTextToleranceLevel as
+              LearningObjectiveDerivationQuestion['shortTextToleranceLevel'] | null) ?? undefined,
+          shortTextAllowPartialCredit: question.shortTextAllowPartialCredit ?? undefined,
+          shortTextTrimWhitespace: question.shortTextTrimWhitespace ?? undefined,
+          shortTextNormalizeWhitespace: question.shortTextNormalizeWhitespace ?? undefined,
+          numericInputKind:
+            (question.numericInputKind as
+              LearningObjectiveDerivationQuestion['numericInputKind'] | null) ?? undefined,
+          numericToleranceMode: isNumericToleranceMode(question.numericToleranceMode)
+            ? question.numericToleranceMode
+            : undefined,
+          numericAbsoluteTolerance: question.numericAbsoluteTolerance ?? undefined,
+          numericRelativeTolerancePercent: question.numericRelativeTolerancePercent ?? undefined,
+          numericUnitFamily:
+            (question.numericUnitFamily as
+              LearningObjectiveDerivationQuestion['numericUnitFamily'] | null) ?? undefined,
+          numericRequireUnit: question.numericRequireUnit ?? undefined,
+          numericAcceptEquivalentUnits: question.numericAcceptEquivalentUnits ?? undefined,
+        }
+      : {}),
+    ...(question.type === 'NUMERIC_ESTIMATE'
+      ? {
+          numericToleranceMode: resolveNumericEstimateToleranceMode(question.numericToleranceMode),
+          numericReferenceValue: question.numericReferenceValue ?? undefined,
+          numericTolerancePercent: question.numericTolerancePercent ?? undefined,
+          numericIntervalLeft: question.numericIntervalLeft ?? undefined,
+          numericIntervalRight: question.numericIntervalRight ?? undefined,
+          numericInputType:
+            question.numericInputType === 'INTEGER' || question.numericInputType === 'DECIMAL'
+              ? question.numericInputType
+              : undefined,
+          numericDecimalPlaces: question.numericDecimalPlaces ?? undefined,
+          numericMin: question.numericMin ?? undefined,
+          numericMax: question.numericMax ?? undefined,
+          numericTwoRounds: question.numericTwoRounds ?? undefined,
+        }
+      : {}),
+    ...(question.type === 'MATCHING'
+      ? {
+          matchingPairs: Array.isArray(question.matchingPairs) ? question.matchingPairs : undefined,
+          matchingShuffleRight: question.matchingShuffleRight ?? true,
+        }
+      : {}),
+    ...(question.type === 'ORDERING'
+      ? {
+          orderingItems: Array.isArray(question.orderingItems) ? question.orderingItems : undefined,
+        }
+      : {}),
+    ...(question.type === 'CATEGORIZATION'
+      ? {
+          categories: Array.isArray(question.categories) ? question.categories : undefined,
+          categorizationItems: Array.isArray(question.categorizationItems)
+            ? question.categorizationItems
+            : undefined,
+          categorizationShuffleItems: question.categorizationShuffleItems ?? true,
+        }
+      : {}),
+    ...(questionSupportsConfidence(question.type)
+      ? {
+          confidenceEnabled: question.confidenceEnabled ?? false,
+          confidenceLabelLow: question.confidenceLabelLow ?? undefined,
+          confidenceLabelHigh: question.confidenceLabelHigh ?? undefined,
+        }
+      : {}),
+  });
+  return parsed.success ? parsed.data : null;
+}
+
 async function snapshotWithDb(
   db: LearningObjectiveDb,
   session: SessionSnapshotRow,
@@ -359,7 +538,13 @@ async function snapshotWithDb(
     session.quizId
       ? db.question.findMany({
           where: { quizId: session.quizId },
-          select: { id: true, text: true, order: true },
+          select: {
+            id: true,
+            text: true,
+            order: true,
+            type: true,
+            answers: { select: { isCorrect: true } },
+          },
           orderBy: [{ order: 'asc' }, { id: 'asc' }],
         })
       : [],
@@ -376,6 +561,7 @@ async function snapshotWithDb(
       questionId: question.id,
       text: question.text,
       order: question.order,
+      eligibleForDerivation: isStoredQuestionEligibleForDerivation(question),
     })),
     availableQaTasks: availableQaTaskCatalog.tasks.map((question) => ({
       kind: 'qa-question' as const,
@@ -617,6 +803,8 @@ export async function saveSessionLearningObjectives(
         continue;
       }
       if (!existing) {
+        const purpose = purposeToDb(mutation.purpose);
+        assertForumAssignmentWrite({ purpose, scope: mutation.scope });
         const objectiveRowId = randomUUID();
         await tx.sessionLearningObjective.create({
           data: {
@@ -632,6 +820,7 @@ export async function saveSessionLearningObjectives(
             derivationVersion: null,
             ...requestedConfirmationToDb(mutation.confirmationState, 0, now),
             projection: 'SESSION_MANUAL',
+            purpose,
             sourceQuizId: scopeUsesQuiz(mutation.scope) ? currentSourceQuizId : null,
             createdAt: now,
             updatedAt: now,
@@ -641,6 +830,8 @@ export async function saveSessionLearningObjectives(
         continue;
       }
 
+      const purpose = purposeToDb(mutation.purpose, existing.purpose);
+      assertForumAssignmentWrite({ purpose, scope: mutation.scope, existing });
       assertRevisionCanAdvance(existing.revision);
       const nextRevision = existing.revision + 1;
       const oldScope = persistedScope(existing);
@@ -1271,6 +1462,265 @@ export async function getSessionLearningObjectivesSnapshotWithDb(
     throw new TRPCError({ code: 'NOT_FOUND', message: 'Session nicht gefunden.' });
   }
   return snapshotWithDb(tx, session, now);
+}
+
+export async function getSessionForumAssignments(sessionId: string): Promise<string[]> {
+  const rows = await prisma.sessionLearningObjective.findMany({
+    where: {
+      sessionId,
+      suppressedAt: null,
+      purpose: 'FORUM_ASSIGNMENT',
+    },
+    select: {
+      text: true,
+    },
+    orderBy: [{ createdAt: 'asc' }, { objectiveId: 'asc' }],
+  });
+  return rows.map((row) => row.text.trim()).filter((text) => text.length > 0);
+}
+
+export async function deriveSessionLearningObjectives(
+  input: DeriveSessionLearningObjectivesInput,
+  options: { readonly signal?: AbortSignal; readonly now?: Date } = {},
+): Promise<DeriveSessionLearningObjectivesResult> {
+  const now = options.now ?? new Date();
+  const baseCorrelation = {
+    operationId: input.operationId,
+    expectedLearningContextRevision: input.expectedLearningContextRevision,
+  } as const;
+
+  const session = await prisma.session.findUnique({
+    where: { code: input.code.toUpperCase() },
+    select: {
+      id: true,
+      status: true,
+      endedAt: true,
+      expiresAt: true,
+      quizId: true,
+      learningContextRevision: true,
+      learningContextConfigured: true,
+    },
+  });
+  if (!session) {
+    throw new TRPCError({ code: 'NOT_FOUND', message: 'Session nicht gefunden.' });
+  }
+  if (isSessionEffectivelyFinished(session, now)) {
+    throw new TRPCError({
+      code: 'BAD_REQUEST',
+      message: 'Beendete Sessions können nicht mehr verändert werden.',
+    });
+  }
+  if (session.learningContextRevision !== input.expectedLearningContextRevision) {
+    conflict();
+  }
+  assertRevisionCanAdvance(session.learningContextRevision);
+  if (!session.quizId) {
+    return DeriveSessionLearningObjectivesResultSchema.parse({
+      ...baseCorrelation,
+      status: 'no_eligible_questions',
+    });
+  }
+
+  const storedQuestions = await prisma.question.findMany({
+    where: {
+      quizId: session.quizId,
+      ...(input.questionId ? { id: input.questionId } : {}),
+    },
+    select: learningSourceQuestionSelect,
+    orderBy: [{ order: 'asc' }, { id: 'asc' }],
+  });
+
+  const derivationQuestions = storedQuestions
+    .map(mapStoredQuestionToDerivationQuestion)
+    .filter((question): question is LearningObjectiveDerivationQuestion => question !== null);
+
+  if (derivationQuestions.length === 0) {
+    return DeriveSessionLearningObjectivesResultSchema.parse({
+      ...baseCorrelation,
+      status: 'no_eligible_questions',
+    });
+  }
+
+  const derivationResult = await deriveLearningObjectiveDrafts(
+    {
+      schemaVersion: LEARNING_OBJECTIVE_DERIVATION_SCHEMA_VERSION,
+      operationId: input.operationId,
+      quizId: session.quizId,
+      expectedBundleRevision: input.expectedLearningContextRevision,
+      locale: input.locale,
+      maximumDrafts: input.maximumDrafts,
+      questions: derivationQuestions,
+    },
+    { signal: options.signal, now: () => now },
+  );
+
+  if (derivationResult.status !== 'completed') {
+    if (derivationResult.status === 'busy') {
+      return DeriveSessionLearningObjectivesResultSchema.parse({
+        ...baseCorrelation,
+        status: 'busy',
+        retry: 'manual',
+      });
+    }
+    if (derivationResult.status === 'input_too_large') {
+      return DeriveSessionLearningObjectivesResultSchema.parse({
+        ...baseCorrelation,
+        status: 'input_too_large',
+        sourceQuestionId: derivationResult.sourceQuestionId,
+      });
+    }
+    return DeriveSessionLearningObjectivesResultSchema.parse({
+      ...baseCorrelation,
+      status: derivationResult.status,
+    });
+  }
+
+  const questionById = new Map(storedQuestions.map((question) => [question.id, question]));
+
+  const applied = await prisma.$transaction(async (tx) => {
+    const writeNow = options.now ?? new Date();
+    await tx.$executeRaw`SELECT 1 FROM "Session" WHERE id = ${session.id} FOR UPDATE`;
+    const lockedSession = await tx.session.findUnique({
+      where: { id: session.id },
+      select: {
+        id: true,
+        status: true,
+        endedAt: true,
+        expiresAt: true,
+        quizId: true,
+        learningContextRevision: true,
+        learningContextConfigured: true,
+      },
+    });
+    if (!lockedSession) {
+      throw new TRPCError({ code: 'NOT_FOUND', message: 'Session nicht gefunden.' });
+    }
+    if (isSessionEffectivelyFinished(lockedSession, writeNow)) {
+      throw new TRPCError({
+        code: 'BAD_REQUEST',
+        message: 'Beendete Sessions können nicht mehr verändert werden.',
+      });
+    }
+    if (
+      lockedSession.learningContextRevision !== input.expectedLearningContextRevision ||
+      lockedSession.quizId !== session.quizId
+    ) {
+      conflict();
+    }
+    assertRevisionCanAdvance(lockedSession.learningContextRevision);
+
+    const existingRows = await tx.sessionLearningObjective.findMany({
+      where: { sessionId: lockedSession.id },
+      include: sessionObjectiveInclude,
+    });
+    const activeCount = existingRows.filter((row) => row.suppressedAt === null).length;
+    const existingByObjectiveId = new Map(existingRows.map((row) => [row.objectiveId, row]));
+    const remainingCapacity = Math.max(0, LEARNING_OBJECTIVE_MAX_OBJECTIVES - activeCount);
+    const unseenDrafts = derivationResult.drafts
+      .filter((draft) => !existingByObjectiveId.has(draft.id))
+      .slice(0, remainingCapacity);
+
+    const currentSourceQuizId = lockedSession.quizId
+      ? ((
+          await tx.quiz.findUnique({
+            where: { id: lockedSession.quizId },
+            select: { sourceQuizId: true },
+          })
+        )?.sourceQuizId ?? null)
+      : null;
+
+    for (const draft of unseenDrafts) {
+      const objectiveRowId = randomUUID();
+      const references = [
+        ...draft.scope.sourceQuestionIds.map((questionId) => {
+          const q = questionById.get(questionId);
+          return {
+            id: randomUUID(),
+            sourceReferenceId: q?.sourceQuestionId ?? questionId,
+            objectiveRowId,
+            kind: 'TASK' as const,
+            sourceKind: 'QUIZ_QUESTION' as const,
+            quizQuestionId: questionId,
+            qaQuestionId: null,
+            unresolvedReason: null,
+          };
+        }),
+        ...draft.origin.derivedFromSourceQuestionIds.map((questionId) => {
+          const q = questionById.get(questionId);
+          return {
+            id: randomUUID(),
+            sourceReferenceId: q?.sourceQuestionId ?? questionId,
+            objectiveRowId,
+            kind: 'DERIVATION' as const,
+            sourceKind: 'QUIZ_QUESTION' as const,
+            quizQuestionId: questionId,
+            qaQuestionId: null,
+            unresolvedReason: null,
+          };
+        }),
+      ];
+      await tx.sessionLearningObjective.create({
+        data: {
+          id: objectiveRowId,
+          sessionId: lockedSession.id,
+          objectiveId: draft.id,
+          revision: 0,
+          text: draft.text,
+          scope: 'TASKS',
+          origin: 'MODEL_DERIVED',
+          modelId: draft.origin.modelId,
+          modelVersion: draft.origin.modelVersion,
+          derivationVersion: draft.origin.derivationVersion,
+          confirmationState: 'DRAFT',
+          confirmationRevision: null,
+          confirmationAt: null,
+          previousConfirmationState: null,
+          needsReviewReason: null,
+          projection: 'SESSION_OVERRIDE',
+          purpose: 'LEARNING_OBJECTIVE',
+          sourceQuizId: currentSourceQuizId,
+          suppressedAt: null,
+          createdAt: writeNow,
+          updatedAt: writeNow,
+          references: { create: references },
+        },
+      });
+    }
+
+    const nextSession =
+      unseenDrafts.length > 0
+        ? await tx.session.update({
+            where: { id: lockedSession.id },
+            data: {
+              learningContextRevision: lockedSession.learningContextRevision + 1,
+              learningContextConfigured: true,
+            },
+            select: {
+              id: true,
+              status: true,
+              endedAt: true,
+              expiresAt: true,
+              quizId: true,
+              learningContextRevision: true,
+              learningContextConfigured: true,
+            },
+          })
+        : lockedSession;
+
+    return {
+      snapshot: await snapshotWithDb(tx, nextSession, writeNow),
+      appliedCount: unseenDrafts.length,
+    };
+  });
+
+  return DeriveSessionLearningObjectivesResultSchema.parse({
+    ...baseCorrelation,
+    status: 'completed',
+    snapshot: applied.snapshot,
+    appliedCount: applied.appliedCount,
+    limitations: derivationResult.limitations,
+    batchCount: derivationResult.batchCount,
+  });
 }
 
 export const sessionLearningObjectivesInternals = {

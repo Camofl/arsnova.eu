@@ -315,9 +315,9 @@ function projectLearningContext(input: {
     return stageQuizSource(reference.questionId, stagedSources);
   };
 
-  const orderedObjectives = [...input.snapshot.objectives].sort((left, right) =>
-    compareCodeUnits(left.id, right.id),
-  );
+  const orderedObjectives = [...input.snapshot.objectives]
+    .filter((objective) => objective.purpose !== 'forum-assignment')
+    .sort((left, right) => compareCodeUnits(left.id, right.id));
   for (const objective of orderedObjectives) {
     if (budgetOmittedObjectiveIds.has(objective.id)) {
       budgetOmittedObjectives += 1;
@@ -420,7 +420,9 @@ function selectReferencedQaQuestions(
 ): ReferencedLearningQaSelection {
   const ids = new Set<string>();
   const omittedObjectiveIds: string[] = [];
-  for (const objective of [...snapshot.objectives].sort(compareLearningObjectivePriority)) {
+  for (const objective of [...snapshot.objectives]
+    .filter((candidate) => candidate.purpose !== 'forum-assignment')
+    .sort(compareLearningObjectivePriority)) {
     if (objective.scope.kind !== 'question-set') continue;
     const objectiveIds = objective.scope.taskReferences
       .flatMap((reference) => (reference.kind === 'qa-question' ? [reference.questionId] : []))

@@ -1329,12 +1329,16 @@ html {
   word-break: break-word;
 }
 
-/* Safe, non-interactive Markdown in persisted preparation objectives. */
-.learning-objectives__text.markdown-body > :first-child {
+/* Safe, non-interactive Markdown in persisted preparation and session objectives. */
+.learning-objectives__text.markdown-body > :first-child,
+.session-objectives__text.markdown-body > :first-child,
+.session-vote__qa-assignment-text.markdown-body > :first-child {
   margin-block-start: 0;
 }
 
-.learning-objectives__text.markdown-body > :last-child {
+.learning-objectives__text.markdown-body > :last-child,
+.session-objectives__text.markdown-body > :last-child,
+.session-vote__qa-assignment-text.markdown-body > :last-child {
   margin-block-end: 0;
 }
 
@@ -1344,20 +1348,42 @@ html {
 .learning-objectives__text.markdown-body h6,
 .learning-objectives__text.markdown-body ul,
 .learning-objectives__text.markdown-body ol,
-.learning-objectives__text.markdown-body blockquote {
+.learning-objectives__text.markdown-body blockquote,
+.session-objectives__text.markdown-body p,
+.session-objectives__text.markdown-body h4,
+.session-objectives__text.markdown-body h5,
+.session-objectives__text.markdown-body h6,
+.session-objectives__text.markdown-body ul,
+.session-objectives__text.markdown-body ol,
+.session-objectives__text.markdown-body blockquote,
+.session-vote__qa-assignment-text.markdown-body p,
+.session-vote__qa-assignment-text.markdown-body h4,
+.session-vote__qa-assignment-text.markdown-body h5,
+.session-vote__qa-assignment-text.markdown-body h6,
+.session-vote__qa-assignment-text.markdown-body ul,
+.session-vote__qa-assignment-text.markdown-body ol,
+.session-vote__qa-assignment-text.markdown-body blockquote {
   margin-block: 0 0.5rem;
   overflow-wrap: anywhere;
 }
 
 .learning-objectives__text.markdown-body h4,
 .learning-objectives__text.markdown-body h5,
-.learning-objectives__text.markdown-body h6 {
+.learning-objectives__text.markdown-body h6,
+.session-objectives__text.markdown-body h4,
+.session-objectives__text.markdown-body h5,
+.session-objectives__text.markdown-body h6,
+.session-vote__qa-assignment-text.markdown-body h4,
+.session-vote__qa-assignment-text.markdown-body h5,
+.session-vote__qa-assignment-text.markdown-body h6 {
   font: var(--mat-sys-body-large);
   font-weight: 700;
   line-height: 1.5;
 }
 
-.learning-objectives__text.markdown-body pre {
+.learning-objectives__text.markdown-body pre,
+.session-objectives__text.markdown-body pre,
+.session-vote__qa-assignment-text.markdown-body pre {
   max-width: 100%;
   overflow-wrap: anywhere;
   white-space: pre-wrap;

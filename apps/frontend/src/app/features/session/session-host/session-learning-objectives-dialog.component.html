@@ -5,30 +5,53 @@
   tabindex="-1"
 >
   <span class="dialog-title-header__icon" aria-hidden="true">
-    <mat-icon>school</mat-icon>
+    <mat-icon>{{ isQaMode() ? 'campaign' : 'school' }}</mat-icon>
   </span>
   <span class="dialog-title-header__copy">
-    <span class="dialog-title-header__heading" i18n="@@sessionLearningObjectives.title"
-      >Lernziele</span
-    >
-    <span class="dialog-title-header__sub" i18n="@@sessionLearningObjectives.subtitle">
-      Ziele für Quiz und Q&amp;A dieser Session
-    </span>
+    @if (isQaMode()) {
+      <span class="dialog-title-header__heading" i18n="@@sessionQaAssignments.title">Auftrag</span>
+      <span class="dialog-title-header__sub" i18n="@@sessionQaAssignments.subtitle">
+        Auftrag für das Q&amp;A-Forum dieser Session
+      </span>
+    } @else if (isQuestionFocused()) {
+      <span class="dialog-title-header__heading" i18n="@@sessionLearningObjectives.questionTitle"
+        >Lernziel zur Frage</span
+      >
+      <span class="dialog-title-header__sub" i18n="@@sessionLearningObjectives.questionSubtitle">
+        Kompetenzziel der aktuell gezeigten Frage
+      </span>
+    } @else {
+      <span class="dialog-title-header__heading" i18n="@@sessionLearningObjectives.title"
+        >Lernziele</span
+      >
+      <span class="dialog-title-header__sub" i18n="@@sessionLearningObjectives.subtitle">
+        Lernziele für dieses Quiz
+      </span>
+    }
   </span>
 </h2>
 
 <mat-dialog-content
   class="session-objectives__content"
-  [attr.aria-busy]="pending() || loadState() === 'loading'"
+  [class.session-objectives__content--focused]="isAudiencePresentation()"
+  [attr.aria-busy]="pending() || derivationIsPending() || loadState() === 'loading'"
 >
   @if (loadState() === 'loading') {
     <div class="session-objectives__loading" role="status">
       <mat-spinner diameter="32" />
-      <span i18n="@@sessionLearningObjectives.loading">Lernziele werden geladen …</span>
+      @if (isQaMode()) {
+        <span i18n="@@sessionQaAssignments.loading">Auftrag wird geladen …</span>
+      } @else {
+        <span i18n="@@sessionLearningObjectives.loading">Lernziele werden geladen …</span>
+      }
     </div>
   } @else if (loadState() === 'error') {
     <div class="session-objectives__callout session-objectives__callout--error" role="alert">
-      <p i18n="@@sessionLearningObjectives.loadFailed">Lernziele konnten nicht geladen werden.</p>
+      @if (isQaMode()) {
+        <p i18n="@@sessionQaAssignments.loadFailed">Auftrag konnte nicht geladen werden.</p>
+      } @else {
+        <p i18n="@@sessionLearningObjectives.loadFailed">Lernziele konnten nicht geladen werden.</p>
+      }
       <button mat-stroked-button type="button" (click)="retryLoad()">
         <mat-icon aria-hidden="true">refresh</mat-icon>
         <span i18n="@@common.retry">Erneut versuchen</span>
@@ -38,9 +61,15 @@
     @if (isReadOnly()) {
       <div class="session-objectives__callout" role="status">
         <mat-icon aria-hidden="true">lock</mat-icon>
-        <p i18n="@@sessionLearningObjectives.readOnly">
-          Diese beendete Session ist nur noch lesbar. Lernziele können nicht mehr geändert werden.
-        </p>
+        @if (isQaMode()) {
+          <p i18n="@@sessionQaAssignments.readOnly">
+            Diese beendete Session ist nur noch lesbar. Aufträge können nicht mehr geändert werden.
+          </p>
+        } @else {
+          <p i18n="@@sessionLearningObjectives.readOnly">
+            Diese beendete Session ist nur noch lesbar. Lernziele können nicht mehr geändert werden.
+          </p>
+        }
       </div>
     }
 
@@ -57,7 +86,7 @@
           <button
             mat-stroked-button
             type="button"
-            [disabled]="pending()"
+            [disabled]="pending() || derivationIsPending()"
             (click)="retryConflictReload()"
           >
             <mat-icon aria-hidden="true">refresh</mat-icon>
@@ -71,76 +100,206 @@
       {{ statusMessage() }}
     </div>
 
-    <p class="session-objectives__origin-intro" i18n="@@learningObjectives.originIntro">
-      Manuelle Lernziele formulierst du selbst. Automatisch aus Aufgaben formulierte Lernziele
-      erscheinen als modellunterstützte Vorschläge. Sie bleiben entsprechend gekennzeichnet und
-      müssen von dir fachlich geprüft werden.
-    </p>
-
-    @if (objectives().length === 0 && !formOpen()) {
-      <p class="session-objectives__empty" i18n="@@sessionLearningObjectives.empty">
-        Für diese Session sind noch keine Lernziele konfiguriert.
-      </p>
+    @if (!isAudiencePresentation()) {
+      @if (isQaMode()) {
+        <p class="session-objectives__origin-intro" i18n="@@sessionQaAssignments.intro">
+          Hier hinterlegst du einen klaren Arbeits- oder Diskussionsauftrag für das Q&amp;A-Forum.
+          Sobald ein Auftrag vorhanden ist, sehen Teilnehmende im Forum den Button »Auftrag«.
+        </p>
+      } @else {
+        <p class="session-objectives__origin-intro" i18n="@@learningObjectives.originIntro">
+          Du kannst Lernziele selbst schreiben oder automatisch aus deinen Fragen vorschlagen
+          lassen. Automatische Vorschläge werden als Entwurf angelegt, bis du sie prüfst und
+          bestätigst.
+        </p>
+      }
     }
 
-    <div class="session-objectives__list">
-      @for (objective of objectives(); track objective.id) {
+    @if (hasEligibleQuizTasksForDerivation()) {
+      <section
+        class="session-objectives__derivation"
+        aria-labelledby="session-learning-objective-derivation-title"
+        [attr.aria-busy]="derivationIsPending()"
+      >
+        <h3
+          id="session-learning-objective-derivation-title"
+          i18n="@@learningObjectives.derivationTitle"
+        >
+          Lernziele vorschlagen lassen
+        </h3>
+        <p
+          id="session-learning-objective-derivation-description"
+          i18n="@@learningObjectives.derivationHelp"
+        >
+          Auf Klick erstellt die lokale Text-KI passende Lernziel-Entwürfe aus deinen aktiven Fragen
+          und Lösungen. Deine bestehenden Lernziele bleiben unverändert.
+        </p>
+        <div class="session-objectives__derivation-actions">
+          <button
+            mat-flat-button
+            type="button"
+            id="session-learning-objective-derive"
+            aria-describedby="session-learning-objective-derivation-description"
+            [disabled]="
+              derivationIsPending() || pending() || allObjectives().length >= maxObjectives
+            "
+            (click)="deriveLearningObjectives()"
+          >
+            <mat-icon aria-hidden="true">auto_awesome</mat-icon>
+            @if (derivationCanRetry()) {
+              <span i18n="@@learningObjectives.derivationRetry">Nochmal versuchen</span>
+            } @else if (derivationStatus() === 'completed') {
+              <span i18n="@@learningObjectives.derivationAgain"
+                >Erneut automatisch formulieren</span
+              >
+            } @else {
+              <span i18n="@@learningObjectives.derivationStart"
+                >Automatisch aus Fragen formulieren</span
+              >
+            }
+          </button>
+          @if (derivationIsPending()) {
+            <button
+              mat-stroked-button
+              type="button"
+              id="session-learning-objective-derive-cancel"
+              (click)="cancelLearningObjectiveDerivation()"
+              i18n="@@learningObjectives.derivationCancel"
+            >
+              Abbrechen
+            </button>
+          }
+        </div>
+        @if (derivationMessage()) {
+          <div
+            id="session-learning-objective-derivation-status"
+            class="session-objectives__derivation-status"
+            [class.session-objectives__derivation-status--error]="
+              derivationStatus() !== 'pending' && derivationStatus() !== 'completed'
+            "
+            role="status"
+            tabindex="-1"
+            aria-live="polite"
+            aria-atomic="true"
+          >
+            <p>{{ derivationMessage() }}</p>
+            @if (derivationLimitations().length > 0) {
+              <p i18n="@@learningObjectives.derivationLimitations">Hinweise:</p>
+              <ul>
+                @for (limitation of derivationLimitations(); track limitation) {
+                  <li>{{ limitation }}</li>
+                }
+              </ul>
+            }
+          </div>
+        }
+      </section>
+    }
+
+    @if (objectives().length === 0 && !formOpen()) {
+      @if (isQaMode()) {
+        <p class="session-objectives__empty" i18n="@@sessionQaAssignments.empty">
+          Für dieses Q&amp;A-Forum ist noch kein Auftrag hinterlegt.
+        </p>
+      } @else if (isQuestionFocused()) {
+        <p class="session-objectives__empty" i18n="@@sessionLearningObjectives.questionEmpty">
+          Für diese Frage ist noch kein Lernziel hinterlegt.
+        </p>
+      } @else {
+        <p class="session-objectives__empty" i18n="@@sessionLearningObjectives.empty">
+          Für diese Session sind noch keine Lernziele konfiguriert.
+        </p>
+      }
+    }
+
+    <div
+      class="session-objectives__list"
+      [class.session-objectives__list--audience]="isAudiencePresentation()"
+    >
+      @for (objective of visibleObjectives(); track objective.id) {
         <article
           class="session-objectives__item"
+          [class.session-objectives__item--audience]="isAudiencePresentation()"
           [attr.aria-labelledby]="'session-objective-' + objective.id"
         >
           <div>
-            <p class="session-objectives__text" [id]="'session-objective-' + objective.id">
-              {{ objective.text }}
-            </p>
-            <div class="session-objectives__meta">
-              <span
-                class="session-objectives__status"
-                [class.session-objectives__status--review]="
-                  objective.confirmation.state === 'needs-review'
-                "
-              >
-                {{ statusLabel(objective) }}
-              </span>
-              <span>{{ scopeLabel(objective) }}</span>
-              <span>{{ ownershipLabel(objective) }}</span>
-              @if (objective.origin.kind === 'model-derived') {
-                <span i18n="@@sessionLearningObjectives.modelDerived">Modellunterstützt</span>
-              }
-            </div>
-            @if (reviewReason(objective); as reason) {
-              <p class="session-objectives__reference-warning" role="status">
-                <mat-icon aria-hidden="true">warning</mat-icon>
-                <span>{{ reason }}</span>
-              </p>
-            }
-            @if (hasUnresolvedReferences(objective)) {
-              <p class="session-objectives__reference-warning" role="status">
-                <mat-icon aria-hidden="true">link_off</mat-icon>
-                <span i18n="@@sessionLearningObjectives.unresolvedReference">
-                  Mindestens ein Aufgabenverweis ist nicht mehr verfügbar. Das Ziel bleibt sichtbar
-                  und muss vor einer Inhaltsänderung neu zugeordnet werden.
+            <div
+              class="session-objectives__text markdown-body"
+              [class.session-objectives__text--audience]="isAudiencePresentation()"
+              [id]="'session-objective-' + objective.id"
+              [innerHTML]="renderObjectiveMarkdown(objective.text)"
+            ></div>
+            @if (!isAudiencePresentation() && !isQaMode()) {
+              <div class="session-objectives__meta">
+                <span
+                  class="session-objectives__status"
+                  [class.session-objectives__status--review]="
+                    objective.confirmation.state === 'needs-review'
+                  "
+                >
+                  {{ statusLabel(objective) }}
                 </span>
-              </p>
+                <span>{{ scopeLabel(objective) }}</span>
+                <span>{{ ownershipLabel(objective) }}</span>
+                @if (objective.origin.kind === 'model-derived') {
+                  <span i18n="@@sessionLearningObjectives.modelDerived">KI-Vorschlag</span>
+                }
+              </div>
+            }
+            @if (!isAudiencePresentation()) {
+              @if (reviewReason(objective); as reason) {
+                <p class="session-objectives__reference-warning" role="status">
+                  <mat-icon aria-hidden="true">warning</mat-icon>
+                  <span>{{ reason }}</span>
+                </p>
+              }
+              @if (hasUnresolvedReferences(objective)) {
+                <p class="session-objectives__reference-warning" role="status">
+                  <mat-icon aria-hidden="true">link_off</mat-icon>
+                  <span i18n="@@sessionLearningObjectives.unresolvedReference">
+                    Mindestens ein Fragenverweis ist nicht mehr verfügbar. Das Ziel bleibt sichtbar
+                    und muss vor einer Inhaltsänderung neu zugeordnet werden.
+                  </span>
+                </p>
+              }
             }
           </div>
 
           @if (!isReadOnly()) {
-            @if (pendingDeleteId() === objective.id) {
+            @if (isAudiencePresentation()) {
+              <button
+                mat-icon-button
+                type="button"
+                class="session-objectives__audience-edit-btn"
+                [id]="'session-learning-objective-edit-' + objective.id"
+                [disabled]="pending() || derivationIsPending()"
+                (click)="beginEdit(objective)"
+                i18n-aria-label="@@sessionLearningObjectives.edit"
+                aria-label="Bearbeiten"
+              >
+                <mat-icon aria-hidden="true">edit</mat-icon>
+              </button>
+            } @else if (pendingDeleteId() === objective.id) {
               <div
                 class="session-objectives__delete-confirm"
                 role="group"
                 i18n-aria-label="@@sessionLearningObjectives.deleteConfirmGroup"
                 aria-label="Löschen bestätigen"
               >
-                <span i18n="@@sessionLearningObjectives.deleteQuestion"
-                  >Dieses Lernziel wirklich löschen?</span
-                >
+                @if (isQaMode()) {
+                  <span i18n="@@sessionQaAssignments.deleteQuestion"
+                    >Diesen Auftrag wirklich löschen?</span
+                  >
+                } @else {
+                  <span i18n="@@sessionLearningObjectives.deleteQuestion"
+                    >Dieses Lernziel wirklich löschen?</span
+                  >
+                }
                 <button
                   mat-flat-button
                   type="button"
                   [id]="'session-learning-objective-confirm-delete-' + objective.id"
-                  [disabled]="pending()"
+                  [disabled]="pending() || derivationIsPending()"
                   (click)="confirmDelete(objective)"
                   i18n="@@sessionLearningObjectives.deleteConfirm"
                 >
@@ -149,7 +308,7 @@
                 <button
                   mat-button
                   type="button"
-                  [disabled]="pending()"
+                  [disabled]="pending() || derivationIsPending()"
                   (click)="cancelDelete(objective.id)"
                   i18n="@@common.cancel"
                 >
@@ -162,7 +321,7 @@
                   mat-button
                   type="button"
                   [id]="'session-learning-objective-edit-' + objective.id"
-                  [disabled]="pending()"
+                  [disabled]="pending() || derivationIsPending()"
                   (click)="beginEdit(objective)"
                 >
                   <mat-icon aria-hidden="true">edit</mat-icon>
@@ -172,7 +331,7 @@
                   mat-button
                   type="button"
                   [id]="'session-learning-objective-delete-' + objective.id"
-                  [disabled]="pending()"
+                  [disabled]="pending() || derivationIsPending()"
                   (click)="requestDelete(objective.id)"
                 >
                   <mat-icon aria-hidden="true">delete</mat-icon>
@@ -188,13 +347,25 @@
     @if (formOpen()) {
       <form class="session-objectives__form" (submit)="$event.preventDefault(); save()" novalidate>
         @if (editingId()) {
-          <h3 i18n="@@sessionLearningObjectives.editTitle">Lernziel bearbeiten</h3>
+          @if (isQaMode()) {
+            <h3 i18n="@@sessionQaAssignments.editTitle">Auftrag bearbeiten</h3>
+          } @else {
+            <h3 i18n="@@sessionLearningObjectives.editTitle">Lernziel bearbeiten</h3>
+          }
         } @else {
-          <h3 i18n="@@sessionLearningObjectives.addTitle">Lernziel hinzufügen</h3>
+          @if (isQaMode()) {
+            <h3 i18n="@@sessionQaAssignments.addTitle">Auftrag hinzufügen</h3>
+          } @else {
+            <h3 i18n="@@sessionLearningObjectives.addTitle">Lernziel hinzufügen</h3>
+          }
         }
 
         <mat-form-field appearance="outline">
-          <mat-label i18n="@@sessionLearningObjectives.textLabel">Lernziel</mat-label>
+          @if (isQaMode()) {
+            <mat-label i18n="@@sessionQaAssignments.textLabel">Auftrag</mat-label>
+          } @else {
+            <mat-label i18n="@@sessionLearningObjectives.textLabel">Lernziel</mat-label>
+          }
           <textarea
             #objectiveText
             matInput
@@ -211,131 +382,137 @@
           >
         </mat-form-field>
 
-        <fieldset id="session-learning-objective-scope" class="session-objectives__fieldset">
-          <legend i18n="@@sessionLearningObjectives.scopeLegend">Bereich</legend>
-          <mat-radio-group
-            [value]="scopeKind()"
-            (change)="setScopeKind($event.value)"
-            i18n-aria-label="@@sessionLearningObjectives.scopeAria"
-            aria-label="Bereich des Lernziels"
-          >
-            <mat-radio-button
-              id="session-learning-objective-scope-session"
-              value="session"
-              i18n="@@sessionLearningObjectives.scopeSessionOption"
+        @if (!isQuestionFocused() && !isQaMode()) {
+          <fieldset id="session-learning-objective-scope" class="session-objectives__fieldset">
+            <legend i18n="@@sessionLearningObjectives.scopeLegend">Bereich</legend>
+            <mat-radio-group
+              [value]="scopeKind()"
+              (change)="setScopeKind($event.value)"
+              i18n-aria-label="@@sessionLearningObjectives.scopeAria"
+              aria-label="Bereich des Lernziels"
             >
-              Ganze Session einschließlich Q&amp;A
-            </mat-radio-button>
-            @if (data.hasQuiz()) {
+              @if (data.hasQuiz()) {
+                <mat-radio-button
+                  id="session-learning-objective-scope-quiz"
+                  value="quiz-wide"
+                  i18n="@@sessionLearningObjectives.scopeQuizOption"
+                >
+                  Gesamtes Quiz
+                </mat-radio-button>
+              } @else {
+                <mat-radio-button
+                  id="session-learning-objective-scope-session"
+                  value="session"
+                  i18n="@@sessionLearningObjectives.scopeSessionOption"
+                >
+                  Ganze Session einschließlich Q&amp;A
+                </mat-radio-button>
+              }
               <mat-radio-button
-                value="quiz-wide"
-                i18n="@@sessionLearningObjectives.scopeQuizOption"
+                value="question-set"
+                i18n="@@sessionLearningObjectives.scopeTasksOption"
               >
-                Gesamtes Quiz
+                Ausgewählte Fragen
               </mat-radio-button>
-            }
-            <mat-radio-button
-              value="question-set"
-              i18n="@@sessionLearningObjectives.scopeTasksOption"
-            >
-              Ausgewählte Quiz- oder Q&amp;A-Aufgaben
-            </mat-radio-button>
-          </mat-radio-group>
+            </mat-radio-group>
 
-          @if (scopeKind() === 'question-set') {
-            <div
-              class="session-objectives__tasks"
-              role="group"
-              i18n-aria-label="@@sessionLearningObjectives.taskSelection"
-              aria-label="Aufgaben auswählen"
+            @if (scopeKind() === 'question-set') {
+              <div
+                class="session-objectives__tasks"
+                role="group"
+                i18n-aria-label="@@sessionLearningObjectives.taskSelection"
+                aria-label="Fragen auswählen"
+              >
+                @for (
+                  option of selectableTaskOptions();
+                  track option.reference.kind + ':' + option.reference.questionId
+                ) {
+                  <mat-checkbox
+                    [id]="
+                      'session-learning-objective-task-' +
+                      option.reference.kind +
+                      ':' +
+                      option.reference.questionId
+                    "
+                    [checked]="isTaskSelected(option.reference)"
+                    [disabled]="isTaskSelectionDisabled(option.reference)"
+                    (change)="toggleTask(option.reference, $event.checked)"
+                  >
+                    <span
+                      class="session-objectives__task-text markdown-body"
+                      [innerHTML]="renderTaskMarkdown(option.label)"
+                    ></span>
+                  </mat-checkbox>
+                } @empty {
+                  <p i18n="@@sessionLearningObjectives.noTasks">
+                    Aktuell sind keine auswählbaren Fragen verfügbar. Nutze das gesamte Quiz.
+                  </p>
+                }
+                @if (snapshot()?.availableQaTasksTruncated) {
+                  <p
+                    class="session-objectives__hint"
+                    role="status"
+                    i18n="@@sessionLearningObjectives.qaTaskCatalogTruncated"
+                  >
+                    Bei sehr großen Foren werden nur die neuesten Q&amp;A-Aufgaben angeboten.
+                  </p>
+                }
+              </div>
+
+              @if (selectedTaskKeys().size >= maxReferences) {
+                <p class="session-objectives__hint" role="status">
+                  {{ referenceLimitMessage }}
+                </p>
+              }
+            }
+          </fieldset>
+        }
+
+        @if (!isQaMode()) {
+          <fieldset class="session-objectives__fieldset">
+            <legend i18n="@@sessionLearningObjectives.confirmationLegend">Status</legend>
+            <mat-radio-group
+              [value]="confirmationState()"
+              (change)="setConfirmationState($event.value)"
+              i18n-aria-label="@@sessionLearningObjectives.confirmationAria"
+              aria-label="Status des Lernziels"
             >
-              @for (
-                option of selectableTaskOptions();
-                track option.reference.kind + ':' + option.reference.questionId
-              ) {
-                <mat-checkbox
-                  [id]="
-                    'session-learning-objective-task-' +
-                    option.reference.kind +
-                    ':' +
-                    option.reference.questionId
-                  "
-                  [checked]="isTaskSelected(option.reference)"
-                  [disabled]="isTaskSelectionDisabled(option.reference)"
-                  (change)="toggleTask(option.reference, $event.checked)"
-                >
+              <mat-radio-button id="session-learning-objective-status-draft" value="draft">
+                <span class="session-objectives__status-option">
                   <span
-                    class="session-objectives__task-text markdown-body"
-                    [innerHTML]="renderTaskMarkdown(option.label)"
-                  ></span>
-                </mat-checkbox>
-              } @empty {
-                <p i18n="@@sessionLearningObjectives.noTasks">
-                  Aktuell sind keine auswählbaren Aufgaben verfügbar. Nutze den Sessionbereich.
-                </p>
-              }
-              @if (snapshot()?.availableQaTasksTruncated) {
-                <p
-                  class="session-objectives__hint"
-                  role="status"
-                  i18n="@@sessionLearningObjectives.qaTaskCatalogTruncated"
-                >
-                  Bei sehr großen Foren werden nur die neuesten Q&amp;A-Aufgaben angeboten.
-                </p>
-              }
-            </div>
-
-            @if (selectedTaskKeys().size >= maxReferences) {
-              <p class="session-objectives__hint" role="status">
-                {{ referenceLimitMessage }}
-              </p>
-            }
-          }
-        </fieldset>
-
-        <fieldset class="session-objectives__fieldset">
-          <legend i18n="@@sessionLearningObjectives.confirmationLegend">Status</legend>
-          <mat-radio-group
-            [value]="confirmationState()"
-            (change)="setConfirmationState($event.value)"
-            i18n-aria-label="@@sessionLearningObjectives.confirmationAria"
-            aria-label="Status des Lernziels"
-          >
-            <mat-radio-button id="session-learning-objective-status-draft" value="draft">
-              <span class="session-objectives__status-option">
-                <span
-                  class="session-objectives__status-option-title"
-                  i18n="@@sessionLearningObjectives.draft"
-                  >Entwurf</span
-                >
-                <span
-                  class="session-objectives__status-option-hint"
-                  i18n="@@learningObjectives.draftHint"
-                >
-                  Noch nicht fachlich geprüft. Nutze diesen Status, solange du Inhalt oder Bereich
-                  abstimmst.
+                    class="session-objectives__status-option-title"
+                    i18n="@@sessionLearningObjectives.draft"
+                    >Entwurf</span
+                  >
+                  <span
+                    class="session-objectives__status-option-hint"
+                    i18n="@@learningObjectives.draftHint"
+                  >
+                    Noch in Abstimmung. KI-Vorschläge starten immer als Entwurf.
+                  </span>
                 </span>
-              </span>
-            </mat-radio-button>
-            <mat-radio-button value="confirmed">
-              <span class="session-objectives__status-option">
-                <span
-                  class="session-objectives__status-option-title"
-                  i18n="@@sessionLearningObjectives.confirmed"
-                  >Bestätigt</span
-                >
-                <span
-                  class="session-objectives__status-option-hint"
-                  i18n="@@learningObjectives.confirmedHint"
-                >
-                  Von dir fachlich geprüft. Relevante Quellenänderungen lösen erneut Prüfbedarf aus.
+              </mat-radio-button>
+              <mat-radio-button value="confirmed">
+                <span class="session-objectives__status-option">
+                  <span
+                    class="session-objectives__status-option-title"
+                    i18n="@@sessionLearningObjectives.confirmed"
+                    >Bestätigt</span
+                  >
+                  <span
+                    class="session-objectives__status-option-hint"
+                    i18n="@@learningObjectives.confirmedHint"
+                  >
+                    Freigegeben. Wenn sich zugehörige Fragen ändern, wird das Ziel zur Prüfung
+                    markiert.
+                  </span>
                 </span>
-              </span>
-            </mat-radio-button>
-          </mat-radio-group>
-        </fieldset>
+              </mat-radio-button>
+            </mat-radio-group>
+          </fieldset>
+        }
 
-        @if (editingId()) {
+        @if (editingId() && !isQaMode()) {
           <p class="session-objectives__hint" i18n="@@sessionLearningObjectives.overrideHint">
             Wenn du Text oder Bereich eines Quiz-Lernziels änderst, bleibt diese Sessionfassung bei
             einem erneuten Quiz-Anhängen erhalten.
@@ -346,8 +523,8 @@
           <p class="session-objectives__reference-warning" role="alert">
             <mat-icon aria-hidden="true">warning</mat-icon>
             <span i18n="@@sessionLearningObjectives.missingDerivationHint">
-              Eine Herleitungsaufgabe fehlt. Das Ziel bleibt bis zu einer neuen Herleitung
-              prüfbedürftig und kann nicht bestätigt werden.
+              Die ursprüngliche Frage zu diesem KI-Vorschlag fehlt. Bitte erstelle einen neuen
+              Vorschlag oder speichere das Ziel als Entwurf.
             </span>
           </p>
         }
@@ -364,7 +541,7 @@
           <button
             mat-button
             type="button"
-            [disabled]="pending()"
+            [disabled]="pending() || derivationIsPending()"
             (click)="cancelEdit()"
             i18n="@@common.cancel"
           >
@@ -373,7 +550,7 @@
           <button
             mat-flat-button
             type="submit"
-            [disabled]="pending() || authoritativeReloadRequired()"
+            [disabled]="pending() || derivationIsPending() || authoritativeReloadRequired()"
           >
             @if (pending()) {
               <mat-spinner diameter="20" aria-label="Speichern" i18n-aria-label="@@common.saving" />
@@ -383,23 +560,33 @@
           </button>
         </div>
       </form>
-    } @else if (!isReadOnly()) {
+    } @else if (!isReadOnly() && !isAudiencePresentation()) {
       <button
         mat-stroked-button
         type="button"
         id="session-learning-objective-add"
-        [disabled]="pending() || objectives().length >= maxObjectives"
+        [disabled]="pending() || derivationIsPending() || allObjectives().length >= maxObjectives"
         (click)="beginAdd()"
       >
         <mat-icon aria-hidden="true">add</mat-icon>
-        <span i18n="@@sessionLearningObjectives.add">Lernziel hinzufügen</span>
+        @if (isQaMode()) {
+          <span i18n="@@sessionQaAssignments.add">Auftrag hinzufügen</span>
+        } @else {
+          <span i18n="@@sessionLearningObjectives.add">Lernziel hinzufügen</span>
+        }
       </button>
     }
   }
 </mat-dialog-content>
 
 <mat-dialog-actions align="end">
-  <button mat-button type="button" [disabled]="pending()" (click)="close()" i18n="@@common.close">
+  <button
+    mat-button
+    type="button"
+    [disabled]="pending() || derivationIsPending()"
+    (click)="close()"
+    i18n="@@common.close"
+  >
     Schließen
   </button>
 </mat-dialog-actions>

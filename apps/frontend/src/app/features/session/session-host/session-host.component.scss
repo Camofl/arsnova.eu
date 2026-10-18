@@ -8731,19 +8731,6 @@ $round2-color: var(--mat-sys-primary);
   border-top: 1px solid var(--mat-sys-outline-variant);
 }
 
-.session-host__tool-label {
-  margin: 0 0 0.5rem;
-  font: var(--mat-sys-title-small);
-  color: var(--mat-sys-on-surface-variant);
-  overflow-wrap: anywhere;
-}
-
-.session-host__moderation-stack > .session-host__tool-label {
-  margin: 0;
-  font: var(--mat-sys-label-medium);
-  text-align: center;
-}
-
 .session-host__display-tools {
   min-width: 0;
   max-width: 100%;

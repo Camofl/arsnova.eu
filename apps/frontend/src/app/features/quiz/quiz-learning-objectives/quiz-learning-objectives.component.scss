@@ -6,21 +6,78 @@
   background: var(--mat-sys-surface-container-low);
   border-color: var(--mat-sys-outline-variant);
   border-radius: var(--mat-sys-corner-large);
+  overflow: hidden;
 }
 
-.learning-objectives mat-card-header {
+.learning-objectives__expansion-panel.mat-expansion-panel {
+  background: transparent;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.learning-objectives__expansion-body {
+  padding-block: 0 1rem;
+}
+
+.learning-objectives__panel-title {
   align-items: center;
-  padding-block-end: 1rem;
+  color: var(--mat-sys-on-surface);
+  display: flex;
+  flex: 1 1 auto;
+  gap: 0.75rem;
+  letter-spacing: -0.01em;
+  margin: 0;
+  min-width: 0;
+  width: 100%;
 }
 
-.learning-objectives [mat-card-avatar] {
+.learning-objectives__panel-icon.dialog-title-header__icon {
+  align-items: center;
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: var(--mat-sys-corner-small);
+  color: var(--mat-sys-primary);
+  display: inline-flex;
+  flex-shrink: 0;
+  height: 2rem;
+  justify-content: center;
+  margin-top: 0;
+  width: 2rem;
+
+  mat-icon {
+    font-size: 1.125rem;
+    height: 1.125rem;
+    width: 1.125rem;
+  }
+}
+
+.learning-objectives__panel-heading {
+  flex: 0 1 auto;
+  font: var(--mat-sys-title-large);
+  font-weight: 600;
+  line-height: 1.25;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.learning-objectives__panel-count {
   align-items: center;
   background: var(--mat-sys-secondary-container);
+  border-radius: var(--mat-sys-corner-full);
   color: var(--mat-sys-on-secondary-container);
-  display: flex;
+  display: inline-flex;
+  flex-shrink: 0;
+  font: var(--mat-sys-label-medium);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
   justify-content: center;
+  margin-left: auto;
+  min-width: 1.5rem;
+  padding: 0.1rem 0.55rem;
 }
 
+.learning-objectives__subtitle,
 .learning-objectives__origin-intro,
 .learning-objectives__intro,
 .learning-objectives__empty,
@@ -30,6 +87,7 @@
   line-height: 1.5;
 }
 
+.learning-objectives__subtitle,
 .learning-objectives__origin-intro,
 .learning-objectives__intro,
 .learning-objectives__empty {

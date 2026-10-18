@@ -62,6 +62,56 @@
   width: 1px;
 }
 
+.session-objectives__derivation {
+  background: var(--mat-sys-surface-container);
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: var(--mat-sys-corner-medium);
+  display: grid;
+  gap: 0.75rem;
+  padding: 1rem;
+}
+
+.session-objectives__derivation h3,
+.session-objectives__derivation p {
+  margin: 0;
+}
+
+.session-objectives__derivation h3 {
+  font: var(--mat-sys-title-medium);
+}
+
+.session-objectives__derivation > p,
+.session-objectives__derivation-status {
+  color: var(--mat-sys-on-surface-variant);
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.session-objectives__derivation-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.session-objectives__derivation-status {
+  background: var(--mat-sys-secondary-container);
+  border-radius: var(--mat-sys-corner-small);
+  color: var(--mat-sys-on-secondary-container);
+  padding: 0.75rem;
+}
+
+.session-objectives__derivation-status--error {
+  background: var(--mat-sys-error-container);
+  color: var(--mat-sys-on-error-container);
+}
+
+.session-objectives__derivation-status ul {
+  margin-block: 0.5rem 0;
+  overflow-wrap: anywhere;
+  padding-inline-start: 1.25rem;
+}
+
 .session-objectives__list {
   display: grid;
   gap: 0.75rem;
@@ -77,11 +127,58 @@
   padding: 1rem;
 }
 
+.session-objectives__item--audience {
+  align-items: center;
+  background: color-mix(
+    in srgb,
+    var(--mat-sys-primary-container) 28%,
+    var(--mat-sys-surface-container-low)
+  );
+  border-color: color-mix(in srgb, var(--mat-sys-primary) 35%, var(--mat-sys-outline-variant));
+  grid-template-columns: minmax(0, 1fr) auto;
+  padding: 1rem 0.75rem 1rem 1.25rem;
+}
+
+.session-objectives__audience-edit-btn {
+  --mat-icon-button-state-layer-size: 2.25rem;
+  --mat-icon-button-icon-size: 1.125rem;
+  --mdc-icon-button-state-layer-size: 2.25rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
+  justify-self: end;
+  flex-shrink: 0;
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: 0;
+  color: var(--mat-sys-on-surface-variant);
+  opacity: 0.4;
+  transition: opacity 0.15s ease;
+
+  mat-icon {
+    font-size: 1.125rem;
+    width: 1.125rem;
+    height: 1.125rem;
+  }
+
+  &:hover,
+  &:focus-visible {
+    opacity: 0.9;
+  }
+}
+
 .session-objectives__text {
   font: var(--mat-sys-body-large);
   line-height: 1.5;
   margin: 0;
   overflow-wrap: anywhere;
+}
+
+.session-objectives__text--audience {
+  font: var(--mat-sys-title-medium);
+  font-weight: 500;
+  line-height: 1.55;
 }
 
 .session-objectives__meta {
@@ -208,17 +305,19 @@ button[mat-stroked-button] {
     width: min(100%, calc(100vw - 2rem));
   }
 
-  .session-objectives__item {
+  .session-objectives__item:not(.session-objectives__item--audience) {
     grid-template-columns: minmax(0, 1fr);
   }
 
   .session-objectives__actions,
-  .session-objectives__form-actions {
+  .session-objectives__form-actions,
+  .session-objectives__derivation-actions {
     justify-content: stretch;
   }
 
   .session-objectives__actions button,
   .session-objectives__form-actions button,
+  .session-objectives__derivation-actions button,
   #session-learning-objective-add {
     flex: 1 1 auto;
   }

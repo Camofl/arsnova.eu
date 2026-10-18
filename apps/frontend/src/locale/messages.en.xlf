@@ -34540,16 +34540,16 @@
         </context-group>
       </trans-unit>
       <trans-unit id="learningObjectives.subtitle" datatype="html">
-        <source> Formuliere Ziele für das gesamte Quiz oder für ausgewählte Aufgaben.</source>
-        <target>Formulate goals for the entire quiz or for selected tasks.</target>
+        <source> Halte fest, was mit dem Quiz oder einzelnen Fragen erreicht werden soll.</source>
+        <target>Define what this quiz or individual questions should achieve.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/features/quiz/quiz-learning-objectives/quiz-learning-objectives.component.html</context>
           <context context-type="linenumber">11,13</context>
         </context-group>
       </trans-unit>
       <trans-unit id="learningObjectives.originIntro" datatype="html">
-        <source> Manuelle Lernziele formulierst du selbst. Automatisch aus Aufgaben formulierte Lernziele erscheinen als modellunterstützte Vorschläge. Sie bleiben entsprechend gekennzeichnet und müssen von dir fachlich geprüft werden.</source>
-        <target>You write manual learning objectives yourself. Learning objectives formulated automatically from tasks appear as model-assisted suggestions. They remain labelled as such and require your subject-matter review.</target>
+        <source> Du kannst Lernziele selbst schreiben oder automatisch aus deinen Fragen vorschlagen lassen. Automatische Vorschläge werden als Entwurf angelegt, bis du sie prüfst und bestätigst.</source>
+        <target>You can write learning objectives yourself or have them suggested automatically from your questions. Automatic suggestions are saved as drafts until you review and confirm them.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/features/quiz/quiz-learning-objectives/quiz-learning-objectives.component.html</context>
           <context context-type="linenumber">20,25</context>
@@ -34560,8 +34560,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="learningObjectives.intro" datatype="html">
-        <source> Lernziele werden beim Live-Schalten übernommen. Deaktivierte oder fehlende Aufgaben werden niemals automatisch ersetzt.</source>
-        <target>Learning objectives are adopted when going live. Disabled or missing tasks are never automatically replaced.</target>
+        <source> Beim Start einer Live-Session werden deine Lernziele für aktive Fragen übernommen.</source>
+        <target>When you start a live session, your learning objectives for active questions are included automatically.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/features/quiz/quiz-learning-objectives/quiz-learning-objectives.component.html</context>
           <context context-type="linenumber">17,20</context>
@@ -34616,8 +34616,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="learningObjectives.modelDerived" datatype="html">
-        <source>Modellunterstützt</source>
-        <target>Model-assisted</target>
+        <source>KI-Vorschlag</source>
+        <target>AI suggestion</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/features/quiz/quiz-learning-objectives/quiz-learning-objectives.component.html</context>
           <context context-type="linenumber">108</context>
@@ -34716,24 +34716,24 @@
         </context-group>
       </trans-unit>
       <trans-unit id="learningObjectives.scopeSelected" datatype="html">
-        <source> Ausgewählte Aufgaben</source>
-        <target>Selected tasks</target>
+        <source> Ausgewählte Fragen</source>
+        <target>Selected questions</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/features/quiz/quiz-learning-objectives/quiz-learning-objectives.component.html</context>
           <context context-type="linenumber">216,218</context>
         </context-group>
       </trans-unit>
       <trans-unit id="learningObjectives.questionSelection" datatype="html">
-        <source>Aufgaben auswählen</source>
-        <target>Select tasks</target>
+        <source>Fragen auswählen</source>
+        <target>Select questions</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/features/quiz/quiz-learning-objectives/quiz-learning-objectives.component.html</context>
           <context context-type="linenumber">226</context>
         </context-group>
       </trans-unit>
       <trans-unit id="learningObjectives.questionNumber" datatype="html">
-        <source>Aufgabe <x id="INTERPOLATION" equiv-text="{{ index + 1 }}"/>:</source>
-        <target>Task <x id="INTERPOLATION" equiv-text="{{ index + 1 }}"/>:</target>
+        <source>Frage <x id="INTERPOLATION" equiv-text="{{ index + 1 }}"/>:</source>
+        <target>Question <x id="INTERPOLATION" equiv-text="{{ index + 1 }}"/>:</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/features/quiz/quiz-learning-objectives/quiz-learning-objectives.component.html</context>
           <context context-type="linenumber">234</context>
@@ -34748,8 +34748,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="learningObjectives.missingReferences" datatype="html">
-        <source> Mindestens eine referenzierte Aufgabe fehlt. Entferne den Verweis oder wähle einen anderen Bereich.</source>
-        <target>At least one referenced task is missing. Remove the reference or select a different scope.</target>
+        <source> Mindestens eine referenzierte Frage fehlt. Entferne den Verweis oder wähle einen anderen Bereich.</source>
+        <target>At least one referenced question is missing. Remove the reference or select a different scope.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/features/quiz/quiz-learning-objectives/quiz-learning-objectives.component.html</context>
           <context context-type="linenumber">245,248</context>
@@ -34796,8 +34796,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="learningObjectives.draftHint" datatype="html">
-        <source>Noch nicht fachlich geprüft. Nutze diesen Status, solange du Inhalt oder Bereich abstimmst.</source>
-        <target>Not yet reviewed for subject-matter accuracy. Use this status while refining the content or scope.</target>
+        <source>Noch in Abstimmung. KI-Vorschläge starten immer als Entwurf.</source>
+        <target>Work in progress. AI suggestions always start as drafts.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/features/quiz/quiz-learning-objectives/quiz-learning-objectives.component.html</context>
           <context context-type="linenumber">300</context>
@@ -34808,8 +34808,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="learningObjectives.confirmedHint" datatype="html">
-        <source>Von dir fachlich geprüft. Relevante Quellenänderungen lösen erneut Prüfbedarf aus.</source>
-        <target>Reviewed by you for subject-matter accuracy. Relevant source changes trigger another review.</target>
+        <source>Freigegeben. Wenn sich zugehörige Fragen ändern, wird das Ziel zur Prüfung markiert.</source>
+        <target>Confirmed. If linked questions change, the objective is marked for review.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/features/quiz/quiz-learning-objectives/quiz-learning-objectives.component.html</context>
           <context context-type="linenumber">316</context>
@@ -34840,8 +34840,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="learningObjectives.referenceLimit" datatype="html">
-        <source>Höchstens <x id="maxReferences" equiv-text="this.maxReferences"/> Aufgaben können einem Lernziel zugeordnet werden.</source>
-        <target>A maximum of <x id="maxReferences" equiv-text="this.maxReferences"/> tasks can be assigned to a learning objective.</target>
+        <source>Höchstens <x id="maxReferences" equiv-text="this.maxReferences"/> Fragen können einem Lernziel zugeordnet werden.</source>
+        <target>A maximum of <x id="maxReferences" equiv-text="this.maxReferences"/> questions can be assigned to a learning objective.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/features/quiz/quiz-learning-objectives/quiz-learning-objectives.component.ts</context>
           <context context-type="linenumber">137</context>
@@ -34864,8 +34864,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="learningObjectives.scopeRequired" datatype="html">
-        <source>Wähle mindestens eine Aufgabe oder nutze den gesamten Quizbereich.</source>
-        <target>Select at least one task or use the entire quiz.</target>
+        <source>Wähle mindestens eine Frage oder nutze den gesamten Quizbereich.</source>
+        <target>Select at least one question or use the entire quiz.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/features/quiz/quiz-learning-objectives/quiz-learning-objectives.component.ts</context>
           <context context-type="linenumber">189</context>
@@ -34976,8 +34976,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="learningObjectives.scopeQuestionCount" datatype="html">
-        <source><x id="count" equiv-text="objective.scope.sourceQuestionIds.length"/> Aufgabe(n)</source>
-        <target><x id="count" equiv-text="objective.scope.sourceQuestionIds.length"/> task(s)</target>
+        <source><x id="count" equiv-text="objective.scope.sourceQuestionIds.length"/> Frage(n)</source>
+        <target><x id="count" equiv-text="objective.scope.sourceQuestionIds.length"/> question(s)</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/features/quiz/quiz-learning-objectives/quiz-learning-objectives.component.ts</context>
           <context context-type="linenumber">329</context>
@@ -35032,8 +35032,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="sessionHost.learningObjectivesButton" datatype="html">
-        <source>Ziele</source>
-        <target>Goals</target>
+        <source>Lernziel</source>
+        <target>Learning objective</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/features/session/session-host/session-host.component.html</context>
           <context context-type="linenumber">656</context>
@@ -35048,8 +35048,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="sessionLearningObjectives.subtitle" datatype="html">
-        <source> Ziele für Quiz und Q&amp;A dieser Session</source>
-        <target>Learning objectives from the quiz and Q&amp;A for this session</target>
+        <source> Lernziele für dieses Quiz</source>
+        <target>Learning objectives for this quiz</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/features/session/session-host/session-learning-objectives-dialog.component.html</context>
           <context context-type="linenumber">14,16</context>
@@ -35104,8 +35104,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="sessionLearningObjectives.modelDerived" datatype="html">
-        <source>Modellunterstützt</source>
-        <target>Model-assisted</target>
+        <source>KI-Vorschlag</source>
+        <target>AI suggestion</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/features/session/session-host/session-learning-objectives-dialog.component.html</context>
           <context context-type="linenumber">102</context>
@@ -35216,16 +35216,16 @@
         </context-group>
       </trans-unit>
       <trans-unit id="sessionLearningObjectives.scopeTasksOption" datatype="html">
-        <source> Ausgewählte Quiz- oder Q&amp;A-Aufgaben</source>
-        <target> Selected quiz or Q&amp;A tasks</target>
+        <source> Ausgewählte Fragen</source>
+        <target> Selected questions</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/features/session/session-host/session-learning-objectives-dialog.component.html</context>
           <context context-type="linenumber">234,236</context>
         </context-group>
       </trans-unit>
       <trans-unit id="sessionLearningObjectives.taskSelection" datatype="html">
-        <source>Aufgaben auswählen</source>
-        <target>Select tasks</target>
+        <source>Fragen auswählen</source>
+        <target>Select questions</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/features/session/session-host/session-learning-objectives-dialog.component.html</context>
           <context context-type="linenumber">244</context>
@@ -35312,24 +35312,24 @@
         </context-group>
       </trans-unit>
       <trans-unit id="sessionLearningObjectives.quizTaskLabel" datatype="html">
-        <source>Quizaufgabe <x id="order" equiv-text="task.order + 1"/>: <x id="text" equiv-text="task.text"/></source>
-        <target>Quiz task <x id="order" equiv-text="task.order + 1"/>: <x id="text" equiv-text="task.text"/></target>
+        <source>Frage <x id="order" equiv-text="task.order + 1"/>: <x id="text" equiv-text="task.text"/></source>
+        <target>Question <x id="order" equiv-text="task.order + 1"/>: <x id="text" equiv-text="task.text"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/features/session/session-host/session-learning-objectives-dialog.component.ts</context>
           <context context-type="linenumber">108</context>
         </context-group>
       </trans-unit>
       <trans-unit id="sessionLearningObjectives.qaTaskFallback" datatype="html">
-        <source>Q&amp;A-Frage</source>
-        <target>Q&amp;A question</target>
+        <source>Q&amp;A-Aufgabe</source>
+        <target>Q&amp;A task</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/features/session/session-host/session-learning-objectives-dialog.component.ts</context>
           <context context-type="linenumber">121</context>
         </context-group>
       </trans-unit>
       <trans-unit id="sessionLearningObjectives.quizTaskFallback" datatype="html">
-        <source>Quizaufgabe</source>
-        <target>Quiz task</target>
+        <source>Frage</source>
+        <target>Question</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/features/session/session-host/session-learning-objectives-dialog.component.ts</context>
           <context context-type="linenumber">122</context>
@@ -35544,8 +35544,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="sessionLearningObjectives.scopeTasks" datatype="html">
-        <source><x id="count" equiv-text="objective.scope.taskReferences.length"/> Aufgabe(n)</source>
-        <target><x id="count" equiv-text="objective.scope.taskReferences.length"/> task(s)</target>
+        <source><x id="count" equiv-text="objective.scope.taskReferences.length"/> Frage(n)</source>
+        <target><x id="count" equiv-text="objective.scope.taskReferences.length"/> question(s)</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/features/session/session-host/session-learning-objectives-dialog.component.ts</context>
           <context context-type="linenumber">454</context>
@@ -35592,8 +35592,8 @@
         <target>The learning objectives changed during automatic generation. Your changes have been preserved. Start the generation again.</target>
       </trans-unit>
       <trans-unit id="learningObjectives.derivationBusy" datatype="html">
-        <source>Das lokale Modell ist gerade ausgelastet. Deine Lernziele bleiben unverändert. Versuche es bewusst noch einmal.</source>
-        <target>The local model is currently busy. Your learning objectives remain unchanged. Try again when you choose.</target>
+        <source>Die lokale Text-KI ist gerade ausgelastet. Deine Lernziele bleiben unverändert. Bitte versuche es gleich noch einmal.</source>
+        <target>The local text AI is currently busy. Your learning objectives remain unchanged. Please try again in a moment.</target>
       </trans-unit>
       <trans-unit id="learningObjectives.derivationCancel" datatype="html">
         <source>Herleitung abbrechen</source>
@@ -35608,8 +35608,8 @@
         <target>Suggestions not added: <x id="count" equiv-text="omittedForCapacity"/>. Space remained reserved for existing learning objectives.</target>
       </trans-unit>
       <trans-unit id="learningObjectives.derivationCircuitOpen" datatype="html">
-        <source>Das lokale Modell erholt sich gerade von Fehlern. Versuche es später bewusst noch einmal.</source>
-        <target>The local model is recovering from errors. Try again later when you choose.</target>
+        <source>Die automatische Erstellung steht kurzzeitig nicht zur Verfügung. Bitte versuche es in einem Moment noch einmal.</source>
+        <target>Automatic generation is temporarily unavailable. Please try again in a moment.</target>
       </trans-unit>
       <trans-unit id="learningObjectives.derivationCompleted" datatype="html">
         <source><x id="count" equiv-text="applied.length"/> Lernzielvorschläge wurden als Entwürfe hinzugefügt. Prüfe sie vor dem Bestätigen.</source>
@@ -35632,8 +35632,8 @@
         <target>The automatic generation contained duplicate suggestions. Start it again.</target>
       </trans-unit>
       <trans-unit id="learningObjectives.derivationHelp" datatype="html">
-        <source>Erst nach deiner ausdrücklichen Aktion werden geeignete aktive Aufgaben mit ihren Lösungen an das lokale Modell übergeben. Vorschläge werden als Entwurf ergänzt; manuelle, bearbeitete oder bestätigte Lernziele bleiben unverändert.</source>
-        <target>Only after you explicitly start the action are suitable active tasks and their solutions passed to the local model. Suggestions are added as drafts; manual, edited, or confirmed learning objectives remain unchanged.</target>
+        <source> Auf Klick erstellt die lokale Text-KI passende Lernziel-Entwürfe aus deinen aktiven Fragen und Lösungen. Deine bestehenden Lernziele bleiben unverändert. </source>
+        <target>When you click the button, the local text AI creates draft learning objectives from your active questions and solutions. Your existing learning objectives remain unchanged.</target>
       </trans-unit>
       <trans-unit id="learningObjectives.derivationIdCollision" datatype="html">
         <source>Die Vorschläge können nicht sicher zugeordnet werden. Deine bestehenden Lernziele bleiben unverändert. Starte die Herleitung erneut.</source>
@@ -35676,23 +35676,23 @@
         <target>At least one task used for generation was changed or disabled during automatic generation. Your learning objectives remain unchanged. Start the generation again.</target>
       </trans-unit>
       <trans-unit id="learningObjectives.derivationStart" datatype="html">
-        <source>Automatisch aus Aufgaben formulieren</source>
-        <target>Generate automatically from tasks</target>
+        <source>Automatisch aus Fragen formulieren</source>
+        <target>Generate automatically from questions</target>
       </trans-unit>
       <trans-unit id="learningObjectives.derivationTimeout" datatype="html">
-        <source>Die automatische Herleitung hat zu lange gedauert. Deine Lernziele bleiben unverändert.</source>
+        <source>Die automatische Erstellung hat zu lange gedauert. Deine Lernziele bleiben unverändert.</source>
         <target>The automatic generation took too long. Your learning objectives remain unchanged.</target>
       </trans-unit>
       <trans-unit id="learningObjectives.derivationTitle" datatype="html">
-        <source>Automatische Vorschläge</source>
-        <target>Automatic suggestions</target>
+        <source> Lernziele vorschlagen lassen </source>
+        <target>Suggest learning objectives</target>
       </trans-unit>
       <trans-unit id="learningObjectives.derivationUnavailable" datatype="html">
-        <source>Die automatische Herleitung ist gerade nicht verfügbar. Versuche es später erneut.</source>
-        <target>Automatic generation is currently unavailable. Try again later.</target>
+        <source>Die lokale Text-KI ist gerade nicht erreichbar. Du kannst Lernziele manuell eintragen oder es später erneut versuchen.</source>
+        <target>The local text AI is currently unreachable. You can enter learning objectives manually or try again later.</target>
       </trans-unit>
       <trans-unit id="learningObjectives.derivationAborted" datatype="html">
-        <source>Die automatische Herleitung wurde abgebrochen. Deine Lernziele bleiben unverändert.</source>
+        <source>Die automatische Erstellung wurde abgebrochen. Deine Lernziele bleiben unverändert.</source>
         <target>The automatic generation was cancelled. Your learning objectives remain unchanged.</target>
       </trans-unit>
       <trans-unit id="sessionHost.moderationDiagnosis" datatype="html">
@@ -36070,6 +36070,110 @@
           <context context-type="sourcefile">src/app/features/session/session-host/moderation-compass-dialog.component.ts</context>
           <context context-type="linenumber">452</context>
         </context-group>
+      </trans-unit>
+      <trans-unit id="sessionHost.qaAssignmentButton" datatype="html">
+        <source>Auftrag</source>
+        <target>Task</target>
+      </trans-unit>
+      <trans-unit id="sessionHost.qaAssignmentAria" datatype="html">
+        <source>Auftrag für das Q&amp;A-Forum öffnen</source>
+        <target>Open task for the Q&amp;A forum</target>
+      </trans-unit>
+      <trans-unit id="sessionQaAssignments.title" datatype="html">
+        <source>Auftrag</source>
+        <target>Task</target>
+      </trans-unit>
+      <trans-unit id="sessionQaAssignments.subtitle" datatype="html">
+        <source>Auftrag für das Q&amp;A-Forum dieser Session</source>
+        <target>Task for the Q&amp;A forum of this session</target>
+      </trans-unit>
+      <trans-unit id="sessionLearningObjectives.questionTitle" datatype="html">
+        <source>Lernziel zur Frage</source>
+        <target>Learning objective for this question</target>
+      </trans-unit>
+      <trans-unit id="sessionLearningObjectives.questionSubtitle" datatype="html">
+        <source>Kompetenzziel der aktuell gezeigten Frage</source>
+        <target>Competency goal of the currently displayed question</target>
+      </trans-unit>
+      <trans-unit id="sessionQaAssignments.loading" datatype="html">
+        <source>Auftrag wird geladen …</source>
+        <target>Task is loading...</target>
+      </trans-unit>
+      <trans-unit id="sessionQaAssignments.loadFailed" datatype="html">
+        <source>Auftrag konnte nicht geladen werden.</source>
+        <target>Task could not be loaded.</target>
+      </trans-unit>
+      <trans-unit id="sessionQaAssignments.readOnly" datatype="html">
+        <source>Diese beendete Session ist nur noch lesbar. Aufträge können nicht mehr geändert werden.</source>
+        <target>This session has ended and is read-only. Tasks can no longer be changed.</target>
+      </trans-unit>
+      <trans-unit id="sessionQaAssignments.intro" datatype="html">
+        <source>Hier hinterlegst du einen klaren Arbeits- oder Diskussionsauftrag für das Q&amp;A-Forum. Sobald ein Auftrag vorhanden ist, sehen Teilnehmende im Forum den Button »Auftrag«.</source>
+        <target>Define a clear work or discussion prompt for the Q&amp;A forum here. As soon as a task is available, participants will see the “Task” button in the forum.</target>
+      </trans-unit>
+      <trans-unit id="sessionQaAssignments.empty" datatype="html">
+        <source>Für dieses Q&amp;A-Forum ist noch kein Auftrag hinterlegt.</source>
+        <target>No task has been set for this Q&amp;A forum yet.</target>
+      </trans-unit>
+      <trans-unit id="sessionLearningObjectives.questionEmpty" datatype="html">
+        <source>Für diese Frage ist noch kein Lernziel hinterlegt.</source>
+        <target>No learning objective has been set for this question yet.</target>
+      </trans-unit>
+      <trans-unit id="sessionQaAssignments.deleteQuestion" datatype="html">
+        <source>Diesen Auftrag wirklich löschen?</source>
+        <target>Really delete this task?</target>
+      </trans-unit>
+      <trans-unit id="sessionQaAssignments.editTitle" datatype="html">
+        <source>Auftrag bearbeiten</source>
+        <target>Edit task</target>
+      </trans-unit>
+      <trans-unit id="sessionQaAssignments.addTitle" datatype="html">
+        <source>Auftrag hinzufügen</source>
+        <target>Add task</target>
+      </trans-unit>
+      <trans-unit id="sessionQaAssignments.textLabel" datatype="html">
+        <source>Auftrag</source>
+        <target>Task</target>
+      </trans-unit>
+      <trans-unit id="sessionQaAssignments.add" datatype="html">
+        <source>Auftrag hinzufügen</source>
+        <target>Add task</target>
+      </trans-unit>
+      <trans-unit id="sessionQaAssignments.textRequired" datatype="html">
+        <source>Formuliere einen Auftrag.</source>
+        <target>Enter a task.</target>
+      </trans-unit>
+      <trans-unit id="sessionQaAssignments.textTooLong" datatype="html">
+        <source>Der Auftrag ist zu lang.</source>
+        <target>The task is too long.</target>
+      </trans-unit>
+      <trans-unit id="sessionQaAssignments.created" datatype="html">
+        <source>Auftrag hinzugefügt.</source>
+        <target>Task added.</target>
+      </trans-unit>
+      <trans-unit id="sessionQaAssignments.updated" datatype="html">
+        <source>Auftrag aktualisiert.</source>
+        <target>Task updated.</target>
+      </trans-unit>
+      <trans-unit id="sessionQaAssignments.saveFailed" datatype="html">
+        <source>Auftrag konnte nicht gespeichert werden. Versuche es erneut.</source>
+        <target>Task could not be saved. Please try again.</target>
+      </trans-unit>
+      <trans-unit id="sessionQaAssignments.deleted" datatype="html">
+        <source>Auftrag gelöscht.</source>
+        <target>Task deleted.</target>
+      </trans-unit>
+      <trans-unit id="sessionQaAssignments.deleteFailed" datatype="html">
+        <source>Auftrag konnte nicht gelöscht werden.</source>
+        <target>Task could not be deleted.</target>
+      </trans-unit>
+      <trans-unit id="sessionVote.qaAssignmentButton" datatype="html">
+        <source>Auftrag</source>
+        <target>Task</target>
+      </trans-unit>
+      <trans-unit id="sessionVote.qaAssignmentHeading" datatype="html">
+        <source>Auftrag für dieses Forum</source>
+        <target>Task for this forum</target>
       </trans-unit>
     </body>
   </file>

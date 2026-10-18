@@ -497,6 +497,12 @@ export type SessionLearningObjectiveProjection = z.infer<
   typeof SessionLearningObjectiveProjectionSchema
 >;
 
+export const SessionLearningObjectivePurposeSchema = z.enum([
+  'learning-objective',
+  'forum-assignment',
+]);
+export type SessionLearningObjectivePurpose = z.infer<typeof SessionLearningObjectivePurposeSchema>;
+
 export const SessionLearningObjectiveDTOSchema = z
   .object({
     id: LearningObjectiveIdSchema,
@@ -506,6 +512,7 @@ export const SessionLearningObjectiveDTOSchema = z
     origin: SessionLearningObjectiveOriginSchema,
     confirmation: LearningObjectiveConfirmationSchema,
     projection: SessionLearningObjectiveProjectionSchema,
+    purpose: SessionLearningObjectivePurposeSchema.default('learning-objective'),
     createdAt: LearningObjectiveTimestampSchema,
     updatedAt: LearningObjectiveTimestampSchema,
   })
@@ -542,6 +549,29 @@ export const SessionLearningObjectiveDTOSchema = z
         path: ['origin', 'kind'],
         message: 'Sessionmanuelle Ziele benötigen manuelle Herkunft.',
       });
+    }
+    if (value.purpose === 'forum-assignment') {
+      if (value.origin.kind !== 'manual') {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['origin', 'kind'],
+          message: 'Q&A-Forumsaufträge benötigen manuelle Herkunft.',
+        });
+      }
+      if (value.projection !== 'session-manual') {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['projection'],
+          message: 'Q&A-Forumsaufträge müssen sessionmanuell persistiert sein.',
+        });
+      }
+      if (value.scope.kind !== 'session') {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['scope', 'kind'],
+          message: 'Q&A-Forumsaufträge gelten für die gesamte Session.',
+        });
+      }
     }
     if (value.projection === 'quiz-projected') {
       if (value.scope.kind === 'session') {
@@ -666,6 +696,7 @@ export const SessionLearningObjectiveAvailableQuizTaskSchema = z
     questionId: z.uuid(),
     text: z.string().trim().min(1).max(QUIZ_QUESTION_TEXT_MAX_LENGTH),
     order: z.number().int().min(0),
+    eligibleForDerivation: z.boolean().optional(),
   })
   .strict();
 export type SessionLearningObjectiveAvailableQuizTask = z.infer<
@@ -757,8 +788,18 @@ const SessionLearningObjectiveUpsertSchema = z
     text: LearningObjectiveTextSchema,
     scope: SessionLearningObjectiveWriteScopeSchema,
     confirmationState: z.enum(['draft', 'confirmed']),
+    purpose: SessionLearningObjectivePurposeSchema.optional(),
   })
-  .strict();
+  .strict()
+  .superRefine((value, ctx) => {
+    if (value.purpose === 'forum-assignment' && value.scope.kind !== 'session') {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['scope', 'kind'],
+        message: 'Q&A-Forumsaufträge gelten für die gesamte Session.',
+      });
+    }
+  });
 
 const SessionLearningObjectiveDeleteSchema = z
   .object({
@@ -806,4 +847,58 @@ export type SaveSessionLearningObjectivesInput = z.infer<
 export const SaveSessionLearningObjectivesOutputSchema = SessionLearningObjectivesSnapshotSchema;
 export type SaveSessionLearningObjectivesOutput = z.infer<
   typeof SaveSessionLearningObjectivesOutputSchema
+>;
+
+export const DeriveSessionLearningObjectivesInputSchema = z
+  .object({
+    code: z.string().length(6),
+    operationId: z.uuid(),
+    expectedLearningContextRevision: LearningObjectiveRevisionSchema,
+    maximumDrafts: z.number().int().min(1).max(LEARNING_OBJECTIVE_MAX_OBJECTIVES),
+    locale: z.enum(['de', 'en', 'fr', 'es', 'it']),
+    questionId: z.uuid().optional(),
+  })
+  .strict();
+export type DeriveSessionLearningObjectivesInput = z.infer<
+  typeof DeriveSessionLearningObjectivesInputSchema
+>;
+
+const SessionLearningObjectiveDerivationBaseResultSchema = z
+  .object({
+    operationId: z.uuid(),
+    expectedLearningContextRevision: LearningObjectiveRevisionSchema,
+  })
+  .strict();
+
+export const DeriveSessionLearningObjectivesResultSchema = z.discriminatedUnion('status', [
+  SessionLearningObjectiveDerivationBaseResultSchema.extend({
+    status: z.literal('completed'),
+    snapshot: SessionLearningObjectivesSnapshotSchema,
+    appliedCount: z.number().int().min(0).max(LEARNING_OBJECTIVE_MAX_OBJECTIVES),
+    limitations: z.array(z.string().trim().min(1).max(280)).max(6),
+    batchCount: z.number().int().min(1).max(QUIZ_UPLOAD_MAX_QUESTIONS),
+  }).strict(),
+  SessionLearningObjectiveDerivationBaseResultSchema.extend({
+    status: z.literal('busy'),
+    retry: z.literal('manual'),
+  }).strict(),
+  SessionLearningObjectiveDerivationBaseResultSchema.extend({
+    status: z.enum([
+      'disabled',
+      'aborted',
+      'timeout',
+      'unavailable',
+      'invalid_response',
+      'misconfigured',
+      'circuit_open',
+      'no_eligible_questions',
+    ]),
+  }).strict(),
+  SessionLearningObjectiveDerivationBaseResultSchema.extend({
+    status: z.literal('input_too_large'),
+    sourceQuestionId: QuizSourceQuestionIdSchema,
+  }).strict(),
+]);
+export type DeriveSessionLearningObjectivesResult = z.infer<
+  typeof DeriveSessionLearningObjectivesResultSchema
 >;

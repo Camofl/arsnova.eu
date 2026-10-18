@@ -78,5 +78,8 @@ lerna-debug.log*
 .nx/cache
 .nx/workspace-data
 
+# ---------- Local Open-Weight GGUF (download, do not commit) ----------
+*.gguf
+
 # ---------- Private teaching notes ----------
 docs/_private-dozent/

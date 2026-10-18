@@ -15,6 +15,7 @@ import {
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatExpansionModule } from '@angular/material/expansion';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
@@ -39,6 +40,28 @@ import { QuizStoreService, type QuizQuestion } from '../data/quiz-store.service'
 import { LearningObjectiveDerivationClient } from './learning-objective-derivation.client';
 
 type DerivationUiStatus = 'idle' | 'pending' | LearningObjectiveDerivationResult['status'];
+
+export function isQuizQuestionEligibleForLearningObjectiveDerivation(
+  question: QuizQuestion,
+): boolean {
+  if (!question.enabled) return false;
+  switch (question.type) {
+    case 'MULTIPLE_CHOICE':
+    case 'SINGLE_CHOICE':
+      return question.answers.some((answer) => answer.isCorrect);
+    case 'SHORT_TEXT':
+    case 'NUMERIC_ESTIMATE':
+    case 'MATCHING':
+    case 'ORDERING':
+    case 'CATEGORIZATION':
+      return true;
+    case 'FREETEXT':
+    case 'SURVEY':
+    case 'RATING':
+    default:
+      return false;
+  }
+}
 
 export function mapQuestionForLearningObjectiveDerivation(
   question: QuizQuestion,
@@ -127,6 +150,7 @@ export function mapQuestionForLearningObjectiveDerivation(
     MatButtonModule,
     MatCardModule,
     MatCheckboxModule,
+    MatExpansionModule,
     MatFormFieldModule,
     MatIconModule,
     MatInputModule,
@@ -150,13 +174,32 @@ export class QuizLearningObjectivesComponent {
 
   readonly quizId = input.required<string>();
   readonly questions = input.required<readonly QuizQuestion[]>();
+  readonly focusedQuestionId = input<string | null>(null);
+  readonly panelExpanded = signal(false);
 
   readonly maxTextLength = LEARNING_OBJECTIVE_TEXT_MAX_LENGTH;
   readonly maxObjectives = LEARNING_OBJECTIVE_MAX_OBJECTIVES;
   readonly maxReferences = LEARNING_OBJECTIVE_MAX_REFERENCES;
-  readonly referenceLimitMessage = $localize`:@@learningObjectives.referenceLimit:Höchstens ${this.maxReferences}:maxReferences: Aufgaben können einem Lernziel zugeordnet werden.`;
+  readonly referenceLimitMessage = $localize`:@@learningObjectives.referenceLimit:Höchstens ${this.maxReferences}:maxReferences: Fragen können einem Lernziel zugeordnet werden.`;
   readonly bundle = computed(() => this.quizStore.getLearningObjectiveBundle(this.quizId()));
-  readonly objectives = computed(() => this.bundle().objectives);
+  readonly allObjectives = computed(() => this.bundle().objectives);
+  readonly objectives = computed(() => {
+    const focusedId = this.focusedQuestionId();
+    const list = this.allObjectives();
+    if (!focusedId) return list;
+    return list.filter(
+      (objective) =>
+        objective.scope.kind === 'question-set' &&
+        objective.scope.sourceQuestionIds.includes(focusedId),
+    );
+  });
+  readonly eligibleQuestions = computed(() => {
+    const focusedId = this.focusedQuestionId();
+    return this.questions()
+      .filter((question) => !focusedId || question.id === focusedId)
+      .filter(isQuizQuestionEligibleForLearningObjectiveDerivation);
+  });
+  readonly hasEligibleQuestionsForDerivation = computed(() => this.eligibleQuestions().length > 0);
   readonly syncConflicts = computed(() =>
     this.quizStore
       .learningObjectiveSyncConflicts()
@@ -205,7 +248,7 @@ export class QuizLearningObjectivesComponent {
 
     const operationId = globalThis.crypto.randomUUID();
     const expectedBundleRevision = this.bundle().revision;
-    const maximumDrafts = this.maxObjectives - this.objectives().length;
+    const maximumDrafts = this.maxObjectives - this.allObjectives().length;
     if (maximumDrafts <= 0) {
       this.finishDerivation(
         'unavailable',
@@ -215,20 +258,22 @@ export class QuizLearningObjectivesComponent {
     }
     let questions: LearningObjectiveDerivationQuestion[];
     try {
+      const focusedId = this.focusedQuestionId();
       questions = [...this.questions()]
+        .filter((question) => !focusedId || question.id === focusedId)
         .sort((left, right) => left.order - right.order || left.id.localeCompare(right.id))
         .map(mapQuestionForLearningObjectiveDerivation);
     } catch {
       this.finishDerivation(
         'invalid_response',
-        $localize`:@@learningObjectives.derivationInvalidQuiz:Mindestens eine Aufgabe kann nicht sicher für die automatische Herleitung verwendet werden. Prüfe das Quiz und versuche es erneut.`,
+        $localize`:@@learningObjectives.derivationInvalidQuiz:Mindestens eine Frage kann nicht sicher für die automatische Herleitung verwendet werden. Prüfe das Quiz und versuche es erneut.`,
       );
       return;
     }
     if (questions.length === 0) {
       this.finishDerivation(
         'no_eligible_questions',
-        $localize`:@@learningObjectives.derivationNoEligible:Es gibt noch keine geeignete aktive Aufgabe mit Lösung.`,
+        $localize`:@@learningObjectives.derivationNoEligible:Es gibt noch keine geeignete aktive Frage mit Lösung.`,
       );
       return;
     }
@@ -292,7 +337,7 @@ export class QuizLearningObjectivesComponent {
         return;
       }
 
-      const remainingCapacity = Math.max(0, this.maxObjectives - this.objectives().length);
+      const remainingCapacity = Math.max(0, this.maxObjectives - this.allObjectives().length);
       const draftsToApply = result.drafts.slice(0, remainingCapacity);
       const omittedForCapacity = result.drafts.length - draftsToApply.length;
 
@@ -316,7 +361,7 @@ export class QuizLearningObjectivesComponent {
       if (sourceChanged) {
         this.finishDerivation(
           'unavailable',
-          $localize`:@@learningObjectives.derivationSourceChanged:Mindestens eine verwendete Aufgabe wurde während der automatischen Herleitung geändert oder deaktiviert. Deine Lernziele bleiben unverändert. Starte die Herleitung erneut.`,
+          $localize`:@@learningObjectives.derivationSourceChanged:Mindestens eine verwendete Frage wurde während der automatischen Herleitung geändert oder deaktiviert. Deine Lernziele bleiben unverändert. Starte die Herleitung erneut.`,
         );
         return;
       }
@@ -357,7 +402,7 @@ export class QuizLearningObjectivesComponent {
       if (sequence !== this.derivationSequence || controller.signal.aborted) return;
       this.finishDerivation(
         'unavailable',
-        $localize`:@@learningObjectives.derivationUnavailable:Die automatische Herleitung ist gerade nicht verfügbar. Versuche es später erneut.`,
+        $localize`:@@learningObjectives.derivationUnavailable:Die lokale Text-KI ist gerade nicht erreichbar. Du kannst Lernziele manuell eintragen oder es später erneut versuchen.`,
       );
     }
   }
@@ -368,17 +413,18 @@ export class QuizLearningObjectivesComponent {
     this.derivationAbortController?.abort();
     this.finishDerivation(
       'aborted',
-      $localize`:@@learningObjectives.derivationAborted:Die automatische Herleitung wurde abgebrochen. Deine Lernziele bleiben unverändert.`,
+      $localize`:@@learningObjectives.derivationAborted:Die automatische Erstellung wurde abgebrochen. Deine Lernziele bleiben unverändert.`,
     );
   }
 
   beginAdd(): void {
+    const focusedId = this.focusedQuestionId();
     this.editingId.set(null);
     this.editingExpectedRevision.set(null);
     this.text.set('');
-    this.scopeKind.set('quiz-wide');
-    this.selectedQuestionIds.set(new Set());
-    this.confirmationState.set('draft');
+    this.scopeKind.set(focusedId ? 'question-set' : 'quiz-wide');
+    this.selectedQuestionIds.set(focusedId ? new Set([focusedId]) : new Set());
+    this.confirmationState.set('confirmed');
     this.pendingDeleteId.set(null);
     this.errorMessage.set(null);
     this.statusMessage.set(null);
@@ -516,7 +562,7 @@ export class QuizLearningObjectivesComponent {
     const selectedIds = [...this.selectedQuestionIds()];
     if (this.scopeKind() === 'question-set' && selectedIds.length === 0) {
       this.errorMessage.set(
-        $localize`:@@learningObjectives.scopeRequired:Wähle mindestens eine Aufgabe oder nutze den gesamten Quizbereich.`,
+        $localize`:@@learningObjectives.scopeRequired:Wähle mindestens eine Frage oder nutze den gesamten Quizbereich.`,
       );
       this.focusElement('learning-objective-scope-all');
       return;
@@ -524,12 +570,12 @@ export class QuizLearningObjectivesComponent {
 
     const editingId = this.editingId();
     const existing = editingId
-      ? this.objectives().find((objective) => objective.id === editingId)
+      ? this.allObjectives().find((objective) => objective.id === editingId)
       : undefined;
     const missingScopeReferences = selectedIds.filter((id) => !this.questionIds().has(id));
     if (this.confirmationState() === 'confirmed' && missingScopeReferences.length > 0) {
       this.errorMessage.set(
-        $localize`:@@learningObjectives.missingScopeCannotConfirm:Ein Lernziel mit fehlendem Aufgabenverweis kann nicht bestätigt werden. Entferne den Verweis oder wähle einen anderen Bereich.`,
+        $localize`:@@learningObjectives.missingScopeCannotConfirm:Ein Lernziel mit fehlendem Fragenverweis kann nicht bestätigt werden. Entferne den Verweis oder wähle einen anderen Bereich.`,
       );
       this.focusElement(`learning-objective-remove-missing-${missingScopeReferences[0]}`);
       return;
@@ -540,7 +586,7 @@ export class QuizLearningObjectivesComponent {
       existing.origin.derivedFromSourceQuestionIds.some((id) => !this.questionIds().has(id))
     ) {
       this.errorMessage.set(
-        $localize`:@@learningObjectives.missingDerivationCannotConfirm:Eine Herleitungsaufgabe fehlt. Das Ziel bleibt bis zu einer neuen Herleitung prüfbedürftig und kann nicht bestätigt werden.`,
+        $localize`:@@learningObjectives.missingDerivationCannotConfirm:Die ursprüngliche Frage zu diesem KI-Vorschlag fehlt. Bitte erstelle einen neuen Vorschlag oder speichere das Ziel als Entwurf.`,
       );
       this.focusElement('learning-objective-status-draft');
       return;
@@ -656,12 +702,12 @@ export class QuizLearningObjectivesComponent {
     if (objective.scope.kind === 'quiz-wide') {
       return $localize`:@@learningObjectives.scopeQuizWide:Gesamtes Quiz`;
     }
-    return $localize`:@@learningObjectives.scopeQuestionCount:${objective.scope.sourceQuestionIds.length}:count: Aufgabe(n)`;
+    return $localize`:@@learningObjectives.scopeQuestionCount:${objective.scope.sourceQuestionIds.length}:count: Frage(n)`;
   }
 
   originLabel(objective: QuizLearningObjectiveV1): string {
     return objective.origin.kind === 'model-derived'
-      ? $localize`:@@learningObjectives.modelDerived:Modellunterstützt`
+      ? $localize`:@@learningObjectives.modelDerived:KI-Vorschlag`
       : $localize`:@@learningObjectives.manualOrigin:Manuell erstellt`;
   }
 
@@ -672,8 +718,8 @@ export class QuizLearningObjectivesComponent {
   reviewReason(objective: QuizLearningObjectiveV1): string | null {
     if (objective.confirmation.state !== 'needs-review') return null;
     return objective.confirmation.reason === 'source-reference-removed'
-      ? $localize`:@@learningObjectives.reviewReferenceRemoved:Eine referenzierte Aufgabe wurde gelöscht. Prüfe den Bereich.`
-      : $localize`:@@learningObjectives.reviewSourceChanged:Der Aufgabeninhalt hat sich seit der Herleitung geändert.`;
+      ? $localize`:@@learningObjectives.reviewReferenceRemoved:Eine verknüpfte Frage wurde gelöscht. Prüfe die Zuordnung.`
+      : $localize`:@@learningObjectives.reviewSourceChanged:Die verknüpfte Frage hat sich geändert. Bitte prüfe das Lernziel.`;
   }
 
   private isCurrentDerivation(sequence: number, controller: AbortController): boolean {
@@ -693,7 +739,7 @@ export class QuizLearningObjectivesComponent {
     this.derivationStatus.set(status);
     this.derivationMessage.set(message);
     if (status !== 'completed') this.derivationLimitations.set([]);
-    const startRemainsEnabled = this.objectives().length < this.maxObjectives;
+    const startRemainsEnabled = this.allObjectives().length < this.maxObjectives;
     this.focusElement(
       preferredFocusId ??
         (status !== 'completed' && startRemainsEnabled
@@ -705,25 +751,25 @@ export class QuizLearningObjectivesComponent {
   private derivationStatusMessage(result: LearningObjectiveDerivationResult): string {
     switch (result.status) {
       case 'busy':
-        return $localize`:@@learningObjectives.derivationBusy:Das lokale Modell ist gerade ausgelastet. Deine Lernziele bleiben unverändert. Versuche es bewusst noch einmal.`;
+        return $localize`:@@learningObjectives.derivationBusy:Die lokale Text-KI ist gerade ausgelastet. Deine Lernziele bleiben unverändert. Bitte versuche es gleich noch einmal.`;
       case 'disabled':
         return $localize`:@@learningObjectives.derivationDisabled:Automatische Vorschläge sind auf diesem System nicht aktiviert. Du kannst Lernziele weiterhin manuell formulieren.`;
       case 'aborted':
-        return $localize`:@@learningObjectives.derivationAborted:Die automatische Herleitung wurde abgebrochen. Deine Lernziele bleiben unverändert.`;
+        return $localize`:@@learningObjectives.derivationAborted:Die automatische Erstellung wurde abgebrochen. Deine Lernziele bleiben unverändert.`;
       case 'timeout':
-        return $localize`:@@learningObjectives.derivationTimeout:Die automatische Herleitung hat zu lange gedauert. Deine Lernziele bleiben unverändert.`;
+        return $localize`:@@learningObjectives.derivationTimeout:Die automatische Erstellung hat zu lange gedauert. Deine Lernziele bleiben unverändert.`;
       case 'unavailable':
-        return $localize`:@@learningObjectives.derivationUnavailable:Die automatische Herleitung ist gerade nicht verfügbar. Versuche es später erneut.`;
+        return $localize`:@@learningObjectives.derivationUnavailable:Die lokale Text-KI ist gerade nicht erreichbar. Du kannst Lernziele manuell eintragen oder es später erneut versuchen.`;
       case 'invalid_response':
         return $localize`:@@learningObjectives.derivationInvalidResponse:Die Antwort konnte nicht sicher zugeordnet werden. Deine Lernziele bleiben unverändert.`;
       case 'misconfigured':
         return $localize`:@@learningObjectives.derivationMisconfigured:Automatische Vorschläge sind auf diesem System noch nicht vollständig eingerichtet. Du kannst Lernziele weiterhin manuell formulieren.`;
       case 'circuit_open':
-        return $localize`:@@learningObjectives.derivationCircuitOpen:Das lokale Modell erholt sich gerade von Fehlern. Versuche es später bewusst noch einmal.`;
+        return $localize`:@@learningObjectives.derivationCircuitOpen:Die automatische Erstellung steht kurzzeitig nicht zur Verfügung. Bitte versuche es in einem Moment noch einmal.`;
       case 'no_eligible_questions':
-        return $localize`:@@learningObjectives.derivationNoEligible:Es gibt noch keine geeignete aktive Aufgabe mit Lösung.`;
+        return $localize`:@@learningObjectives.derivationNoEligible:Es gibt noch keine geeignete aktive Frage mit Lösung.`;
       case 'input_too_large':
-        return $localize`:@@learningObjectives.derivationInputTooLarge:Mindestens eine Aufgabe enthält zu viel Inhalt für die automatische Herleitung. Kürze sie und versuche es erneut.`;
+        return $localize`:@@learningObjectives.derivationInputTooLarge:Mindestens eine Frage enthält zu viel Inhalt für die automatische Herleitung. Kürze sie und versuche es erneut.`;
       case 'completed':
         return $localize`:@@learningObjectives.derivationCompletedEmpty:Die Herleitung ist abgeschlossen. Es wurden keine neuen Vorschläge hinzugefügt.`;
     }

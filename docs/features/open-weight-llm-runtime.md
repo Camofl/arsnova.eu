@@ -89,6 +89,12 @@ URL und Socket sind gegenseitig exklusiv. Das Flag bleibt bis zur gesonderten Co
 
 ### Same-Host-Labor
 
+**Studierende / Fork ohne Inferenz-SSH:** `npm run dev` braucht kein Modell. Die verständliche
+Anleitung zum lokalen Docker-Labor (Modell laden, `npm run docker:up:llm:http` neben dem
+Dev-Server, `.env`) steht in
+[docs/onboarding.md](../onboarding.md#optional-lokale-text-ki-qwen3-4b).
+Die folgenden Befehle sind der technische Vertrag dazu.
+
 ```bash
 OPEN_WEIGHT_LLM_MODEL_DIR=/absoluter/pfad/zum/modell \
 OPEN_WEIGHT_LLM_TOKEN=<lokales-ascii-secret-mit-32-bis-512-zeichen> \

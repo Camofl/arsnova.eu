@@ -2,8 +2,10 @@ import {
   afterNextRender,
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   ElementRef,
   Injector,
+  LOCALE_ID,
   computed,
   inject,
   signal,
@@ -28,10 +30,12 @@ import {
   LEARNING_OBJECTIVE_MAX_OBJECTIVES,
   LEARNING_OBJECTIVE_MAX_REFERENCES,
   LEARNING_OBJECTIVE_TEXT_MAX_LENGTH,
+  type DeriveSessionLearningObjectivesResult,
   type SessionLearningObjectiveDTO,
   type SessionLearningObjectiveResolvedTaskReference,
   type SessionLearningObjectivesSnapshot,
 } from '@arsnova/shared-types';
+import { getEffectiveLocale, localeIdToSupported } from '../../../core/locale-from-path';
 import { renderMarkdownWithKatex } from '../../../shared/markdown-katex.util';
 import { trpc } from '../../../core/trpc.client';
 
@@ -43,10 +47,14 @@ export interface SessionLearningObjectiveTaskOption {
 export interface SessionLearningObjectivesDialogData {
   code: string;
   hasQuiz: () => boolean;
+  mode?: () => 'quiz' | 'qa';
+  focusedQuestionId?: () => string | null;
+  focusedQuestionEligibleForDerivation?: () => boolean;
 }
 
 type LoadState = 'loading' | 'ready' | 'error';
 type ScopeKind = 'session' | 'quiz-wide' | 'question-set';
+type DerivationUiStatus = 'idle' | 'pending' | DeriveSessionLearningObjectivesResult['status'];
 
 @Component({
   selector: 'app-session-learning-objectives-dialog',
@@ -75,7 +83,12 @@ export class SessionLearningObjectivesDialogComponent {
   private readonly dialogRef = inject(MatDialogRef<SessionLearningObjectivesDialogComponent>);
   private readonly injector = inject(Injector);
   private readonly sanitizer = inject(DomSanitizer);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly locale = getEffectiveLocale(localeIdToSupported(inject(LOCALE_ID)));
   private readonly taskMarkdownCache = new Map<string, SafeHtml>();
+  private readonly objectiveMarkdownCache = new Map<string, SafeHtml>();
+  private derivationAbortController: AbortController | null = null;
+  private derivationSequence = 0;
 
   readonly maxTextLength = LEARNING_OBJECTIVE_TEXT_MAX_LENGTH;
   readonly maxObjectives = LEARNING_OBJECTIVE_MAX_OBJECTIVES;
@@ -100,9 +113,75 @@ export class SessionLearningObjectivesDialogComponent {
   readonly hasUnresolvedDerivation = signal(false);
   readonly scopeTouched = signal(false);
   readonly pendingDeleteId = signal<string | null>(null);
+  readonly derivationStatus = signal<DerivationUiStatus>('idle');
+  readonly derivationMessage = signal<string | null>(null);
+  readonly derivationLimitations = signal<readonly string[]>([]);
+  readonly derivationIsPending = computed(() => this.derivationStatus() === 'pending');
+  readonly derivationCanRetry = computed(() =>
+    [
+      'busy',
+      'aborted',
+      'timeout',
+      'unavailable',
+      'invalid_response',
+      'circuit_open',
+      'input_too_large',
+    ].includes(this.derivationStatus()),
+  );
 
+  readonly isQaMode = computed(() => this.data.mode?.() === 'qa');
+  readonly focusedQuestionId = computed(() =>
+    this.isQaMode() ? null : (this.data.focusedQuestionId?.() ?? null),
+  );
+  readonly isQuestionFocused = computed(() => this.focusedQuestionId() !== null);
   readonly isReadOnly = computed(() => this.snapshot()?.access.state === 'read-only');
-  readonly objectives = computed(() => this.snapshot()?.objectives ?? []);
+  readonly allObjectives = computed(() => this.snapshot()?.objectives ?? []);
+  readonly objectives = computed(() => {
+    const all = this.allObjectives();
+    if (this.isQaMode()) {
+      return all.filter((objective) => isQaForumAssignmentObjective(objective));
+    }
+    const learningObjectives = all.filter((objective) => !isQaForumAssignmentObjective(objective));
+    const focusedId = this.focusedQuestionId();
+    if (focusedId) {
+      return learningObjectives.filter(
+        (objective) =>
+          objective.scope.kind === 'question-set' &&
+          objective.scope.taskReferences.some(
+            (ref) => ref.kind === 'quiz-question' && ref.questionId === focusedId,
+          ),
+      );
+    }
+    return learningObjectives;
+  });
+  readonly confirmedObjectives = computed(() =>
+    this.objectives().filter(isConfirmedLearningObjective),
+  );
+  readonly isAudiencePresentation = computed(() => {
+    if (this.formOpen()) return false;
+    if (this.isQaMode()) return this.objectives().length > 0;
+    return this.confirmedObjectives().length > 0;
+  });
+  readonly visibleObjectives = computed(() => {
+    if (this.isAudiencePresentation() && !this.isQaMode()) {
+      return this.confirmedObjectives();
+    }
+    return this.objectives();
+  });
+  readonly hasEligibleQuizTasksForDerivation = computed(() => {
+    if (this.isQaMode() || this.isReadOnly() || this.objectives().length > 0) return false;
+    const tasks = this.snapshot()?.availableQuizTasks ?? [];
+    const focusedId = this.focusedQuestionId();
+    if (focusedId) {
+      if (this.data.focusedQuestionEligibleForDerivation) {
+        return this.data.focusedQuestionEligibleForDerivation();
+      }
+      const match = tasks.find((task) => task.questionId === focusedId);
+      return match ? match.eligibleForDerivation !== false : false;
+    }
+    return tasks.some((task) => task.eligibleForDerivation !== false);
+  });
+
   readonly taskOptions = computed(() => {
     const byKey = new Map<string, SessionLearningObjectiveTaskOption>();
     for (const task of this.snapshot()?.availableQaTasks ?? []) {
@@ -112,59 +191,183 @@ export class SessionLearningObjectivesDialogComponent {
         label: task.text,
       });
     }
-    for (const task of this.snapshot()?.availableQuizTasks ?? []) {
-      const reference = { kind: 'quiz-question' as const, questionId: task.questionId };
-      byKey.set(referenceKey(reference), {
-        reference,
-        label: $localize`:@@sessionLearningObjectives.quizTaskLabel:Quizaufgabe ${task.order + 1}:order:: ${task.text}:text:`,
-      });
+    if (!this.isQaMode()) {
+      for (const task of this.snapshot()?.availableQuizTasks ?? []) {
+        const reference = { kind: 'quiz-question' as const, questionId: task.questionId };
+        byKey.set(referenceKey(reference), {
+          reference,
+          label: $localize`:@@sessionLearningObjectives.quizTaskLabel:Frage ${task.order + 1}:order:: ${task.text}:text:`,
+        });
+      }
     }
     for (const objective of this.objectives()) {
       if (objective.scope.kind !== 'question-set') continue;
       for (const reference of objective.scope.taskReferences) {
         if (reference.kind === 'unresolved-task') continue;
+        if (this.isQaMode() && reference.kind === 'quiz-question') continue;
         const key = referenceKey(reference);
         if (!byKey.has(key)) {
           byKey.set(key, {
             reference,
             label:
               reference.kind === 'qa-question'
-                ? $localize`:@@sessionLearningObjectives.qaTaskFallback:Q&A-Frage`
-                : $localize`:@@sessionLearningObjectives.quizTaskFallback:Quizaufgabe`,
+                ? $localize`:@@sessionLearningObjectives.qaTaskFallback:Q&A-Aufgabe`
+                : $localize`:@@sessionLearningObjectives.quizTaskFallback:Frage`,
           });
         }
       }
     }
     return [...byKey.values()];
   });
-  readonly selectableTaskOptions = computed(() =>
-    this.editingModelDerived()
-      ? this.taskOptions().filter((option) => option.reference.kind === 'quiz-question')
-      : this.taskOptions(),
-  );
+  readonly selectableTaskOptions = computed(() => {
+    if (this.isQaMode()) {
+      return this.taskOptions().filter((option) => option.reference.kind === 'qa-question');
+    }
+    if (this.editingModelDerived() || this.data.hasQuiz()) {
+      const quizOnly = this.taskOptions().filter(
+        (option) => option.reference.kind === 'quiz-question',
+      );
+      if (quizOnly.length > 0 || this.editingModelDerived()) {
+        return quizOnly;
+      }
+    }
+    return this.taskOptions();
+  });
 
   private readonly textArea = viewChild<ElementRef<HTMLTextAreaElement>>('objectiveText');
 
   constructor() {
+    this.destroyRef.onDestroy(() => {
+      this.derivationSequence += 1;
+      this.derivationAbortController?.abort();
+      this.derivationAbortController = null;
+    });
     void this.loadSnapshot(false);
   }
 
   close(): void {
-    if (!this.pending()) this.dialogRef.close();
+    if (!this.pending() && !this.derivationIsPending()) this.dialogRef.close();
   }
 
   retryLoad(): void {
     void this.loadSnapshot(false);
   }
 
+  async deriveLearningObjectives(): Promise<void> {
+    if (this.derivationIsPending() || this.pending() || this.isReadOnly() || this.isQaMode()) {
+      return;
+    }
+    const snapshot = this.snapshot();
+    if (!snapshot) return;
+
+    const maximumDrafts = this.maxObjectives - this.allObjectives().length;
+    if (maximumDrafts <= 0) {
+      this.finishDerivation(
+        'unavailable',
+        $localize`:@@learningObjectives.derivationCapacity:Für weitere Vorschläge ist kein Platz. Lösche zuerst nicht mehr benötigte Lernziele.`,
+      );
+      return;
+    }
+
+    const operationId = generateUuid();
+    const expectedLearningContextRevision = snapshot.learningContextRevision;
+    const focusedId = this.focusedQuestionId();
+    const sequence = ++this.derivationSequence;
+    const controller = new AbortController();
+    this.derivationAbortController = controller;
+    this.derivationStatus.set('pending');
+    this.derivationMessage.set(
+      $localize`:@@learningObjectives.derivationPending:Vorschläge werden ausschließlich aus den Quizaufgaben formuliert.`,
+    );
+    this.derivationLimitations.set([]);
+    this.dialogRef.disableClose = true;
+    this.focusElement('session-learning-objective-derive-cancel');
+
+    try {
+      const result = await trpc.session.deriveLearningObjectives.mutate(
+        {
+          code: this.data.code,
+          operationId,
+          expectedLearningContextRevision,
+          maximumDrafts,
+          locale: this.locale,
+          ...(focusedId ? { questionId: focusedId } : {}),
+        },
+        { signal: controller.signal },
+      );
+      if (!this.isCurrentDerivation(sequence, controller)) return;
+      if (
+        result.operationId !== operationId ||
+        result.expectedLearningContextRevision !== expectedLearningContextRevision
+      ) {
+        this.finishDerivation(
+          'invalid_response',
+          $localize`:@@learningObjectives.derivationInvalidResponse:Die Antwort konnte nicht sicher zugeordnet werden. Deine Lernziele bleiben unverändert.`,
+        );
+        return;
+      }
+      if (result.status !== 'completed') {
+        this.finishDerivation(result.status, this.derivationStatusMessage(result));
+        return;
+      }
+      this.snapshot.set(result.snapshot);
+      this.derivationLimitations.set(result.limitations);
+      this.finishDerivation(
+        'completed',
+        result.appliedCount === 0
+          ? $localize`:@@learningObjectives.derivationCompletedEmpty:Die Herleitung ist abgeschlossen. Es wurden keine neuen Vorschläge hinzugefügt.`
+          : result.appliedCount === 1
+            ? $localize`:@@learningObjectives.derivationCompletedSingle:Ein Lernzielvorschlag wurde als Entwurf hinzugefügt. Prüfe ihn vor dem Bestätigen.`
+            : $localize`:@@learningObjectives.derivationCompleted:${result.appliedCount}:count: Lernzielvorschläge wurden als Entwürfe hinzugefügt. Prüfe sie vor dem Bestätigen.`,
+      );
+    } catch (error) {
+      if (sequence !== this.derivationSequence || controller.signal.aborted) return;
+      if (isConflictError(error)) {
+        await this.loadSnapshot(true);
+        this.finishDerivation(
+          'unavailable',
+          $localize`:@@learningObjectives.derivationBundleConflict:Die Lernziele wurden während der automatischen Herleitung geändert. Deine Änderungen bleiben erhalten. Starte die Herleitung erneut.`,
+        );
+        return;
+      }
+      this.finishDerivation(
+        'unavailable',
+        $localize`:@@learningObjectives.derivationUnavailable:Die lokale Text-KI ist gerade nicht erreichbar. Du kannst Lernziele manuell eintragen oder es später erneut versuchen.`,
+      );
+    }
+  }
+
+  cancelLearningObjectiveDerivation(): void {
+    if (!this.derivationIsPending()) return;
+    this.derivationSequence += 1;
+    this.derivationAbortController?.abort();
+    this.finishDerivation(
+      'aborted',
+      $localize`:@@learningObjectives.derivationAborted:Die automatische Erstellung wurde abgebrochen. Deine Lernziele bleiben unverändert.`,
+    );
+  }
+
   beginAdd(): void {
     if (this.isReadOnly()) return;
+    const focusedId = this.focusedQuestionId();
     this.editingId.set(null);
     this.expectedRevision.set(null);
     this.text.set('');
-    this.scopeKind.set('session');
-    this.selectedTaskKeys.set(new Set());
-    this.confirmationState.set('draft');
+    if (focusedId) {
+      const ref: SessionLearningObjectiveResolvedTaskReference = {
+        kind: 'quiz-question',
+        questionId: focusedId,
+      };
+      this.scopeKind.set('question-set');
+      this.selectedTaskKeys.set(new Set([referenceKey(ref)]));
+    } else if (!this.isQaMode() && this.data.hasQuiz()) {
+      this.scopeKind.set('quiz-wide');
+      this.selectedTaskKeys.set(new Set());
+    } else {
+      this.scopeKind.set('session');
+      this.selectedTaskKeys.set(new Set());
+    }
+    this.confirmationState.set('confirmed');
     this.editingModelDerived.set(false);
     this.mustReplaceUnresolvedScope.set(false);
     this.hasUnresolvedDerivation.set(false);
@@ -180,9 +383,11 @@ export class SessionLearningObjectivesDialogComponent {
     this.editingId.set(objective.id);
     this.expectedRevision.set(objective.revision);
     this.text.set(objective.text);
-    this.scopeKind.set(objective.scope.kind);
+    this.scopeKind.set(this.isQaMode() ? 'session' : objective.scope.kind);
     const references =
-      objective.scope.kind === 'question-set' ? objective.scope.taskReferences : [];
+      !this.isQaMode() && objective.scope.kind === 'question-set'
+        ? objective.scope.taskReferences
+        : [];
     this.selectedTaskKeys.set(
       new Set(
         references
@@ -281,10 +486,26 @@ export class SessionLearningObjectivesDialogComponent {
     return rendered;
   }
 
+  renderObjectiveMarkdown(value: string): SafeHtml {
+    const cached = this.objectiveMarkdownCache.get(value);
+    if (cached) return cached;
+    const rendered = this.sanitizer.bypassSecurityTrustHtml(
+      renderMarkdownWithKatex(value, {
+        escapeListMarkers: true,
+        headingStartLevel: 4,
+        imagePolicy: 'allow-relative-and-https',
+        interactive: false,
+      }).html,
+    );
+    this.objectiveMarkdownCache.set(value, rendered);
+    return rendered;
+  }
+
   async save(): Promise<void> {
     if (
       !this.formOpen() ||
       this.pending() ||
+      this.derivationIsPending() ||
       this.isReadOnly() ||
       this.authoritativeReloadRequired()
     ) {
@@ -296,15 +517,19 @@ export class SessionLearningObjectivesDialogComponent {
     if (!text || text.length > this.maxTextLength) {
       this.errorMessage.set(
         !text
-          ? $localize`:@@sessionLearningObjectives.textRequired:Formuliere ein Lernziel.`
-          : $localize`:@@sessionLearningObjectives.textTooLong:Das Lernziel ist zu lang.`,
+          ? this.isQaMode()
+            ? $localize`:@@sessionQaAssignments.textRequired:Formuliere einen Auftrag.`
+            : $localize`:@@sessionLearningObjectives.textRequired:Formuliere ein Lernziel.`
+          : this.isQaMode()
+            ? $localize`:@@sessionQaAssignments.textTooLong:Der Auftrag ist zu lang.`
+            : $localize`:@@sessionLearningObjectives.textTooLong:Das Lernziel ist zu lang.`,
       );
       this.focusTextArea();
       return;
     }
     if (this.mustReplaceUnresolvedScope() && !this.scopeTouched()) {
       this.errorMessage.set(
-        $localize`:@@sessionLearningObjectives.rescopeRequired:Mindestens ein Aufgabenverweis ist nicht mehr verfügbar. Wähle den Bereich neu, bevor du speicherst.`,
+        $localize`:@@sessionLearningObjectives.rescopeRequired:Mindestens ein Fragenverweis ist nicht mehr verfügbar. Wähle den Bereich neu, bevor du speicherst.`,
       );
       this.focusScopeChoice();
       return;
@@ -312,7 +537,7 @@ export class SessionLearningObjectivesDialogComponent {
 
     if (this.confirmationState() === 'confirmed' && this.hasUnresolvedDerivation()) {
       this.errorMessage.set(
-        $localize`:@@sessionLearningObjectives.missingDerivationCannotConfirm:Eine Herleitungsaufgabe fehlt. Das Ziel bleibt bis zu einer neuen Herleitung prüfbedürftig und kann nicht bestätigt werden.`,
+        $localize`:@@sessionLearningObjectives.missingDerivationCannotConfirm:Die ursprüngliche Frage zu diesem KI-Vorschlag fehlt. Bitte erstelle einen neuen Vorschlag oder speichere das Ziel als Entwurf.`,
       );
       this.focusElement('session-learning-objective-status-draft');
       return;
@@ -323,7 +548,7 @@ export class SessionLearningObjectivesDialogComponent {
       .map((option) => option.reference);
     if (this.scopeKind() === 'question-set' && selected.length === 0) {
       this.errorMessage.set(
-        $localize`:@@sessionLearningObjectives.taskRequired:Wähle mindestens eine Aufgabe oder einen anderen Bereich.`,
+        $localize`:@@sessionLearningObjectives.taskRequired:Wähle mindestens eine Frage oder einen anderen Bereich.`,
       );
       this.focusScopeChoice();
       return;
@@ -342,13 +567,15 @@ export class SessionLearningObjectivesDialogComponent {
             objectiveId,
             expectedRevision: this.editingId() ? this.expectedRevision() : null,
             text,
-            scope:
-              this.scopeKind() === 'question-set'
+            scope: this.isQaMode()
+              ? { kind: 'session' }
+              : this.scopeKind() === 'question-set'
                 ? { kind: 'question-set', taskReferences: selected }
                 : this.scopeKind() === 'session'
                   ? { kind: 'session' }
                   : { kind: 'quiz-wide' },
-            confirmationState: this.confirmationState(),
+            confirmationState: this.isQaMode() ? 'confirmed' : this.confirmationState(),
+            purpose: this.isQaMode() ? 'forum-assignment' : 'learning-objective',
           },
         ],
       });
@@ -358,8 +585,12 @@ export class SessionLearningObjectivesDialogComponent {
       this.conflictMessage.set(null);
       this.statusMessage.set(
         this.expectedRevision() === null
-          ? $localize`:@@sessionLearningObjectives.created:Lernziel hinzugefügt.`
-          : $localize`:@@sessionLearningObjectives.updated:Lernziel aktualisiert.`,
+          ? this.isQaMode()
+            ? $localize`:@@sessionQaAssignments.created:Auftrag hinzugefügt.`
+            : $localize`:@@sessionLearningObjectives.created:Lernziel hinzugefügt.`
+          : this.isQaMode()
+            ? $localize`:@@sessionQaAssignments.updated:Auftrag aktualisiert.`
+            : $localize`:@@sessionLearningObjectives.updated:Lernziel aktualisiert.`,
       );
       this.focusElement(`session-learning-objective-edit-${objectiveId}`);
     } catch (error) {
@@ -367,7 +598,9 @@ export class SessionLearningObjectivesDialogComponent {
         await this.handleSaveConflict(objectiveId);
       } else {
         this.errorMessage.set(
-          $localize`:@@sessionLearningObjectives.saveFailed:Lernziel konnte nicht gespeichert werden. Versuche es erneut.`,
+          this.isQaMode()
+            ? $localize`:@@sessionQaAssignments.saveFailed:Auftrag konnte nicht gespeichert werden. Versuche es erneut.`
+            : $localize`:@@sessionLearningObjectives.saveFailed:Lernziel konnte nicht gespeichert werden. Versuche es erneut.`,
         );
         this.focusTextArea();
       }
@@ -393,7 +626,7 @@ export class SessionLearningObjectivesDialogComponent {
 
   async confirmDelete(objective: SessionLearningObjectiveDTO): Promise<void> {
     const snapshot = this.snapshot();
-    if (!snapshot || this.pending() || this.isReadOnly()) return;
+    if (!snapshot || this.pending() || this.derivationIsPending() || this.isReadOnly()) return;
     this.setPending(true);
     this.clearMessages();
     try {
@@ -410,7 +643,11 @@ export class SessionLearningObjectivesDialogComponent {
       });
       this.snapshot.set(result);
       this.pendingDeleteId.set(null);
-      this.statusMessage.set($localize`:@@sessionLearningObjectives.deleted:Lernziel gelöscht.`);
+      this.statusMessage.set(
+        this.isQaMode()
+          ? $localize`:@@sessionQaAssignments.deleted:Auftrag gelöscht.`
+          : $localize`:@@sessionLearningObjectives.deleted:Lernziel gelöscht.`,
+      );
       this.focusElement('session-learning-objective-add', 'session-learning-objectives-heading');
     } catch (error) {
       if (isConflictError(error)) {
@@ -426,7 +663,9 @@ export class SessionLearningObjectivesDialogComponent {
         this.focusElement('session-learning-objectives-conflict');
       } else {
         this.errorMessage.set(
-          $localize`:@@sessionLearningObjectives.deleteFailed:Lernziel konnte nicht gelöscht werden.`,
+          this.isQaMode()
+            ? $localize`:@@sessionQaAssignments.deleteFailed:Auftrag konnte nicht gelöscht werden.`
+            : $localize`:@@sessionLearningObjectives.deleteFailed:Lernziel konnte nicht gelöscht werden.`,
         );
         this.focusElement(`session-learning-objective-delete-${objective.id}`);
       }
@@ -450,11 +689,11 @@ export class SessionLearningObjectivesDialogComponent {
     if (objective.confirmation.state !== 'needs-review') return null;
     switch (objective.confirmation.reason) {
       case 'source-reference-removed':
-        return $localize`:@@sessionLearningObjectives.reviewReferenceRemoved:Eine referenzierte Aufgabe wurde entfernt. Ordne den Bereich neu oder leite das Ziel erneut her.`;
+        return $localize`:@@sessionLearningObjectives.reviewReferenceRemoved:Eine verknüpfte Frage wurde entfernt. Ordne den Bereich neu zu oder erstelle einen neuen Vorschlag.`;
       case 'derivation-replaced':
-        return $localize`:@@sessionLearningObjectives.reviewDerivationReplaced:Die Herleitung wurde ersetzt. Prüfe das Ziel, bevor du es erneut bestätigst.`;
+        return $localize`:@@sessionLearningObjectives.reviewDerivationReplaced:Der Vorschlag wurde aktualisiert. Bitte prüfe das Lernziel erneut.`;
       default:
-        return $localize`:@@sessionLearningObjectives.reviewSourceChanged:Der Inhalt einer Herleitungsaufgabe hat sich geändert. Prüfe das Ziel erneut.`;
+        return $localize`:@@sessionLearningObjectives.reviewSourceChanged:Die verknüpfte Frage hat sich geändert. Bitte prüfe das Lernziel erneut.`;
     }
   }
 
@@ -476,7 +715,7 @@ export class SessionLearningObjectivesDialogComponent {
     if (objective.scope.kind === 'quiz-wide') {
       return $localize`:@@sessionLearningObjectives.scopeQuiz:Gesamtes Quiz`;
     }
-    return $localize`:@@sessionLearningObjectives.scopeTasks:${objective.scope.taskReferences.length}:count: Aufgabe(n)`;
+    return $localize`:@@sessionLearningObjectives.scopeTasks:${objective.scope.taskReferences.length}:count: Frage(n)`;
   }
 
   hasUnresolvedReferences(objective: SessionLearningObjectiveDTO): boolean {
@@ -490,7 +729,7 @@ export class SessionLearningObjectivesDialogComponent {
   }
 
   async retryConflictReload(): Promise<void> {
-    if (this.pending()) return;
+    if (this.pending() || this.derivationIsPending()) return;
     this.setPending(true);
     const reloaded = await this.loadSnapshot(true);
     this.setPending(false);
@@ -537,7 +776,7 @@ export class SessionLearningObjectivesDialogComponent {
       return;
     }
     this.authoritativeReloadRequired.set(false);
-    const latest = this.objectives().find((objective) => objective.id === objectiveId);
+    const latest = this.allObjectives().find((objective) => objective.id === objectiveId);
     this.formOpen.set(false);
     this.editingId.set(null);
     this.conflictMessage.set(
@@ -546,6 +785,60 @@ export class SessionLearningObjectivesDialogComponent {
         : $localize`:@@sessionLearningObjectives.rowRemovedConflict:Dieses Lernziel wurde inzwischen gelöscht. Die aktuelle Liste wurde geladen.`,
     );
     this.focusElement('session-learning-objectives-conflict');
+  }
+
+  private isCurrentDerivation(sequence: number, controller: AbortController): boolean {
+    return (
+      sequence === this.derivationSequence &&
+      !controller.signal.aborted &&
+      this.derivationAbortController === controller
+    );
+  }
+
+  private finishDerivation(
+    status: Exclude<DerivationUiStatus, 'idle' | 'pending'>,
+    message: string,
+    preferredFocusId?: string,
+  ): void {
+    this.derivationAbortController = null;
+    this.dialogRef.disableClose = this.pending();
+    this.derivationStatus.set(status);
+    this.derivationMessage.set(message);
+    if (status !== 'completed') this.derivationLimitations.set([]);
+    const startRemainsEnabled = this.allObjectives().length < this.maxObjectives;
+    this.focusElement(
+      preferredFocusId ??
+        (status !== 'completed' && startRemainsEnabled
+          ? 'session-learning-objective-derive'
+          : 'session-learning-objective-derivation-status'),
+    );
+  }
+
+  private derivationStatusMessage(result: DeriveSessionLearningObjectivesResult): string {
+    switch (result.status) {
+      case 'busy':
+        return $localize`:@@learningObjectives.derivationBusy:Die lokale Text-KI ist gerade ausgelastet. Deine Lernziele bleiben unverändert. Bitte versuche es gleich noch einmal.`;
+      case 'disabled':
+        return $localize`:@@learningObjectives.derivationDisabled:Automatische Vorschläge sind auf diesem System nicht aktiviert. Du kannst Lernziele weiterhin manuell formulieren.`;
+      case 'aborted':
+        return $localize`:@@learningObjectives.derivationAborted:Die automatische Erstellung wurde abgebrochen. Deine Lernziele bleiben unverändert.`;
+      case 'timeout':
+        return $localize`:@@learningObjectives.derivationTimeout:Die automatische Erstellung hat zu lange gedauert. Deine Lernziele bleiben unverändert.`;
+      case 'unavailable':
+        return $localize`:@@learningObjectives.derivationUnavailable:Die lokale Text-KI ist gerade nicht erreichbar. Du kannst Lernziele manuell eintragen oder es später erneut versuchen.`;
+      case 'invalid_response':
+        return $localize`:@@learningObjectives.derivationInvalidResponse:Die Antwort konnte nicht sicher zugeordnet werden. Deine Lernziele bleiben unverändert.`;
+      case 'misconfigured':
+        return $localize`:@@learningObjectives.derivationMisconfigured:Automatische Vorschläge sind auf diesem System noch nicht vollständig eingerichtet. Du kannst Lernziele weiterhin manuell formulieren.`;
+      case 'circuit_open':
+        return $localize`:@@learningObjectives.derivationCircuitOpen:Die automatische Erstellung steht kurzzeitig nicht zur Verfügung. Bitte versuche es in einem Moment noch einmal.`;
+      case 'no_eligible_questions':
+        return $localize`:@@learningObjectives.derivationNoEligible:Es gibt noch keine geeignete aktive Frage mit Lösung.`;
+      case 'input_too_large':
+        return $localize`:@@learningObjectives.derivationInputTooLarge:Mindestens eine Frage enthält zu viel Inhalt für die automatische Herleitung. Kürze sie und versuche es erneut.`;
+      case 'completed':
+        return $localize`:@@learningObjectives.derivationCompletedEmpty:Die Herleitung ist abgeschlossen. Es wurden keine neuen Vorschläge hinzugefügt.`;
+    }
   }
 
   private clearMessages(): void {
@@ -565,13 +858,14 @@ export class SessionLearningObjectivesDialogComponent {
     this.focusElement(
       firstTask
         ? `session-learning-objective-task-${referenceKey(firstTask.reference)}`
-        : 'session-learning-objective-scope-session',
+        : 'session-learning-objective-scope-quiz',
+      'session-learning-objective-scope-session',
     );
   }
 
   private setPending(value: boolean): void {
     this.pending.set(value);
-    this.dialogRef.disableClose = value;
+    this.dialogRef.disableClose = value || this.derivationIsPending();
   }
 
   private focusElement(primaryId: string, fallbackId?: string): void {
@@ -590,6 +884,14 @@ export class SessionLearningObjectivesDialogComponent {
     queueMicrotask(focus);
     afterNextRender(focus, { injector: this.injector });
   }
+}
+
+export function isConfirmedLearningObjective(objective: SessionLearningObjectiveDTO): boolean {
+  return objective.confirmation.state === 'confirmed';
+}
+
+export function isQaForumAssignmentObjective(objective: SessionLearningObjectiveDTO): boolean {
+  return objective.purpose === 'forum-assignment';
 }
 
 function referenceKey(reference: SessionLearningObjectiveResolvedTaskReference): string {

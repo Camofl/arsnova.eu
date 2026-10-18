@@ -180,7 +180,10 @@ export class FeedbackVoteComponent implements OnInit, OnDestroy {
         });
         return;
       }
-      untracked(() => this.clearEmbeddedState());
+      untracked(() => {
+        this.clearEmbeddedState();
+        this.loading.set(false);
+      });
     });
   }
 
@@ -222,15 +225,10 @@ export class FeedbackVoteComponent implements OnInit, OnDestroy {
     () => this.showSessionCode() || this.showStandaloneParticipantMeta(),
   );
   readonly showSessionContext = computed(() => {
-    if (!this.code()) {
+    if (!this.code() || this.embeddedInSession()) {
       return false;
     }
-    if (this.showSessionCode() || this.showStandaloneParticipantMeta()) {
-      return true;
-    }
-    // In der Session-Vote-Shell stehen Kanal und Code schon im Live-Banner.
-    // Context nur noch bei eigenem Session-Titel (ohne redundantes „Blitzlicht“).
-    return this.embeddedInSession() && !!this.sessionTitleLabel();
+    return this.showSessionCode() || this.showStandaloneParticipantMeta();
   });
   readonly sessionContextAriaLabel = computed(() => {
     const parts = [
@@ -314,7 +312,7 @@ export class FeedbackVoteComponent implements OnInit, OnDestroy {
 
     this.voted.set(hasAlreadyVoted(code));
     if (this.embeddedInSession()) {
-      this.loading.set(this.sharedResult() === null);
+      this.loading.set(false);
       return;
     }
     if (await this.redirectStandaloneQuizSession(code)) {

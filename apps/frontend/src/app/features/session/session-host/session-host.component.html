@@ -602,11 +602,6 @@
         </section>
         @if (showHostModerationStack()) {
           <div class="session-host__moderation-stack">
-            @if (activeChannel() === 'quiz') {
-              <span class="session-host__tool-label" i18n="@@sessionHost.moderationArea"
-                >Moderation</span
-              >
-            }
             @if (moderationCompassReturn()) {
               <button
                 type="button"
@@ -652,15 +647,24 @@
                 data-testid="host-learning-objectives"
                 (click)="openLearningObjectivesDialog()"
                 aria-haspopup="dialog"
-                i18n-aria-label="@@sessionHost.learningObjectivesAria"
-                aria-label="Lernziele für diese Session öffnen"
+                [attr.aria-label]="learningObjectivesControlAriaLabel()"
               >
-                <mat-icon aria-hidden="true">school</mat-icon>
-                <span
-                  class="session-host__moderation-control-label"
-                  i18n="@@sessionHost.learningObjectivesButton"
-                  >Ziele</span
-                >
+                <mat-icon aria-hidden="true">{{
+                  activeChannel() === 'qa' ? 'campaign' : 'school'
+                }}</mat-icon>
+                @if (activeChannel() === 'qa') {
+                  <span
+                    class="session-host__moderation-control-label"
+                    i18n="@@sessionHost.qaAssignmentButton"
+                    >Auftrag</span
+                  >
+                } @else {
+                  <span
+                    class="session-host__moderation-control-label"
+                    i18n="@@sessionHost.learningObjectivesButton"
+                    >Lernziel</span
+                  >
+                }
               </button>
             }
           </div>
