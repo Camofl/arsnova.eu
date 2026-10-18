@@ -380,6 +380,7 @@ describe('JoinComponent', () => {
 
     expect(comp.nicknameOptions().length).toBeGreaterThanOrEqual(50);
     expect(comp.nicknameOptions()[0]).toBe('Marie Curie');
+    expect(comp.nicknameSelectLabel()).toBe('Nobelpreisträger:innen');
   });
 
   it('aktiviert den generativen Reserve-Pool erst nach Erschoepfung der Ursprungsliste', async () => {
@@ -458,6 +459,7 @@ describe('JoinComponent', () => {
     await new Promise((r) => setTimeout(r, 80));
 
     expect(comp.isTaken(longNickname)).toBe(true);
+    expect(comp.nicknameSelectLabel()).toBe('Märchenfiguren');
   });
 
   it('zeigt bei Q&A standardmäßig die Kita-Pseudonymliste auch ohne Quiz-Einstellungen', async () => {
@@ -485,6 +487,8 @@ describe('JoinComponent', () => {
     expect(comp.showNicknameList()).toBe(true);
     expect(comp.nicknameOptions()[0]).toBe(NICKNAME_LISTS.KINDERGARTEN[0]);
     expect(comp.canSubmit()).toBe(false);
+    expect((fixture.nativeElement as HTMLElement).textContent).toContain('Bunte Tier-Icons');
+    expect(comp.nicknameSelectLabel()).toBe('Bunte Tier-Icons');
   });
 
   it('erzwingt auch in quizlosen Sessions die Pseudonymauswahl aus dem Onboarding-Profil', async () => {

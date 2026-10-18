@@ -180,6 +180,21 @@ export class JoinComponent implements OnInit, OnDestroy {
     return (s?.nicknameTheme ?? 'HIGH_SCHOOL') === 'KINDERGARTEN';
   });
 
+  readonly nicknameSelectLabel = computed(() => {
+    switch ((this.session()?.nicknameTheme ?? 'HIGH_SCHOOL') as NicknameTheme) {
+      case 'KINDERGARTEN':
+        return $localize`:@@sessionParticipation.themeKindergarten:Bunte Tier-Icons`;
+      case 'PRIMARY_SCHOOL':
+        return $localize`:@@sessionParticipation.themePrimary:Märchenfiguren`;
+      case 'MIDDLE_SCHOOL':
+        return $localize`:@@sessionParticipation.themeMiddle:Entdecker und Superhelden`;
+      case 'HIGH_SCHOOL':
+        return $localize`:@@sessionParticipation.themeHigh:Philosophen und Forscher`;
+      case 'NOBEL_LAUREATES':
+        return $localize`:@@sessionParticipation.themeNobel:Nobelpreisträger:innen`;
+    }
+  });
+
   readonly kindergartenEmojiForSelected = computed((): string | null => {
     if (!this.isKindergartenNicknameTheme()) return null;
     const nick = this.selectedNickname().trim();

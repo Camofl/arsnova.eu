@@ -473,6 +473,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.hostSessionCtaLoadGeneration += 1;
     this.focusService.registerInput(undefined);
     this.clearToolbarMotdDefer();
     this.motdHeaderState.setOverlayOpen(false);
@@ -830,8 +831,11 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
       .slice(0, limit);
   }
 
-  /** Stellt ein frisches Host-Token aus der Browser-Capability aus (Pending-Count). */
+  /** Stellt ein Host-Token aus der Capability aus, falls noch keines liegt. */
   private async ensureHostTokenForHomeCta(code: string): Promise<boolean> {
+    if (hasHostToken(code)) {
+      return true;
+    }
     const capability = getHostBrowserCapability(code);
     if (capability) {
       try {
@@ -842,11 +846,39 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
         setHostToken(code, issued.hostToken);
         return true;
       } catch {
-        // Capability vorhanden, Ausgabe fehlgeschlagen: gespeichertes Token als Fallback.
         return hasHostToken(code);
       }
     }
-    return hasHostToken(code);
+    return false;
+  }
+
+  private resolveHostSessionCtaFromInfo(
+    code: string,
+    session: SessionInfoDTO,
+  ): HostSessionCta | null {
+    if (!isQaConfiguredForHostResume(session)) {
+      return null;
+    }
+    const now = resolveSessionServerNow(session);
+    const iso = session.postProcessingEndsAt ?? session.expiresAt ?? null;
+    const accessUntilMs = iso ? Date.parse(iso) : Number.NaN;
+    if (Number.isFinite(accessUntilMs) && accessUntilMs <= now) {
+      return null;
+    }
+    const openIso = session.qaClosesAt ?? session.expiresAt ?? null;
+    const openUntilMs = openIso ? Date.parse(openIso) : Number.NaN;
+    return {
+      code,
+      deadlineLabel: iso ? this.formatHostAccessDeadline(iso, session.timeZone) : null,
+      openUntilLabel: openIso ? this.formatHostAccessDeadline(openIso, session.timeZone) : null,
+      questionCount: typeof session.qaQuestionCount === 'number' ? session.qaQuestionCount : null,
+      pendingQuestionCount:
+        typeof session.qaPendingQuestionCount === 'number' ? session.qaPendingQuestionCount : null,
+      qaOpen: isQaOpenForParticipants(session, new Date(now)),
+      openUntilMs: Number.isFinite(openUntilMs) ? openUntilMs : null,
+      accessUntilMs: Number.isFinite(accessUntilMs) ? accessUntilMs : null,
+      primary: false,
+    };
   }
 
   private async loadHostSessionCtas(): Promise<void> {
@@ -863,52 +895,18 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
 
     const anonymousClientId = getAnonymousClientId();
     const lastHosted = getLastHostedSessionCode();
-    // Sequentiell: pendingHostSessionCode ist global und darf nicht parallel überschrieben werden.
-    const resolved: Array<HostSessionCta | null> = [];
-    for (const code of fetchCodes) {
-      if (generation !== this.hostSessionCtaLoadGeneration) {
-        return;
-      }
-      try {
-        const hostReady = await this.ensureHostTokenForHomeCta(code);
-        if (hostReady) {
-          setPendingHostSessionCode(code);
+    // Öffentliches getInfo reicht für Filter, Ranking und Fristen. Ohne
+    // pendingHostSessionCode kann der Batch parallel laufen.
+    const resolved = await Promise.all(
+      fetchCodes.map(async (code): Promise<HostSessionCta | null> => {
+        try {
+          const session = await trpc.session.getInfo.query({ code, anonymousClientId });
+          return this.resolveHostSessionCtaFromInfo(code, session);
+        } catch {
+          return null;
         }
-        const session = await trpc.session.getInfo.query({ code, anonymousClientId });
-        if (!isQaConfiguredForHostResume(session)) {
-          resolved.push(null);
-          continue;
-        }
-        const now = resolveSessionServerNow(session);
-        const iso = session.postProcessingEndsAt ?? session.expiresAt ?? null;
-        const accessUntilMs = iso ? Date.parse(iso) : Number.NaN;
-        if (Number.isFinite(accessUntilMs) && accessUntilMs <= now) {
-          resolved.push(null);
-          continue;
-        }
-        const openIso = session.qaClosesAt ?? session.expiresAt ?? null;
-        const openUntilMs = openIso ? Date.parse(openIso) : Number.NaN;
-        resolved.push({
-          code,
-          deadlineLabel: iso ? this.formatHostAccessDeadline(iso, session.timeZone) : null,
-          openUntilLabel: openIso ? this.formatHostAccessDeadline(openIso, session.timeZone) : null,
-          questionCount:
-            typeof session.qaQuestionCount === 'number' ? session.qaQuestionCount : null,
-          pendingQuestionCount:
-            typeof session.qaPendingQuestionCount === 'number'
-              ? session.qaPendingQuestionCount
-              : null,
-          qaOpen: isQaOpenForParticipants(session, new Date(now)),
-          openUntilMs: Number.isFinite(openUntilMs) ? openUntilMs : null,
-          accessUntilMs: Number.isFinite(accessUntilMs) ? accessUntilMs : null,
-          primary: false,
-        });
-      } catch {
-        resolved.push(null);
-      } finally {
-        setPendingHostSessionCode(null);
-      }
-    }
+      }),
+    );
     if (generation !== this.hostSessionCtaLoadGeneration) {
       return;
     }
@@ -921,6 +919,53 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
         lastHosted,
       ),
     );
+    void this.enrichHostSessionCtaPendingCounts(generation);
+  }
+
+  /** Moderationszahl braucht ein Host-Token; die CTA ist dann schon sichtbar. */
+  private async enrichHostSessionCtaPendingCounts(generation: number): Promise<void> {
+    const anonymousClientId = getAnonymousClientId();
+    const pendingItems = this.hostSessionCtas().filter(
+      (item) => item.pendingQuestionCount === null,
+    );
+    for (const item of pendingItems) {
+      if (generation !== this.hostSessionCtaLoadGeneration) {
+        return;
+      }
+      if (this.forgottenHostSessionCodes.has(item.code)) {
+        continue;
+      }
+      try {
+        const hostReady = await this.ensureHostTokenForHomeCta(item.code);
+        if (!hostReady) {
+          continue;
+        }
+        setPendingHostSessionCode(item.code);
+        const session = await trpc.session.getInfo.query({
+          code: item.code,
+          anonymousClientId,
+        });
+        const pendingQuestionCount =
+          typeof session.qaPendingQuestionCount === 'number'
+            ? session.qaPendingQuestionCount
+            : null;
+        if (pendingQuestionCount === null) {
+          continue;
+        }
+        if (generation !== this.hostSessionCtaLoadGeneration) {
+          return;
+        }
+        this.hostSessionCtas.update((current) =>
+          current.map((entry) =>
+            entry.code === item.code ? { ...entry, pendingQuestionCount } : entry,
+          ),
+        );
+      } catch {
+        // Öffentliche CTA bleibt stehen; Moderationszahl ist optional.
+      } finally {
+        setPendingHostSessionCode(null);
+      }
+    }
   }
 
   private formatHostAccessDeadline(iso: string, timeZone?: string): string | null {

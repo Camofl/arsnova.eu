@@ -2246,10 +2246,10 @@ describe('SessionPresentComponent', () => {
     expect(fixture.componentInstance.qaWordCloudContextPills()).toEqual([
       'Thema',
       'Beste Fragen',
-      'ohne Glättung',
+      'ohne Wort-Glättung',
     ]);
     expect(text).toContain('Beste Fragen');
-    expect(text).toContain('ohne Glättung');
+    expect(text).toContain('ohne Wort-Glättung');
     fixture.destroy();
   });
 
@@ -2388,9 +2388,9 @@ describe('SessionPresentComponent', () => {
     expect(fixture.componentInstance.qaWordCloudContextPills()).toEqual([
       'Wörter',
       'Kontroverse',
-      'Glättung an',
+      'Wort-Glättung an',
     ]);
-    expect(pills).toEqual(['Wörter', 'Kontroverse', 'Glättung an']);
+    expect(pills).toEqual(['Wörter', 'Kontroverse', 'Wort-Glättung an']);
     fixture.destroy();
   });
 

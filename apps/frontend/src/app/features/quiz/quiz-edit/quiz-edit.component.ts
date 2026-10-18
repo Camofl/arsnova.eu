@@ -609,14 +609,26 @@ export class QuizEditComponent implements OnDestroy {
   ];
 
   readonly nicknameThemeOptions: Array<{ value: NicknameTheme; label: string }> = [
-    { value: 'NOBEL_LAUREATES', label: $localize`Nobelpreis` },
     {
       value: 'KINDERGARTEN',
-      label: $localize`:@@quiz.nicknameTheme.kindergarten:Kindergarten (Tier-Emojis)`,
+      label: $localize`:@@sessionParticipation.themeKindergarten:Bunte Tier-Icons`,
     },
-    { value: 'PRIMARY_SCHOOL', label: $localize`Grundschule` },
-    { value: 'MIDDLE_SCHOOL', label: $localize`Mittelstufe` },
-    { value: 'HIGH_SCHOOL', label: $localize`Oberstufe` },
+    {
+      value: 'PRIMARY_SCHOOL',
+      label: $localize`:@@sessionParticipation.themePrimary:Märchenfiguren`,
+    },
+    {
+      value: 'MIDDLE_SCHOOL',
+      label: $localize`:@@sessionParticipation.themeMiddle:Entdecker und Superhelden`,
+    },
+    {
+      value: 'HIGH_SCHOOL',
+      label: $localize`:@@sessionParticipation.themeHigh:Philosophen und Forscher`,
+    },
+    {
+      value: 'NOBEL_LAUREATES',
+      label: $localize`:@@sessionParticipation.themeNobel:Nobelpreisträger:innen`,
+    },
   ];
 
   readonly quiz = computed(() => this.quizStore.getQuizById(this.id));
@@ -923,7 +935,7 @@ export class QuizEditComponent implements OnDestroy {
     this.settingsForm.markAsDirty();
   }
 
-  /** Altersgruppe nur bei vorgegebenen Pseudonymen. */
+  /** Pseudonymgruppe nur bei vorgegebenen Pseudonymen. */
   isNicknameThemeSectionVisible(): boolean {
     return this.participantNameMode() === 'nicknameTheme';
   }

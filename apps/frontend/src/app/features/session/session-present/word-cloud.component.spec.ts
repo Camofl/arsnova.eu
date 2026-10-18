@@ -41,13 +41,13 @@ describe('WordCloudComponent', () => {
   it('zeigt Kontext-Pills neben den Zaehlern', () => {
     const fixture = TestBed.createComponent(WordCloudComponent);
     fixture.componentRef.setInput('responses', ['Motivation durch Teamarbeit']);
-    fixture.componentRef.setInput('contextPills', ['Themen', 'Beste Fragen', 'ohne Glättung']);
+    fixture.componentRef.setInput('contextPills', ['Themen', 'Beste Fragen', 'ohne Wort-Glättung']);
     fixture.detectChanges();
 
     const pills = [
       ...fixture.nativeElement.querySelectorAll('.word-cloud__meta-pill--context'),
     ].map((el) => (el.textContent ?? '').trim());
-    expect(pills).toEqual(['Themen', 'Beste Fragen', 'ohne Glättung']);
+    expect(pills).toEqual(['Themen', 'Beste Fragen', 'ohne Wort-Glättung']);
   });
 
   it('waehlt einen vorgegebenen Fokusbegriff in der Wolke', () => {

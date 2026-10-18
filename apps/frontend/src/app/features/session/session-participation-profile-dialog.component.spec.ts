@@ -26,15 +26,20 @@ describe('SessionParticipationProfileDialogComponent', () => {
     return fixture;
   }
 
-  it('bietet alle drei Identitätsmodi und erklärt die Grenze des Anonymmodus', () => {
+  it('bietet alle drei Identitätsmodi mit kurzem Anonym-Hinweis', () => {
     const fixture = createComponent();
     const host = fixture.nativeElement as HTMLElement;
 
     expect(host.querySelectorAll('mat-radio-button')).toHaveLength(3);
+    expect(host.textContent).toContain('Namensdarstellung');
+    expect(host.textContent).not.toContain('Teilnahme für Q&A');
     expect(host.textContent).toContain('Vorgegebene Pseudonyme');
     expect(host.textContent).toContain('Eigener Nickname');
-    expect(host.textContent).toContain('Anonymmodus');
-    expect(host.textContent).toContain('keine vollständige Anonymisierung');
+    expect(host.textContent).toContain('Anonym');
+    expect(host.textContent).not.toContain('Anonymmodus');
+    expect(host.textContent).toContain('Beiträge erscheinen ohne sichtbare Verfasserangabe');
+    expect(host.textContent).not.toContain('keine vollständige Anonymisierung');
+    expect(host.textContent).not.toContain('Lege fest, wie Personen');
     expect(host.textContent).not.toContain('Nach dem ersten erfolgreichen Beitritt');
     expect(host.textContent).not.toContain('Schritt 1 von 2');
   });
@@ -71,6 +76,24 @@ describe('SessionParticipationProfileDialogComponent', () => {
       identityMode: 'CUSTOM_NICKNAME',
       nicknameTheme: 'MIDDLE_SCHOOL',
     });
+  });
+
+  it('beschreibt die Pseudonymgruppen nach ihrem Inhalt', () => {
+    const fixture = createComponent();
+    const select = fixture.nativeElement.querySelector('mat-select') as HTMLElement;
+    select.click();
+    fixture.detectChanges();
+
+    const options = [...document.querySelectorAll('mat-option')].map((el) =>
+      el.textContent?.replace(/\s+/g, ' ').trim(),
+    );
+    expect(options).toEqual([
+      'Bunte Tier-Icons',
+      'Märchenfiguren',
+      'Entdecker und Superhelden',
+      'Philosophen und Forscher',
+      'Nobelpreisträger:innen',
+    ]);
   });
 
   it('zeigt die Pseudonymgruppe nur für vorgegebene Pseudonyme', () => {

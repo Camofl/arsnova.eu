@@ -26,6 +26,7 @@
   - tRPC router/procedure map: `mem:backend/api-router`.
   - Angular route/component map: `mem:frontend/routing-components`.
   - Frontend i18n/UI constraints including locale-specific quotation marks: `mem:frontend/i18n-ui`.
+  - Short, non-redundant, idiomatic UI copy and shared nickname-theme labels: `mem:frontend/localized-copy-guidelines`.
   - Quiz editor global save/change-detection contract: `mem:frontend/quiz-editor-save-flow`.
   - Deployment/operator context: `mem:deployment/core`.
   - Testing conventions and checks: `mem:testing/core`.
@@ -56,6 +57,7 @@
 - `mem:backend/api-router`
 - `mem:frontend/routing-components`
 - `mem:frontend/i18n-ui`
+- `mem:frontend/localized-copy-guidelines`
 - `mem:frontend/quiz-editor-save-flow`
 - `mem:deployment/core`
 - `mem:testing/core`

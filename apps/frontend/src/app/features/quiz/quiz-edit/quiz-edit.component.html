@@ -365,19 +365,17 @@
                   >Eigener Nickname</mat-radio-button
                 >
                 <mat-radio-button value="anonymousMode" i18n="@@sessionParticipation.anonymousLabel"
-                  >Anonymmodus</mat-radio-button
+                  >Anonym</mat-radio-button
                 >
               </mat-radio-group>
               @if (isNicknameThemeSectionVisible()) {
                 <div class="quiz-edit-form__nickname-theme quiz-edit-form__nickname-theme--nested">
                   <mat-form-field appearance="outline">
-                    <mat-label i18n="@@quizForm.nicknameThemePseudonymLabel"
-                      >Altersgruppe für Pseudonyme</mat-label
-                    >
+                    <mat-label i18n="@@sessionParticipation.themeLabel">Pseudonymgruppe</mat-label>
                     <mat-select
                       formControlName="nicknameTheme"
-                      i18n-aria-label="@@quizForm.nicknameThemePseudonymAria"
-                      aria-label="Altersgruppe für Pseudonyme wählen"
+                      i18n-aria-label="@@sessionParticipation.themeAria"
+                      aria-label="Pseudonymgruppe wählen"
                     >
                       @for (theme of nicknameThemeOptions; track theme.value) {
                         <mat-option [value]="theme.value">{{ theme.label }}</mat-option>

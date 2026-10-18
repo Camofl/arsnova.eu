@@ -114,6 +114,7 @@ export class QaChannelConfigurationDialogComponent implements OnInit {
   qaTitle = this.resolveInitialTitle();
   moderationMode = this.resolveInitialModeration();
   identityMode: SessionParticipantIdentityMode = this.resolveIdentityMode();
+  nicknameTheme: NicknameTheme = this.data.session.nicknameTheme ?? 'HIGH_SCHOOL';
   deadlineKind: SessionQaDeadlineSelection['kind'] = this.resolveInitialDeadlineKind();
   days = 1;
   absoluteDate: Date | null = null;
@@ -151,6 +152,14 @@ export class QaChannelConfigurationDialogComponent implements OnInit {
     return this.configurationMode() === 'REPLAN'
       ? $localize`:@@qaConfig.editTitle:Fragerunde bearbeiten`
       : $localize`:@@qaConfig.title:Fragerunde einrichten`;
+  }
+
+  showTitleField(): boolean {
+    return this.configurationMode() === 'INITIAL';
+  }
+
+  showParticipationProfile(): boolean {
+    return this.data.omitParticipationProfile !== true;
   }
 
   confirmLabel(): string {
@@ -604,7 +613,7 @@ export class QaChannelConfigurationDialogComponent implements OnInit {
       return undefined;
     }
     return {
-      nicknameTheme: this.data.session.nicknameTheme ?? 'HIGH_SCHOOL',
+      nicknameTheme: this.nicknameTheme,
       identityMode: this.identityMode,
     };
   }
@@ -619,6 +628,7 @@ export class QaChannelConfigurationDialogComponent implements OnInit {
     this.profileLocked.set(locked);
     if (locked) {
       this.identityMode = this.resolveIdentityMode();
+      this.nicknameTheme = this.data.session.nicknameTheme ?? 'HIGH_SCHOOL';
     }
   }
 }

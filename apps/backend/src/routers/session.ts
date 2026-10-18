@@ -3688,12 +3688,15 @@ function assertSessionAllowsInitialQaConfiguration(
   if (!isSessionEffectivelyFinished(session, now)) {
     return;
   }
-  if (
-    mode === 'INITIAL' &&
-    (session.qaClosesAt === null || session.qaClosesAt === undefined) &&
-    !(session.expiresAt instanceof Date && now.getTime() >= session.expiresAt.getTime())
-  ) {
-    return;
+  const globallyExpired =
+    session.expiresAt instanceof Date && now.getTime() >= session.expiresAt.getTime();
+  if (!globallyExpired) {
+    if (mode === 'INITIAL' && (session.qaClosesAt === null || session.qaClosesAt === undefined)) {
+      return;
+    }
+    if (mode === 'REPLAN') {
+      return;
+    }
   }
   assertSessionEffectivelyActive(session, now);
 }

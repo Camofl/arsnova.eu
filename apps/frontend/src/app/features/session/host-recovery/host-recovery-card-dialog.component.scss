@@ -11,6 +11,27 @@
   box-sizing: border-box;
 }
 
+.recovery-card__details-body {
+  display: grid;
+  gap: 0.75rem;
+  margin-block-start: 0.35rem;
+}
+
+.recovery-card__details > summary {
+  cursor: pointer;
+  min-height: 2.75rem;
+  display: flex;
+  align-items: center;
+  padding-block: 0.35rem;
+  font: var(--mat-sys-title-small);
+  color: var(--mat-sys-primary);
+}
+
+.recovery-card__details > summary:focus-visible {
+  outline: 2px solid var(--mat-sys-primary);
+  outline-offset: 2px;
+}
+
 .recovery-card__intro {
   margin: 0;
   color: var(--mat-sys-on-surface);

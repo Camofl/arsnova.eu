@@ -55,54 +55,47 @@ export interface SessionParticipationProfileDialogResult {
             Schritt {{ data.setupStep }} von {{ data.setupStepCount }}
           </span>
         }
-        <span class="dialog-title-header__heading" i18n="@@sessionParticipation.title">
-          Teilnahme für Q&A
-        </span>
+        <span
+          class="dialog-title-header__heading"
+          id="participation-profile-title"
+          i18n="@@sessionParticipation.modeLegend"
+          >Namensdarstellung</span
+        >
       </span>
     </h2>
 
     <mat-dialog-content class="participation-profile-dialog__content">
-      <p id="participation-profile-description" i18n="@@sessionParticipation.description">
-        Lege fest, wie Personen in dieser Session beitreten und wie Verfasserangaben bei Q&A
-        erscheinen.
-      </p>
-
-      <fieldset>
-        <legend i18n="@@sessionParticipation.modeLegend">Namensdarstellung</legend>
-        <mat-radio-group
-          name="session-participation-mode"
-          aria-describedby="participation-profile-description"
-          [ngModel]="identityMode()"
-          (ngModelChange)="identityMode.set($event)"
-        >
-          <mat-radio-button value="PRESET_PSEUDONYM">
-            <span class="participation-profile-dialog__option-copy">
-              <strong i18n="@@sessionParticipation.pseudonymLabel">Vorgegebene Pseudonyme</strong>
-              <span i18n="@@sessionParticipation.pseudonymHint">
-                Jede Person wählt beim Beitritt aus vorgegebenen Namen.
-              </span>
+      <mat-radio-group
+        name="session-participation-mode"
+        aria-labelledby="participation-profile-title"
+        [ngModel]="identityMode()"
+        (ngModelChange)="identityMode.set($event)"
+      >
+        <mat-radio-button value="PRESET_PSEUDONYM">
+          <span class="participation-profile-dialog__option-copy">
+            <strong i18n="@@sessionParticipation.pseudonymLabel">Vorgegebene Pseudonyme</strong>
+            <span i18n="@@sessionParticipation.pseudonymHint">
+              Jede Person wählt beim Beitritt aus vorgegebenen Namen.
             </span>
-          </mat-radio-button>
-          <mat-radio-button value="CUSTOM_NICKNAME">
-            <span class="participation-profile-dialog__option-copy">
-              <strong i18n="@@sessionParticipation.customLabel">Eigener Nickname</strong>
-              <span i18n="@@sessionParticipation.customHint">
-                Personen wählen beim Beitritt selbst einen sichtbaren Namen.
-              </span>
+          </span>
+        </mat-radio-button>
+        <mat-radio-button value="CUSTOM_NICKNAME">
+          <span class="participation-profile-dialog__option-copy">
+            <strong i18n="@@sessionParticipation.customLabel">Eigener Nickname</strong>
+            <span i18n="@@sessionParticipation.customHint">
+              Personen wählen beim Beitritt selbst einen sichtbaren Namen.
             </span>
-          </mat-radio-button>
-          <mat-radio-button value="ANONYMOUS">
-            <span class="participation-profile-dialog__option-copy">
-              <strong i18n="@@sessionParticipation.anonymousLabel">Anonymmodus</strong>
-              <span i18n="@@sessionParticipation.anonymousHint">
-                Beiträge erscheinen ohne sichtbare Verfasserangabe. Technische Session- und
-                Sicherheitsdaten können weiterhin verarbeitet werden; dies ist keine vollständige
-                Anonymisierung.
-              </span>
+          </span>
+        </mat-radio-button>
+        <mat-radio-button value="ANONYMOUS">
+          <span class="participation-profile-dialog__option-copy">
+            <strong i18n="@@sessionParticipation.anonymousLabel">Anonym</strong>
+            <span i18n="@@sessionParticipation.anonymousHint">
+              Beiträge erscheinen ohne sichtbare Verfasserangabe.
             </span>
-          </mat-radio-button>
-        </mat-radio-group>
-      </fieldset>
+          </span>
+        </mat-radio-button>
+      </mat-radio-group>
 
       @if (identityMode() === 'PRESET_PSEUDONYM') {
         <mat-form-field appearance="outline" subscriptSizing="dynamic">
@@ -114,16 +107,16 @@ export interface SessionParticipationProfileDialogResult {
             aria-label="Pseudonymgruppe wählen"
           >
             <mat-option value="KINDERGARTEN" i18n="@@sessionParticipation.themeKindergarten"
-              >Tier-Icons</mat-option
+              >Bunte Tier-Icons</mat-option
             >
             <mat-option value="PRIMARY_SCHOOL" i18n="@@sessionParticipation.themePrimary"
-              >Grundschule</mat-option
+              >Märchenfiguren</mat-option
             >
             <mat-option value="MIDDLE_SCHOOL" i18n="@@sessionParticipation.themeMiddle"
-              >Mittelstufe</mat-option
+              >Entdecker und Superhelden</mat-option
             >
             <mat-option value="HIGH_SCHOOL" i18n="@@sessionParticipation.themeHigh"
-              >Oberstufe</mat-option
+              >Philosophen und Forscher</mat-option
             >
             <mat-option value="NOBEL_LAUREATES" i18n="@@sessionParticipation.themeNobel"
               >Nobelpreisträger:innen</mat-option

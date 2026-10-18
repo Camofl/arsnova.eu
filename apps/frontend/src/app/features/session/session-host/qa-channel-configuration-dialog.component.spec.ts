@@ -139,6 +139,24 @@ describe('QaChannelConfigurationDialogComponent', () => {
     expect(host.textContent).not.toContain('Schritt 1 von 2');
     expect(host.textContent).not.toContain('Verbindliche Vorschau');
     expect(host.textContent).not.toContain('Vorschau prüfen');
+    expect(host.textContent).not.toContain('Lege fest, bis wann');
+    expect(host.querySelector('.dialog-title-header__sub')).toBeNull();
+    const details = [
+      ...host.querySelectorAll('details.qa-config__details'),
+    ] as HTMLDetailsElement[];
+    expect(details).toHaveLength(1);
+    expect(details[0]?.open).toBe(false);
+    expect(details[0]?.querySelector('summary')?.textContent).toContain('Teilnahmeprofil');
+    expect(host.textContent).not.toContain('Weitere Einstellungen');
+    expect(host.textContent).not.toContain('Neue Fragen vor Veröffentlichung prüfen');
+    const content = host.querySelector('.qa-config__content');
+    const contentChildren = [...(content?.children ?? [])];
+    expect(contentChildren.at(-1)).toBe(details[0]);
+    expect(host.textContent).toContain('Zeitzone:');
+    expect(host.textContent).not.toContain('Zeitplan');
+    expect(host.querySelector('.qa-config__title')).not.toBeNull();
+    expect(host.textContent).toContain('/200');
+    expect(host.textContent).not.toContain('Überschrift zum Forum');
   });
 
   it('zeigt die Sequenznummer nur beim ersten Q&A-Start', async () => {
@@ -167,6 +185,7 @@ describe('QaChannelConfigurationDialogComponent', () => {
     expect(fixture.nativeElement.textContent).not.toContain('Schritt 1 von 2');
     expect(fixture.nativeElement.textContent).not.toContain('Teilnahmeprofil');
     expect(fixture.nativeElement.textContent).not.toContain('Sichtbarer Name');
+    expect(fixture.nativeElement.querySelector('.qa-config__details')).toBeNull();
 
     await component.confirm();
 
@@ -185,14 +204,61 @@ describe('QaChannelConfigurationDialogComponent', () => {
 
   it('sperrt das Teilnahmeprofil nach dem ersten Beitritt sichtbar', () => {
     const { fixture } = configureTestBed(true);
+    const host = fixture.nativeElement as HTMLElement;
+    const moreSettings = host.querySelector('.qa-config__details') as HTMLDetailsElement;
 
-    expect(fixture.nativeElement.textContent).toContain(
+    expect(host.textContent).not.toContain(
       'Diese Einstellungen können nach dem ersten Beitritt nicht mehr geändert werden.',
     );
-    const profileFieldset = fixture.nativeElement.querySelector(
-      'fieldset:nth-of-type(2)',
-    ) as HTMLFieldSetElement;
+    expect(moreSettings.open).toBe(false);
+    const profileFieldset = host.querySelector('.qa-config__profile') as HTMLFieldSetElement;
     expect(profileFieldset.disabled).toBe(true);
+  });
+
+  it('bietet die Pseudonymgruppen in der vereinbarten Reihenfolge', () => {
+    const { fixture } = configureTestBed(false, undefined, true, {
+      ...session,
+      allowCustomNicknames: false,
+    });
+    const details = fixture.nativeElement.querySelector(
+      '.qa-config__details',
+    ) as HTMLDetailsElement;
+    details.open = true;
+    fixture.detectChanges();
+
+    const themeSelect = fixture.nativeElement.querySelector(
+      'mat-select[aria-label="Pseudonymgruppe wählen"]',
+    ) as HTMLElement;
+    themeSelect.click();
+    fixture.detectChanges();
+
+    const options = [...document.querySelectorAll('mat-option')].map((el) =>
+      el.textContent?.replace(/\s+/g, ' ').trim(),
+    );
+    expect(options).toEqual([
+      'Bunte Tier-Icons',
+      'Märchenfiguren',
+      'Entdecker und Superhelden',
+      'Philosophen und Forscher',
+      'Nobelpreisträger:innen',
+    ]);
+  });
+
+  it('blendet die Pseudonymgruppe bei anonymem Zugang aus', () => {
+    const { fixture } = configureTestBed(false, undefined, true, {
+      ...session,
+      anonymousMode: true,
+      allowCustomNicknames: false,
+    });
+    const details = fixture.nativeElement.querySelector(
+      '.qa-config__details',
+    ) as HTMLDetailsElement;
+    details.open = true;
+    fixture.detectChanges();
+
+    expect(
+      fixture.nativeElement.querySelector('mat-select[aria-label="Pseudonymgruppe wählen"]'),
+    ).toBeNull();
   });
 
   it('zeigt die ausgerechnete Frist und die globale Verlängerung direkt im Formular', async () => {
@@ -219,7 +285,11 @@ describe('QaChannelConfigurationDialogComponent', () => {
       'Beim Bestätigen kannst du die Fragen danach länger einsehen',
     );
     expect(fixture.nativeElement.textContent).not.toContain('Grün markierte Tage sind wählbar');
-    expect(fixture.nativeElement.textContent).toContain('Titel der Fragenwand');
+    expect(fixture.nativeElement.querySelector('.qa-config__title')).not.toBeNull();
+    expect(fixture.nativeElement.textContent).toContain('/200');
+    expect(fixture.nativeElement.textContent).not.toContain('Überschrift zum Forum');
+    expect(fixture.nativeElement.textContent).not.toContain('Titel der Fragenwand');
+    expect(fixture.nativeElement.textContent).not.toContain('Inhalt');
   });
 
   it('bindet die Mutation an Revision, Vorschauzeit und bestätigte Fristen', async () => {
@@ -245,6 +315,7 @@ describe('QaChannelConfigurationDialogComponent', () => {
     component.deadlineKind = 'DURATION_DAYS';
     component.days = 1;
     component.identityMode = 'PRESET_PSEUDONYM';
+    component.nicknameTheme = 'KINDERGARTEN';
     component.qaTitle = 'Prüfungsfragen';
 
     await component.onDeadlineChange();
@@ -265,7 +336,7 @@ describe('QaChannelConfigurationDialogComponent', () => {
       moderationMode: true,
       participationProfile: {
         identityMode: 'PRESET_PSEUDONYM',
-        nicknameTheme: 'HIGH_SCHOOL',
+        nicknameTheme: 'KINDERGARTEN',
       },
     });
     expect(close).toHaveBeenCalledWith(expect.objectContaining({ preferredChannel: 'qa' }));
@@ -373,7 +444,7 @@ describe('QaChannelConfigurationDialogComponent', () => {
     fixture.detectChanges();
 
     expect(component.profileLocked()).toBe(true);
-    expect(fixture.nativeElement.textContent).toContain(
+    expect(fixture.nativeElement.textContent).not.toContain(
       'Diese Einstellungen können nach dem ersten Beitritt nicht mehr geändert werden.',
     );
     expect(configureMock).toHaveBeenCalledWith(
@@ -462,6 +533,8 @@ describe('QaChannelConfigurationDialogComponent', () => {
     expect(component.reopenQa).toBe(false);
     expect(fixture.nativeElement.textContent).toContain('Fragerunde bearbeiten');
     expect(fixture.nativeElement.textContent).toContain('Änderungen speichern');
+    expect(fixture.nativeElement.querySelector('.qa-config__title')).toBeNull();
+    expect(fixture.nativeElement.textContent).not.toContain('/200');
 
     component.qaTitle = 'Nur Titel';
     await component.confirm();

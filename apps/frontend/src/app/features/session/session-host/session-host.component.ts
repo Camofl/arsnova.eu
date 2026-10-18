@@ -46,7 +46,7 @@ import {
   MatCardTitle,
 } from '@angular/material/card';
 import { MatDialog, MatDialogRef } from '@angular/material/dialog';
-import { MatFormField, MatLabel } from '@angular/material/form-field';
+import { MatFormField, MatHint, MatLabel } from '@angular/material/form-field';
 import { MatIcon } from '@angular/material/icon';
 import { MatInput } from '@angular/material/input';
 import { MatMenu, MatMenuItem, MatMenuTrigger } from '@angular/material/menu';
@@ -672,6 +672,7 @@ function musicTracksForPhase(
     MatCardSubtitle,
     MatCardTitle,
     MatFormField,
+    MatHint,
     MatIcon,
     MatInput,
     MatLabel,
@@ -1565,7 +1566,7 @@ export class SessionHostComponent implements OnInit, OnDestroy {
       case 'pending':
         return $localize`:@@sessionQa.wordCloudSmoothPending:Analyse läuft`;
       case 'active':
-        return $localize`:@@sessionQa.wordCloudSmoothActive:Glättung ist an`;
+        return $localize`:@@sessionQa.wordCloudSmoothActive:Wort-Glättung ist an`;
       case 'stale':
         return $localize`:@@sessionQa.wordCloudSmoothRetry:Neu analysieren`;
       default:
@@ -1582,12 +1583,12 @@ export class SessionHostComponent implements OnInit, OnDestroy {
     }
 
     if (this.freetextWordCloudSmoothingStatus() === 'stale') {
-      return $localize`:@@sessionHost.wordCloudSmoothStale:Neue Antworten seit letzter Glättung`;
+      return $localize`:@@sessionHost.wordCloudSmoothStale:Neue Antworten seit letzter Wort-Glättung`;
     }
 
     const reason = this.freetextWordCloudLemmaFallbackReason();
     if (reason === 'TIMEOUT' || reason === 'INVALID_RESPONSE') {
-      return $localize`:@@sessionQa.wordCloudSmoothFailed:Glättung fehlgeschlagen`;
+      return $localize`:@@sessionQa.wordCloudSmoothFailed:Wort-Glättung fehlgeschlagen`;
     }
 
     if (
@@ -1596,7 +1597,7 @@ export class SessionHostComponent implements OnInit, OnDestroy {
       reason === 'LOCALE_UNSUPPORTED' ||
       reason === 'MODE_UNSUPPORTED'
     ) {
-      return $localize`:@@sessionQa.wordCloudSmoothUnavailable:Glättung nicht verfügbar`;
+      return $localize`:@@sessionQa.wordCloudSmoothUnavailable:Wort-Glättung nicht verfügbar`;
     }
 
     return null;
@@ -2403,7 +2404,7 @@ export class SessionHostComponent implements OnInit, OnDestroy {
       case 'pending':
         return $localize`:@@sessionQa.wordCloudSmoothPending:Analyse läuft`;
       case 'active':
-        return $localize`:@@sessionQa.wordCloudSmoothActive:Glättung ist an`;
+        return $localize`:@@sessionQa.wordCloudSmoothActive:Wort-Glättung ist an`;
       case 'stale':
         return $localize`:@@sessionQa.wordCloudSmoothRetry:Neu analysieren`;
       default:
@@ -2430,12 +2431,12 @@ export class SessionHostComponent implements OnInit, OnDestroy {
     }
 
     if (this.qaWordCloudSmoothingStatus() === 'stale') {
-      return $localize`:@@sessionQa.wordCloudSmoothStale:Neue Fragen seit letzter Glättung`;
+      return $localize`:@@sessionQa.wordCloudSmoothStale:Neue Fragen seit letzter Wort-Glättung`;
     }
 
     const reason = this.qaWordCloudLemmaFallbackReason();
     if (reason === 'TIMEOUT' || reason === 'INVALID_RESPONSE') {
-      return $localize`:@@sessionQa.wordCloudSmoothFailed:Glättung fehlgeschlagen`;
+      return $localize`:@@sessionQa.wordCloudSmoothFailed:Wort-Glättung fehlgeschlagen`;
     }
 
     if (
@@ -2444,7 +2445,7 @@ export class SessionHostComponent implements OnInit, OnDestroy {
       reason === 'LOCALE_UNSUPPORTED' ||
       reason === 'MODE_UNSUPPORTED'
     ) {
-      return $localize`:@@sessionQa.wordCloudSmoothUnavailable:Glättung nicht verfügbar`;
+      return $localize`:@@sessionQa.wordCloudSmoothUnavailable:Wort-Glättung nicht verfügbar`;
     }
 
     return null;
@@ -7491,13 +7492,12 @@ export class SessionHostComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * CanDeactivate-Guard-Hook: zeigt einen Bestätigungsdialog,
-   * wenn die Session noch läuft.
+   * Globales Sessionende aus Menü oder Anker. Der Eintrag bleibt nach
+   * Quiz-FINISHED sichtbar, solange Host-Chrome lebt (z. B. unkonfiguriertes
+   * Q&A oder Nachbereitung). Ohne Dialog wäre das ein stiller No-Op.
    */
   async onSessionEndAnchorClick(event?: Event): Promise<void> {
-    const canEndGlobalSession =
-      this.isSessionActive() ||
-      (this.effectiveStatus() === 'FINISHED' && this.keepQaOpenOnHostLeave());
+    const canEndGlobalSession = this.isSessionActive() || this.effectiveStatus() === 'FINISHED';
     if (!canEndGlobalSession || this.sessionEndPending()) {
       return;
     }
@@ -11796,7 +11796,7 @@ export class SessionHostComponent implements OnInit, OnDestroy {
     if (!session || !this.code) {
       return;
     }
-    if (this.effectiveStatus() === 'FINISHED' && !this.qaChannelNeedsConfiguration()) {
+    if (this.postProcessingEnded()) {
       return;
     }
     if (getStagedHostRecoveryCard(this.code) && !this.qaChannelNeedsConfiguration()) {
