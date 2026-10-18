@@ -55,26 +55,48 @@ describe('SessionResultsExportService', () => {
     const click = vi
       .spyOn(HTMLAnchorElement.prototype, 'click')
       .mockImplementation(() => undefined);
+    const open = vi.spyOn(window, 'open');
     const service = TestBed.inject(SessionResultsExportService);
 
     await expect(
       service.exportPdfFromSessionCode('ABC123', { profile: 'visual', disposition: 'download' }),
     ).resolves.toBe('pdf-download');
     expect(click).toHaveBeenCalledOnce();
+    expect(open).not.toHaveBeenCalled();
     expect(revokeObjectURL).toHaveBeenCalledWith('blob:pdf');
   });
 
-  it('öffnet das PDF in einem neuen Tab, wenn der Host den Plan ansieht', async () => {
-    const opened = { opener: {} as Window, document: { title: '' } };
+  it('öffnet vor dem PDF-Request einen Placeholder-Tab und navigiert dorthin', async () => {
+    const opened = {
+      opener: {} as Window,
+      closed: false,
+      document: { title: '' },
+      location: { assign: vi.fn() },
+      close: vi.fn(),
+    };
     const open = vi.spyOn(window, 'open').mockReturnValue(opened as unknown as Window);
+    let openCallOrder = 0;
+    open.mockImplementation(() => {
+      openCallOrder += 1;
+      return opened as unknown as Window;
+    });
+    let exportDataCallOrder = 0;
+    vi.mocked(trpc.session.getExportData.query).mockImplementation(async () => {
+      exportDataCallOrder = openCallOrder + 1;
+      return exportData;
+    });
     const service = TestBed.inject(SessionResultsExportService);
 
     await expect(
       service.exportPdfFromSessionCode('ABC123', { profile: 'visual', disposition: 'view' }),
     ).resolves.toBe('pdf-view');
-    expect(open).toHaveBeenCalledWith('blob:pdf', '_blank');
+    expect(open).toHaveBeenCalledWith('about:blank', '_blank');
+    expect(openCallOrder).toBe(1);
+    expect(exportDataCallOrder).toBe(2);
+    expect(opened.location.assign).toHaveBeenCalledWith('blob:pdf');
     expect(opened.opener).toBeNull();
     expect(opened.document.title).toBe(pdf.fileName);
+    expect(opened.close).not.toHaveBeenCalled();
     expect(revokeObjectURL).not.toHaveBeenCalled();
   });
 
@@ -88,6 +110,31 @@ describe('SessionResultsExportService', () => {
     await expect(
       service.exportPdfFromSessionCode('ABC123', { profile: 'visual', disposition: 'view' }),
     ).resolves.toBe('pdf-download');
+    expect(click).toHaveBeenCalledOnce();
+  });
+
+  it('schließt den Placeholder und lädt herunter, wenn die Navigation fehlschlägt', async () => {
+    const opened = {
+      opener: {} as Window,
+      closed: false,
+      document: { title: '' },
+      location: {
+        assign: vi.fn(() => {
+          throw new Error('navigation blocked');
+        }),
+      },
+      close: vi.fn(),
+    };
+    vi.spyOn(window, 'open').mockReturnValue(opened as unknown as Window);
+    const click = vi
+      .spyOn(HTMLAnchorElement.prototype, 'click')
+      .mockImplementation(() => undefined);
+    const service = TestBed.inject(SessionResultsExportService);
+
+    await expect(
+      service.exportPdfFromSessionCode('ABC123', { profile: 'visual', disposition: 'view' }),
+    ).resolves.toBe('pdf-download');
+    expect(opened.close).toHaveBeenCalledOnce();
     expect(click).toHaveBeenCalledOnce();
   });
 });

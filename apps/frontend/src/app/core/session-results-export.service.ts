@@ -27,10 +27,17 @@ export class SessionResultsExportService {
     code: string,
     options?: SessionResultsPdfExportOptions,
   ): Promise<SessionResultsPdfExportResult> {
-    const exportData = await trpc.session.getExportData.query({
-      code: code.toUpperCase(),
-    });
-    return this.exportPdfFromExportData(exportData, options);
+    // Synchron im Klick-Kontext öffnen: nach den tRPC-Awaits blockieren Safari/Popup-Policies.
+    const viewPlaceholder = this.openViewPlaceholderIfNeeded(options?.disposition);
+    try {
+      const exportData = await trpc.session.getExportData.query({
+        code: code.toUpperCase(),
+      });
+      return await this.exportPdfFromExportData(exportData, options, viewPlaceholder);
+    } catch (error) {
+      this.closeViewPlaceholder(viewPlaceholder);
+      throw error;
+    }
   }
 
   async exportPdfFromQuizHistory(
@@ -39,26 +46,33 @@ export class SessionResultsExportService {
     options?: SessionResultsPdfExportOptions,
   ): Promise<SessionResultsPdfExportResult> {
     const profile = options?.profile ?? 'visual';
-    const exportData = await trpc.session.getLastSessionExportDataForQuiz.query({
-      quizId,
-      accessProof,
-    });
+    const viewPlaceholder = this.openViewPlaceholderIfNeeded(options?.disposition);
     try {
-      const pdf = await trpc.session.getLastSessionExportPdfForQuiz.query({
+      const exportData = await trpc.session.getLastSessionExportDataForQuiz.query({
         quizId,
         accessProof,
-        localeId: this.localeId,
-        profile,
       });
-      return this.deliverPdf(pdf, options?.disposition ?? 'download');
-    } catch {
-      return this.exportPdfFromExportData(exportData, options);
+      try {
+        const pdf = await trpc.session.getLastSessionExportPdfForQuiz.query({
+          quizId,
+          accessProof,
+          localeId: this.localeId,
+          profile,
+        });
+        return this.deliverPdf(pdf, options?.disposition ?? 'download', viewPlaceholder);
+      } catch {
+        return await this.exportPdfFromExportData(exportData, options, viewPlaceholder);
+      }
+    } catch (error) {
+      this.closeViewPlaceholder(viewPlaceholder);
+      throw error;
     }
   }
 
   private async exportPdfFromExportData(
     exportData: SessionExportDTO,
     options?: SessionResultsPdfExportOptions,
+    viewPlaceholder: Window | null = null,
   ): Promise<SessionResultsPdfExportResult> {
     const profile = options?.profile ?? 'visual';
     if (exportData.questions.length >= 15) {
@@ -71,8 +85,10 @@ export class SessionResultsExportService {
         localeId: this.localeId,
         profile,
       });
-      return this.deliverPdf(pdf, options?.disposition ?? 'download');
+      return this.deliverPdf(pdf, options?.disposition ?? 'download', viewPlaceholder);
     } catch {
+      // Print-Fallback öffnet ein eigenes Fenster — Placeholder wieder schließen.
+      this.closeViewPlaceholder(viewPlaceholder);
       const html = await this.buildPrintableReportHtml(exportData, profile);
       const labels = getSessionResultsReportLabels();
       const documentTitle = `${labels.documentTitle} — ${exportData.quizName}`;
@@ -111,31 +127,86 @@ export class SessionResultsExportService {
   private deliverPdf(
     pdf: { contentBase64: string; fileName: string; mimeType: string },
     disposition: SessionResultsPdfDisposition,
+    viewPlaceholder: Window | null = null,
   ): SessionResultsPdfExportResult {
     if (
       disposition === 'view' &&
-      this.openBase64Export(pdf.contentBase64, pdf.fileName, pdf.mimeType)
+      this.openBase64Export(pdf.contentBase64, pdf.fileName, pdf.mimeType, viewPlaceholder)
     ) {
       return 'pdf-view';
     }
+    this.closeViewPlaceholder(viewPlaceholder);
     this.downloadBase64Export(pdf.contentBase64, pdf.fileName, pdf.mimeType);
     return 'pdf-download';
   }
 
-  private openBase64Export(contentBase64: string, fileName: string, mimeType: string): boolean {
+  /**
+   * Öffnet den Ansehen-Tab noch in der User-Geste (vor awaits).
+   * Ohne Placeholder fällt Ansehen später still auf Download zurück (Safari/Popup-Policy).
+   */
+  private openViewPlaceholderIfNeeded(
+    disposition: SessionResultsPdfDisposition | undefined,
+  ): Window | null {
+    if (disposition !== 'view') {
+      return null;
+    }
+    const view = this.document.defaultView;
+    if (!view) {
+      return null;
+    }
+    // Kein `noopener` in features — sonst liefert Chromium oft `null` bei offenem Tab.
+    const opened = view.open('about:blank', '_blank');
+    if (!opened || opened.closed) {
+      return null;
+    }
+    opened.opener = null;
+    return opened;
+  }
+
+  private closeViewPlaceholder(placeholder: Window | null): void {
+    if (!placeholder || placeholder.closed) {
+      return;
+    }
+    try {
+      placeholder.close();
+    } catch {
+      // Fenster bereits weg oder Close gesperrt.
+    }
+  }
+
+  private openBase64Export(
+    contentBase64: string,
+    fileName: string,
+    mimeType: string,
+    viewPlaceholder: Window | null = null,
+  ): boolean {
     const view = this.document.defaultView;
     if (!view) {
       return false;
     }
     const url = this.createBlobUrl(contentBase64, mimeType);
-    const opened = view.open(url, '_blank');
-    if (!opened) {
-      URL.revokeObjectURL(url);
-      return false;
+    let opened = viewPlaceholder && !viewPlaceholder.closed ? viewPlaceholder : null;
+    if (opened) {
+      try {
+        opened.location.assign(url);
+      } catch {
+        URL.revokeObjectURL(url);
+        return false;
+      }
+    } else {
+      opened = view.open(url, '_blank');
+      if (!opened) {
+        URL.revokeObjectURL(url);
+        return false;
+      }
+      opened.opener = null;
     }
-    opened.opener = null;
-    if (opened.document) {
-      opened.document.title = fileName;
+    try {
+      if (opened.document) {
+        opened.document.title = fileName;
+      }
+    } catch {
+      // Cross-origin nach Blob-Navigation: Titel nicht setzbar.
     }
     view.setTimeout(() => URL.revokeObjectURL(url), 60_000);
     return true;
