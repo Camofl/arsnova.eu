@@ -99,7 +99,7 @@ describe('QuizLearningObjectivesComponent', () => {
     fixture.detectChanges();
     await fixture.whenStable();
 
-    expect(component.errorMessage()).toContain('mindestens eine Aufgabe');
+    expect(component.errorMessage()).toContain('mindestens eine Frage');
     const scopeOption = document.getElementById('learning-objective-scope-all');
     expect(scopeOption?.contains(document.activeElement)).toBe(true);
   });
@@ -208,7 +208,7 @@ describe('QuizLearningObjectivesComponent', () => {
     fixture.detectChanges();
     await fixture.whenStable();
 
-    expect(component.errorMessage()).toContain('fehlendem Aufgabenverweis');
+    expect(component.errorMessage()).toContain('fehlendem Fragenverweis');
     expect(document.activeElement?.id).toBe(`learning-objective-remove-missing-${question.id}`);
     expect(store.getLearningObjectiveBundle(quiz.id).objectives[0]?.confirmation.state).toBe(
       'needs-review',
@@ -274,9 +274,9 @@ describe('QuizLearningObjectivesComponent', () => {
     const intro = fixture.nativeElement.querySelector(
       '.learning-objectives__origin-intro',
     ) as HTMLElement;
-    expect(intro.textContent).toContain('Manuelle Lernziele formulierst du selbst');
-    expect(intro.textContent).toContain('Automatisch aus Aufgaben formulierte Lernziele');
-    expect(intro.textContent).toContain('fachlich geprüft');
+    expect(intro.textContent).toContain('Du kannst Lernziele selbst schreiben');
+    expect(intro.textContent).toContain('automatisch aus deinen Fragen vorschlagen lassen');
+    expect(intro.textContent).toContain('prüfst und bestätigst');
   });
 
   it('erklärt Entwurf und Bestätigt direkt an den Statusoptionen', () => {
@@ -292,8 +292,8 @@ describe('QuizLearningObjectivesComponent', () => {
     const statusGroup = fixture.nativeElement.querySelector(
       '[aria-label="Status des Lernziels"]',
     ) as HTMLElement;
-    expect(statusGroup.textContent).toContain('Noch nicht fachlich geprüft');
-    expect(statusGroup.textContent).toContain('Relevante Quellenänderungen');
+    expect(statusGroup.textContent).toContain('Noch in Abstimmung');
+    expect(statusGroup.textContent).toContain('zur Prüfung markiert');
   });
 
   it('startet die Herleitung nur per Klick, speichert Entwürfe und rendert ihr Markdown sicher', async () => {
@@ -808,5 +808,99 @@ describe('QuizLearningObjectivesComponent', () => {
         .map(({ id }) => id),
     );
     expect(sent.questions.some(({ enabled, answers }) => enabled && answers.length > 0)).toBe(true);
+  });
+
+  it('bietet Lernziele im eingeklappten Expansion-Panel an und blendet die KI-Herleitung ohne geeignete Frage aus', () => {
+    const store = TestBed.inject(QuizStoreService);
+    const quiz = store.createQuiz({ name: 'Expansion & Sichtbarkeit' });
+    const fixture = TestBed.createComponent(QuizLearningObjectivesComponent);
+    fixture.componentRef.setInput('quizId', quiz.id);
+    fixture.componentRef.setInput('questions', []);
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.panelExpanded()).toBe(false);
+    expect(fixture.nativeElement.querySelector('#learning-objective-derive')).toBeNull();
+    expect(fixture.nativeElement.querySelector('#learning-objective-add')).not.toBeNull();
+
+    const surveyQuestion = store.addQuestion(quiz.id, {
+      text: 'Was denkt ihr?',
+      type: 'SURVEY',
+      difficulty: 'EASY',
+      answers: [
+        { text: 'Option A', isCorrect: false },
+        { text: 'Option B', isCorrect: false },
+      ],
+    });
+    fixture.componentRef.setInput('questions', [surveyQuestion]);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('#learning-objective-derive')).toBeNull();
+
+    const scoredQuestion = store.addQuestion(quiz.id, {
+      text: 'Welche Aussage stimmt?',
+      type: 'SINGLE_CHOICE',
+      difficulty: 'EASY',
+      answers: [
+        { text: 'Richtig', isCorrect: true },
+        { text: 'Falsch', isCorrect: false },
+      ],
+    });
+    fixture.componentRef.setInput('questions', [surveyQuestion, scoredQuestion]);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('#learning-objective-derive')).not.toBeNull();
+  });
+
+  it('zeigt bei fokussierter Frage nur deren Lernziele und ordnet neue Ziele dieser Frage zu', () => {
+    const store = TestBed.inject(QuizStoreService);
+    const quiz = store.createQuiz({ name: 'Fragefokus' });
+    const q1 = store.addQuestion(quiz.id, {
+      text: 'Frage 1?',
+      type: 'SINGLE_CHOICE',
+      difficulty: 'EASY',
+      answers: [
+        { text: 'A', isCorrect: true },
+        { text: 'B', isCorrect: false },
+      ],
+    });
+    const q2 = store.addQuestion(quiz.id, {
+      text: 'Frage 2?',
+      type: 'SINGLE_CHOICE',
+      difficulty: 'EASY',
+      answers: [
+        { text: 'C', isCorrect: true },
+        { text: 'D', isCorrect: false },
+      ],
+    });
+    store.saveQuizLearningObjective(quiz.id, {
+      text: 'Quizweites Ziel',
+      scope: { kind: 'quiz-wide' },
+      confirmationState: 'confirmed',
+    });
+    store.saveQuizLearningObjective(quiz.id, {
+      text: 'Ziel zu Frage 1',
+      scope: { kind: 'question-set', sourceQuestionIds: [q1.id] },
+      confirmationState: 'confirmed',
+    });
+    store.saveQuizLearningObjective(quiz.id, {
+      text: 'Ziel zu Frage 2',
+      scope: { kind: 'question-set', sourceQuestionIds: [q2.id] },
+      confirmationState: 'confirmed',
+    });
+
+    const fixture = TestBed.createComponent(QuizLearningObjectivesComponent);
+    fixture.componentRef.setInput('quizId', quiz.id);
+    fixture.componentRef.setInput('questions', [q1, q2]);
+    fixture.componentRef.setInput('focusedQuestionId', q1.id);
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.objectives().map((o) => o.text)).toEqual(['Ziel zu Frage 1']);
+
+    fixture.componentInstance.beginAdd();
+    fixture.componentInstance.setText('Weiteres Ziel zu Frage 1');
+    fixture.componentInstance.save();
+
+    expect(fixture.componentInstance.objectives().map((o) => o.text)).toEqual([
+      'Ziel zu Frage 1',
+      'Weiteres Ziel zu Frage 1',
+    ]);
   });
 });

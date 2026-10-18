@@ -177,15 +177,14 @@ describe('FeedbackVoteComponent', () => {
     const text = fixture.nativeElement.textContent ?? '';
     expect(quickFeedbackResultsQueryMock).not.toHaveBeenCalled();
     expect(quickFeedbackOnResultsSubscribeMock).not.toHaveBeenCalled();
-    expect(text).toContain('Demo-Session');
+    expect(text).not.toContain('Demo-Session');
     expect(text).not.toContain('ABC123');
     expect(text).not.toContain('🦊');
     expect(text).not.toContain('Team Blau');
+    expect(fixture.nativeElement.querySelector('.feedback-vote__context')).toBeNull();
     expect(fixture.nativeElement.querySelector('.feedback-vote__context-item')).toBeNull();
     expect(fixture.nativeElement.querySelector('.feedback-vote__context-kita-avatar')).toBeNull();
     expect(fixture.nativeElement.querySelector('.feedback-vote__context-kicker')).toBeNull();
-    const context = fixture.nativeElement.querySelector('.feedback-vote__context');
-    expect(context?.getAttribute('aria-label')).toContain('Ada');
     expect(text).toContain('Ja · Nein · Vielleicht');
     fixture.destroy();
   });
@@ -237,6 +236,28 @@ describe('FeedbackVoteComponent', () => {
     // Ohne Session-Titel entfällt der Context in der Session-Shell (Kanal steht im Live-Banner).
     expect(fixture.nativeElement.querySelector('.feedback-vote__context')).toBeNull();
     expect(fixture.nativeElement.querySelector('.feedback-vote__context-kicker')).toBeNull();
+    fixture.destroy();
+  });
+
+  it('zeigt im eingebetteten Blitzlicht ohne gestartetes Format den Platzhalter statt »Laden…«', async () => {
+    const fixture = TestBed.createComponent(FeedbackVoteComponent);
+    fixture.componentRef.setInput('sessionCode', 'ABC123');
+    fixture.componentRef.setInput('participantId', 'participant-1');
+    fixture.componentRef.setInput('sessionTitle', 'nur eine frage');
+    fixture.componentRef.setInput('embeddedInSession', true);
+    fixture.componentRef.setInput('sharedResult', null);
+    fixture.componentRef.setInput('showSessionCode', false);
+
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const text = fixture.nativeElement.textContent ?? '';
+    expect(text).toContain('Beim Blitzlicht mitmachen');
+    expect(text).toContain('Sobald ein Format startet');
+    expect(text).not.toContain('Laden…');
+    expect(fixture.nativeElement.querySelector('.feedback-vote__loading')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.feedback-vote__context')).toBeNull();
     fixture.destroy();
   });
 

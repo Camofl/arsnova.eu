@@ -6563,6 +6563,11 @@ export const QaQuestionsListDTOSchema = z.object({
    * (`qa.setPresenterSortMode` → `qa.presentProjection`).
    */
   sortMode: QaQuestionSortModeEnum.optional(),
+  /**
+   * Von der Moderation für das Q&A-Forum hinterlegte Aufträge (nur `session`- oder
+   * `qa-question`-bezogene manuelle Einträge, keine Quiz-Lernziele).
+   */
+  forumAssignments: z.array(z.string().trim().min(1).max(500)).max(100).optional(),
 });
 export type QaQuestionsListDTO = z.infer<typeof QaQuestionsListDTOSchema>;
 

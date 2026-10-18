@@ -81,7 +81,10 @@ import {
   waitForQaQuestionsSignal,
 } from '../lib/qaQuestionsSignal';
 import { zAsyncIterable } from '../lib/zAsyncIterable';
-import { markSessionLearningObjectiveQaSourceRemoved } from '../lib/sessionLearningObjectives';
+import {
+  getSessionForumAssignments,
+  markSessionLearningObjectiveQaSourceRemoved,
+} from '../lib/sessionLearningObjectives';
 
 type QaQuestionVoteRecord = {
   participantId?: string;
@@ -184,6 +187,7 @@ function buildQaQuestionsSnapshot(
     | 'sessionRemaining'
     | 'quota'
     | 'sortMode'
+    | 'forumAssignments'
   > = {},
 ) {
   const expiresAt =
@@ -1211,8 +1215,12 @@ export const qaRouter = router({
         });
       }
       if (!input.moderatorView && contentState !== 'ACTIVE') {
+        const forumAssignments = await getSessionForumAssignments(session.id).catch(
+          () => [] as string[],
+        );
         return buildQaQuestionsSnapshot(session, [], contentState, serverNow, {
           forumVisibleCount: await loadQaForumVisibleCount(session.id, session.qaRankingRevision),
+          ...(forumAssignments.length > 0 ? { forumAssignments } : {}),
           ...(input.participantId
             ? {
                 ownQuestionCounts: await countOwnQaQuestionsByStatus(
@@ -1250,6 +1258,7 @@ export const qaRouter = router({
         filteredSessionPendingCount,
         forumVisibleCount,
         hostOverview,
+        forumAssignments,
       ] = await Promise.all([
         buildQaQuestionPayloadFromDb({
           sessionId: session.id,
@@ -1285,6 +1294,7 @@ export const qaRouter = router({
         input.moderatorView
           ? loadHostQaStatusOverview(session.id, session.qaRankingRevision).catch(() => undefined)
           : Promise.resolve(undefined),
+        getSessionForumAssignments(session.id).catch(() => [] as string[]),
       ]);
       const ownQuestionCounts =
         input.participantId && !input.moderatorView
@@ -1348,6 +1358,7 @@ export const qaRouter = router({
         sessionQuestionCount: session.qaQuestionCount,
         sessionRemaining: Math.max(0, QA_MAX_QUESTIONS_PER_SESSION - session.qaQuestionCount),
         quota,
+        ...(forumAssignments.length > 0 ? { forumAssignments } : {}),
       });
     }),
 

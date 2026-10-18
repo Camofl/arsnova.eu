@@ -187,6 +187,8 @@ import {
   GetSessionLearningObjectivesOutputSchema,
   SaveSessionLearningObjectivesInputSchema,
   SaveSessionLearningObjectivesOutputSchema,
+  DeriveSessionLearningObjectivesInputSchema,
+  DeriveSessionLearningObjectivesResultSchema,
   LEARNING_OBJECTIVE_REVISION_MAX,
 } from '@arsnova/shared-types';
 import {
@@ -339,6 +341,7 @@ import { emitQaQuestionsSignal } from '../lib/qaQuestionsSignal';
 import { clearAllQaPresenterSortModes, clearQaPresenterSortMode } from '../lib/qaPresenterSortMode';
 import { registerSessionPurgeInvalidator } from '../lib/sessionPurgeInvalidation';
 import {
+  deriveSessionLearningObjectives,
   getSessionLearningObjectives,
   getSessionLearningObjectivesSnapshotWithDb,
   initializeSessionLearningObjectivesFromQuiz,
@@ -6522,7 +6525,16 @@ const sessionCoreRouter = router({
   saveLearningObjectives: hostProcedure
     .input(SaveSessionLearningObjectivesInputSchema)
     .output(SaveSessionLearningObjectivesOutputSchema)
-    .mutation(({ input }) => saveSessionLearningObjectives(input)),
+    .mutation(async ({ input }) => {
+      const snapshot = await saveSessionLearningObjectives(input);
+      emitQaQuestionsSignal(snapshot.sessionId, { immediate: true });
+      return snapshot;
+    }),
+
+  deriveLearningObjectives: hostProcedure
+    .input(DeriveSessionLearningObjectivesInputSchema)
+    .output(DeriveSessionLearningObjectivesResultSchema)
+    .mutation(({ input, signal }) => deriveSessionLearningObjectives(input, { signal })),
 
   attachQuizToSession: hostProcedure
     .input(AttachQuizToSessionInputSchema)

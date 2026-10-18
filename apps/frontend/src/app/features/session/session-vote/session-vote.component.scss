@@ -557,6 +557,47 @@
   flex: 1 1 auto;
 }
 
+.session-vote__qa-assignment-toggle {
+  flex-shrink: 0;
+  min-height: 2.75rem;
+  align-self: center;
+}
+
+.session-vote__qa-assignment-panel {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.85rem 1rem;
+  border-radius: var(--mat-sys-corner-large);
+  border: 1px solid color-mix(in srgb, var(--mat-sys-primary) 24%, var(--mat-sys-outline-variant));
+  background: color-mix(
+    in srgb,
+    var(--mat-sys-primary-container) 24%,
+    var(--mat-sys-surface-container-low)
+  );
+  color: var(--mat-sys-on-surface);
+}
+
+.session-vote__qa-assignment-title {
+  margin: 0;
+  font: var(--mat-sys-title-small);
+  font-weight: 700;
+  color: var(--mat-sys-primary);
+}
+
+.session-vote__qa-assignment-list {
+  margin: 0;
+  padding-inline-start: 1.15rem;
+  display: grid;
+  gap: 0.45rem;
+  font: var(--mat-sys-body-medium);
+  line-height: 1.5;
+}
+
+.session-vote__qa-assignment-list:has(> li:only-child) {
+  list-style: none;
+  padding-inline-start: 0;
+}
+
 .session-channel-card__eyebrow {
   margin: 0;
   font: var(--mat-sys-label-large);

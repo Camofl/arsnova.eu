@@ -34482,16 +34482,16 @@
         </context-group>
       </trans-unit>
       <trans-unit id="learningObjectives.subtitle" datatype="html">
-        <source> Formuliere Ziele für das gesamte Quiz oder für ausgewählte Aufgaben.</source>
-        <target>Formule objetivos para todo el cuestionario o para tareas seleccionadas.</target>
+        <source> Halte fest, was mit dem Quiz oder einzelnen Fragen erreicht werden soll.</source>
+        <target>Define qué se debe lograr con el cuestionario o con preguntas concretas.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/features/quiz/quiz-learning-objectives/quiz-learning-objectives.component.html</context>
           <context context-type="linenumber">11,13</context>
         </context-group>
       </trans-unit>
       <trans-unit id="learningObjectives.originIntro" datatype="html">
-        <source> Manuelle Lernziele formulierst du selbst. Automatisch aus Aufgaben formulierte Lernziele erscheinen als modellunterstützte Vorschläge. Sie bleiben entsprechend gekennzeichnet und müssen von dir fachlich geprüft werden.</source>
-        <target>Los objetivos de aprendizaje manuales los formulas tú. Los objetivos formulados automáticamente a partir de las tareas aparecen como propuestas asistidas por un modelo. Siguen identificados como tales y debes revisar su contenido.</target>
+        <source> Du kannst Lernziele selbst schreiben oder automatisch aus deinen Fragen vorschlagen lassen. Automatische Vorschläge werden als Entwurf angelegt, bis du sie prüfst und bestätigst.</source>
+        <target>Puedes redactar los objetivos de aprendizaje tú mismo o dejar que se sugieran automáticamente a partir de tus preguntas. Las sugerencias automáticas se guardan como borrador hasta que las revises y confirmes.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/features/quiz/quiz-learning-objectives/quiz-learning-objectives.component.html</context>
           <context context-type="linenumber">20,25</context>
@@ -34502,8 +34502,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="learningObjectives.intro" datatype="html">
-        <source> Lernziele werden beim Live-Schalten übernommen. Deaktivierte oder fehlende Aufgaben werden niemals automatisch ersetzt.</source>
-        <target>Los objetivos de aprendizaje se adoptan cuando se ponen en marcha. Las tareas deshabilitadas o faltantes nunca se reemplazan automáticamente.</target>
+        <source> Beim Start einer Live-Session werden deine Lernziele für aktive Fragen übernommen.</source>
+        <target>Al iniciar una sesión en vivo, tus objetivos de aprendizaje para las preguntas activas se incluyen automáticamente.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/features/quiz/quiz-learning-objectives/quiz-learning-objectives.component.html</context>
           <context context-type="linenumber">17,20</context>
@@ -34558,8 +34558,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="learningObjectives.modelDerived" datatype="html">
-        <source>Modellunterstützt</source>
-        <target>Asistido por modelo</target>
+        <source>KI-Vorschlag</source>
+        <target>Sugerencia de IA</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/features/quiz/quiz-learning-objectives/quiz-learning-objectives.component.html</context>
           <context context-type="linenumber">108</context>
@@ -34658,24 +34658,24 @@
         </context-group>
       </trans-unit>
       <trans-unit id="learningObjectives.scopeSelected" datatype="html">
-        <source> Ausgewählte Aufgaben</source>
-        <target>Tareas seleccionadas</target>
+        <source> Ausgewählte Fragen</source>
+        <target>Preguntas seleccionadas</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/features/quiz/quiz-learning-objectives/quiz-learning-objectives.component.html</context>
           <context context-type="linenumber">216,218</context>
         </context-group>
       </trans-unit>
       <trans-unit id="learningObjectives.questionSelection" datatype="html">
-        <source>Aufgaben auswählen</source>
-        <target>Seleccionar tareas</target>
+        <source>Fragen auswählen</source>
+        <target>Seleccionar preguntas</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/features/quiz/quiz-learning-objectives/quiz-learning-objectives.component.html</context>
           <context context-type="linenumber">226</context>
         </context-group>
       </trans-unit>
       <trans-unit id="learningObjectives.questionNumber" datatype="html">
-        <source>Aufgabe <x id="INTERPOLATION" equiv-text="{{ index + 1 }}"/>:</source>
-        <target>Tarea <x id="INTERPOLATION" equiv-text="{{ index + 1 }}"/>:</target>
+        <source>Frage <x id="INTERPOLATION" equiv-text="{{ index + 1 }}"/>:</source>
+        <target>Pregunta <x id="INTERPOLATION" equiv-text="{{ index + 1 }}"/>:</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/features/quiz/quiz-learning-objectives/quiz-learning-objectives.component.html</context>
           <context context-type="linenumber">234</context>
@@ -34738,8 +34738,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="learningObjectives.draftHint" datatype="html">
-        <source>Noch nicht fachlich geprüft. Nutze diesen Status, solange du Inhalt oder Bereich abstimmst.</source>
-        <target>Aún no se ha revisado su contenido. Usa este estado mientras ajustas el contenido o el alcance.</target>
+        <source>Noch in Abstimmung. KI-Vorschläge starten immer als Entwurf.</source>
+        <target>En preparación. Las sugerencias de IA siempre comienzan como borrador.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/features/quiz/quiz-learning-objectives/quiz-learning-objectives.component.html</context>
           <context context-type="linenumber">300</context>
@@ -34750,8 +34750,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="learningObjectives.confirmedHint" datatype="html">
-        <source>Von dir fachlich geprüft. Relevante Quellenänderungen lösen erneut Prüfbedarf aus.</source>
-        <target>Revisado por ti. Los cambios relevantes en las fuentes requieren una nueva revisión.</target>
+        <source>Freigegeben. Wenn sich zugehörige Fragen ändern, wird das Ziel zur Prüfung markiert.</source>
+        <target>Confirmado. Si las preguntas vinculadas cambian, el objetivo se marca para revisión.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/features/quiz/quiz-learning-objectives/quiz-learning-objectives.component.html</context>
           <context context-type="linenumber">316</context>
@@ -34918,8 +34918,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="learningObjectives.scopeQuestionCount" datatype="html">
-        <source><x id="count" equiv-text="objective.scope.sourceQuestionIds.length"/> Aufgabe(n)</source>
-        <target><x id="count" equiv-text="objective.scope.sourceQuestionIds.length"/> tarea(s)</target>
+        <source><x id="count" equiv-text="objective.scope.sourceQuestionIds.length"/> Frage(n)</source>
+        <target><x id="count" equiv-text="objective.scope.sourceQuestionIds.length"/> pregunta(s)</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/features/quiz/quiz-learning-objectives/quiz-learning-objectives.component.ts</context>
           <context context-type="linenumber">329</context>
@@ -34974,8 +34974,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="sessionHost.learningObjectivesButton" datatype="html">
-        <source>Ziele</source>
-        <target>Objetivos</target>
+        <source>Lernziel</source>
+        <target>Objetivo</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/features/session/session-host/session-host.component.html</context>
           <context context-type="linenumber">656</context>
@@ -34990,8 +34990,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="sessionLearningObjectives.subtitle" datatype="html">
-        <source> Ziele für Quiz und Q&amp;A dieser Session</source>
-        <target>Objetivos del cuestionario y de preguntas y respuestas para esta sesión</target>
+        <source> Lernziele für dieses Quiz</source>
+        <target>Objetivos de aprendizaje para este cuestionario</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/features/session/session-host/session-learning-objectives-dialog.component.html</context>
           <context context-type="linenumber">14,16</context>
@@ -35158,16 +35158,16 @@
         </context-group>
       </trans-unit>
       <trans-unit id="sessionLearningObjectives.scopeTasksOption" datatype="html">
-        <source> Ausgewählte Quiz- oder Q&amp;A-Aufgaben</source>
-        <target> Tareas seleccionadas del cuestionario o de preguntas y respuestas</target>
+        <source> Ausgewählte Fragen</source>
+        <target> Preguntas seleccionadas</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/features/session/session-host/session-learning-objectives-dialog.component.html</context>
           <context context-type="linenumber">234,236</context>
         </context-group>
       </trans-unit>
       <trans-unit id="sessionLearningObjectives.taskSelection" datatype="html">
-        <source>Aufgaben auswählen</source>
-        <target>Seleccionar tareas</target>
+        <source>Fragen auswählen</source>
+        <target>Seleccionar preguntas</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/features/session/session-host/session-learning-objectives-dialog.component.html</context>
           <context context-type="linenumber">244</context>
@@ -35254,24 +35254,24 @@
         </context-group>
       </trans-unit>
       <trans-unit id="sessionLearningObjectives.quizTaskLabel" datatype="html">
-        <source>Quizaufgabe <x id="order" equiv-text="task.order + 1"/>: <x id="text" equiv-text="task.text"/></source>
-        <target>Tarea del cuestionario <x id="order" equiv-text="task.order + 1"/>: <x id="text" equiv-text="task.text"/></target>
+        <source>Frage <x id="order" equiv-text="task.order + 1"/>: <x id="text" equiv-text="task.text"/></source>
+        <target>Pregunta <x id="order" equiv-text="task.order + 1"/>: <x id="text" equiv-text="task.text"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/features/session/session-host/session-learning-objectives-dialog.component.ts</context>
           <context context-type="linenumber">108</context>
         </context-group>
       </trans-unit>
       <trans-unit id="sessionLearningObjectives.qaTaskFallback" datatype="html">
-        <source>Q&amp;A-Frage</source>
-        <target>pregunta de preguntas y respuestas</target>
+        <source>Q&amp;A-Aufgabe</source>
+        <target>Tarea de preguntas y respuestas</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/features/session/session-host/session-learning-objectives-dialog.component.ts</context>
           <context context-type="linenumber">121</context>
         </context-group>
       </trans-unit>
       <trans-unit id="sessionLearningObjectives.quizTaskFallback" datatype="html">
-        <source>Quizaufgabe</source>
-        <target>Tarea del cuestionario</target>
+        <source>Frage</source>
+        <target>Pregunta</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/features/session/session-host/session-learning-objectives-dialog.component.ts</context>
           <context context-type="linenumber">122</context>
@@ -35486,8 +35486,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="sessionLearningObjectives.scopeTasks" datatype="html">
-        <source><x id="count" equiv-text="objective.scope.taskReferences.length"/> Aufgabe(n)</source>
-        <target><x id="count" equiv-text="objective.scope.taskReferences.length"/> tarea(s)</target>
+        <source><x id="count" equiv-text="objective.scope.taskReferences.length"/> Frage(n)</source>
+        <target><x id="count" equiv-text="objective.scope.taskReferences.length"/> pregunta(s)</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/features/session/session-host/session-learning-objectives-dialog.component.ts</context>
           <context context-type="linenumber">454</context>
@@ -35534,8 +35534,8 @@
         <target>Los objetivos de aprendizaje cambiaron durante la generación automática. Tus cambios se han conservado. Inicia de nuevo la generación.</target>
       </trans-unit>
       <trans-unit id="learningObjectives.derivationBusy" datatype="html">
-        <source>Das lokale Modell ist gerade ausgelastet. Deine Lernziele bleiben unverändert. Versuche es bewusst noch einmal.</source>
-        <target>El modelo local está ocupado. Tus objetivos de aprendizaje no han cambiado. Vuelve a intentarlo cuando quieras.</target>
+        <source>Die lokale Text-KI ist gerade ausgelastet. Deine Lernziele bleiben unverändert. Bitte versuche es gleich noch einmal.</source>
+        <target>La IA de texto local está ocupada en este momento. Tus objetivos de aprendizaje no han cambiado. Inténtalo de nuevo en un momento.</target>
       </trans-unit>
       <trans-unit id="learningObjectives.derivationCancel" datatype="html">
         <source>Herleitung abbrechen</source>
@@ -35550,8 +35550,8 @@
         <target>Sugerencias no añadidas: <x id="count" equiv-text="omittedForCapacity"/>. El espacio se reservó para los objetivos de aprendizaje existentes.</target>
       </trans-unit>
       <trans-unit id="learningObjectives.derivationCircuitOpen" datatype="html">
-        <source>Das lokale Modell erholt sich gerade von Fehlern. Versuche es später bewusst noch einmal.</source>
-        <target>El modelo local se está recuperando de errores. Vuelve a intentarlo más tarde cuando quieras.</target>
+        <source>Die automatische Erstellung steht kurzzeitig nicht zur Verfügung. Bitte versuche es in einem Moment noch einmal.</source>
+        <target>La generación automática no está disponible temporalmente. Inténtalo de nuevo en un momento.</target>
       </trans-unit>
       <trans-unit id="learningObjectives.derivationCompleted" datatype="html">
         <source><x id="count" equiv-text="applied.length"/> Lernzielvorschläge wurden als Entwürfe hinzugefügt. Prüfe sie vor dem Bestätigen.</source>
@@ -35574,8 +35574,8 @@
         <target>La generación automática contenía sugerencias duplicadas. Iníciala de nuevo.</target>
       </trans-unit>
       <trans-unit id="learningObjectives.derivationHelp" datatype="html">
-        <source>Erst nach deiner ausdrücklichen Aktion werden geeignete aktive Aufgaben mit ihren Lösungen an das lokale Modell übergeben. Vorschläge werden als Entwurf ergänzt; manuelle, bearbeitete oder bestätigte Lernziele bleiben unverändert.</source>
-        <target>Las tareas activas adecuadas y sus soluciones solo se envían al modelo local después de tu acción explícita. Las sugerencias se añaden como borradores; los objetivos de aprendizaje manuales, editados o confirmados no cambian.</target>
+        <source> Auf Klick erstellt die lokale Text-KI passende Lernziel-Entwürfe aus deinen aktiven Fragen und Lösungen. Deine bestehenden Lernziele bleiben unverändert. </source>
+        <target>Al hacer clic, la IA de texto local crea borradores de objetivos de aprendizaje a partir de tus preguntas activas y sus soluciones. Tus objetivos existentes no cambian.</target>
       </trans-unit>
       <trans-unit id="learningObjectives.derivationIdCollision" datatype="html">
         <source>Die Vorschläge können nicht sicher zugeordnet werden. Deine bestehenden Lernziele bleiben unverändert. Starte die Herleitung erneut.</source>
@@ -35618,23 +35618,23 @@
         <target>Al menos una tarea utilizada cambió o se desactivó durante la generación automática. Tus objetivos de aprendizaje no han cambiado. Inicia de nuevo la generación.</target>
       </trans-unit>
       <trans-unit id="learningObjectives.derivationStart" datatype="html">
-        <source>Automatisch aus Aufgaben formulieren</source>
-        <target>Formular automáticamente a partir de las tareas</target>
+        <source>Automatisch aus Fragen formulieren</source>
+        <target>Formular automáticamente a partir de las preguntas</target>
       </trans-unit>
       <trans-unit id="learningObjectives.derivationTimeout" datatype="html">
-        <source>Die automatische Herleitung hat zu lange gedauert. Deine Lernziele bleiben unverändert.</source>
+        <source>Die automatische Erstellung hat zu lange gedauert. Deine Lernziele bleiben unverändert.</source>
         <target>La generación automática tardó demasiado. Tus objetivos de aprendizaje no han cambiado.</target>
       </trans-unit>
       <trans-unit id="learningObjectives.derivationTitle" datatype="html">
-        <source>Automatische Vorschläge</source>
-        <target>Sugerencias automáticas</target>
+        <source> Lernziele vorschlagen lassen </source>
+        <target>Sugerir objetivos de aprendizaje</target>
       </trans-unit>
       <trans-unit id="learningObjectives.derivationUnavailable" datatype="html">
-        <source>Die automatische Herleitung ist gerade nicht verfügbar. Versuche es später erneut.</source>
-        <target>La generación automática no está disponible en este momento. Vuelve a intentarlo más tarde.</target>
+        <source>Die lokale Text-KI ist gerade nicht erreichbar. Du kannst Lernziele manuell eintragen oder es später erneut versuchen.</source>
+        <target>La IA de texto local no está disponible en este momento. Puedes introducir los objetivos de aprendizaje manualmente o volver a intentarlo más tarde.</target>
       </trans-unit>
       <trans-unit id="learningObjectives.derivationAborted" datatype="html">
-        <source>Die automatische Herleitung wurde abgebrochen. Deine Lernziele bleiben unverändert.</source>
+        <source>Die automatische Erstellung wurde abgebrochen. Deine Lernziele bleiben unverändert.</source>
         <target>La generación automática se canceló. Tus objetivos de aprendizaje no han cambiado.</target>
       </trans-unit>
       <trans-unit id="sessionHost.moderationDiagnosis" datatype="html">
@@ -36012,6 +36012,110 @@
           <context context-type="sourcefile">src/app/features/session/session-host/moderation-compass-dialog.component.ts</context>
           <context context-type="linenumber">452</context>
         </context-group>
+      </trans-unit>
+      <trans-unit id="sessionHost.qaAssignmentButton" datatype="html">
+        <source>Auftrag</source>
+        <target>Tarea</target>
+      </trans-unit>
+      <trans-unit id="sessionHost.qaAssignmentAria" datatype="html">
+        <source>Auftrag für das Q&amp;A-Forum öffnen</source>
+        <target>Abrir tarea para el foro de preguntas y respuestas</target>
+      </trans-unit>
+      <trans-unit id="sessionQaAssignments.title" datatype="html">
+        <source>Auftrag</source>
+        <target>Tarea</target>
+      </trans-unit>
+      <trans-unit id="sessionQaAssignments.subtitle" datatype="html">
+        <source>Auftrag für das Q&amp;A-Forum dieser Session</source>
+        <target>Tarea para el foro de preguntas y respuestas de esta sesión</target>
+      </trans-unit>
+      <trans-unit id="sessionLearningObjectives.questionTitle" datatype="html">
+        <source>Lernziel zur Frage</source>
+        <target>Objetivo de aprendizaje de la pregunta</target>
+      </trans-unit>
+      <trans-unit id="sessionLearningObjectives.questionSubtitle" datatype="html">
+        <source>Kompetenzziel der aktuell gezeigten Frage</source>
+        <target>Objetivo competencial de la pregunta mostrada actualmente</target>
+      </trans-unit>
+      <trans-unit id="sessionQaAssignments.loading" datatype="html">
+        <source>Auftrag wird geladen …</source>
+        <target>Cargando tarea…</target>
+      </trans-unit>
+      <trans-unit id="sessionQaAssignments.loadFailed" datatype="html">
+        <source>Auftrag konnte nicht geladen werden.</source>
+        <target>No se pudo cargar la tarea.</target>
+      </trans-unit>
+      <trans-unit id="sessionQaAssignments.readOnly" datatype="html">
+        <source>Diese beendete Session ist nur noch lesbar. Aufträge können nicht mehr geändert werden.</source>
+        <target>Esta sesión finalizada es de solo lectura. Las tareas ya no se pueden modificar.</target>
+      </trans-unit>
+      <trans-unit id="sessionQaAssignments.intro" datatype="html">
+        <source>Hier hinterlegst du einen klaren Arbeits- oder Diskussionsauftrag für das Q&amp;A-Forum. Sobald ein Auftrag vorhanden ist, sehen Teilnehmende im Forum den Button »Auftrag«.</source>
+        <target>Define aquí una tarea clara de trabajo o debate para el foro de preguntas y respuestas. En cuanto haya una tarea disponible, quienes participan verán el botón «Tarea» en el foro.</target>
+      </trans-unit>
+      <trans-unit id="sessionQaAssignments.empty" datatype="html">
+        <source>Für dieses Q&amp;A-Forum ist noch kein Auftrag hinterlegt.</source>
+        <target>Todavía no se ha definido ninguna tarea para este foro de preguntas y respuestas.</target>
+      </trans-unit>
+      <trans-unit id="sessionLearningObjectives.questionEmpty" datatype="html">
+        <source>Für diese Frage ist noch kein Lernziel hinterlegt.</source>
+        <target>Todavía no se ha definido ningún objetivo de aprendizaje para esta pregunta.</target>
+      </trans-unit>
+      <trans-unit id="sessionQaAssignments.deleteQuestion" datatype="html">
+        <source>Diesen Auftrag wirklich löschen?</source>
+        <target>¿Eliminar realmente esta tarea?</target>
+      </trans-unit>
+      <trans-unit id="sessionQaAssignments.editTitle" datatype="html">
+        <source>Auftrag bearbeiten</source>
+        <target>Editar tarea</target>
+      </trans-unit>
+      <trans-unit id="sessionQaAssignments.addTitle" datatype="html">
+        <source>Auftrag hinzufügen</source>
+        <target>Añadir tarea</target>
+      </trans-unit>
+      <trans-unit id="sessionQaAssignments.textLabel" datatype="html">
+        <source>Auftrag</source>
+        <target>Tarea</target>
+      </trans-unit>
+      <trans-unit id="sessionQaAssignments.add" datatype="html">
+        <source>Auftrag hinzufügen</source>
+        <target>Añadir tarea</target>
+      </trans-unit>
+      <trans-unit id="sessionQaAssignments.textRequired" datatype="html">
+        <source>Formuliere einen Auftrag.</source>
+        <target>Formula una tarea.</target>
+      </trans-unit>
+      <trans-unit id="sessionQaAssignments.textTooLong" datatype="html">
+        <source>Der Auftrag ist zu lang.</source>
+        <target>La tarea es demasiado larga.</target>
+      </trans-unit>
+      <trans-unit id="sessionQaAssignments.created" datatype="html">
+        <source>Auftrag hinzugefügt.</source>
+        <target>Tarea añadida.</target>
+      </trans-unit>
+      <trans-unit id="sessionQaAssignments.updated" datatype="html">
+        <source>Auftrag aktualisiert.</source>
+        <target>Tarea actualizada.</target>
+      </trans-unit>
+      <trans-unit id="sessionQaAssignments.saveFailed" datatype="html">
+        <source>Auftrag konnte nicht gespeichert werden. Versuche es erneut.</source>
+        <target>No se pudo guardar la tarea. Inténtalo de nuevo.</target>
+      </trans-unit>
+      <trans-unit id="sessionQaAssignments.deleted" datatype="html">
+        <source>Auftrag gelöscht.</source>
+        <target>Tarea eliminada.</target>
+      </trans-unit>
+      <trans-unit id="sessionQaAssignments.deleteFailed" datatype="html">
+        <source>Auftrag konnte nicht gelöscht werden.</source>
+        <target>No se pudo eliminar la tarea.</target>
+      </trans-unit>
+      <trans-unit id="sessionVote.qaAssignmentButton" datatype="html">
+        <source>Auftrag</source>
+        <target>Tarea</target>
+      </trans-unit>
+      <trans-unit id="sessionVote.qaAssignmentHeading" datatype="html">
+        <source>Auftrag für dieses Forum</source>
+        <target>Tarea para este foro</target>
       </trans-unit>
     </body>
   </file>

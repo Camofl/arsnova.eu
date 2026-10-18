@@ -1637,6 +1637,33 @@
   align-items: center;
 }
 
+.learning-objectives__expansion-panel.mat-expansion-panel .mat-expansion-panel-header {
+  padding-inline: 1.25rem !important;
+  gap: 1rem;
+}
+
+.learning-objectives__expansion-panel.mat-expansion-panel
+  .mat-expansion-panel-header
+  .mat-expansion-indicator {
+  flex-shrink: 0;
+}
+
+.learning-objectives__expansion-panel.mat-expansion-panel .mat-expansion-panel-header .mat-content {
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
+  align-items: center;
+}
+
+.learning-objectives__expansion-panel.mat-expansion-panel
+  .mat-expansion-panel-header
+  .mat-expansion-panel-header-title {
+  margin-right: 0 !important;
+  margin-left: 0 !important;
+  min-width: 0;
+  align-items: center;
+}
+
 mat-form-field:has(.quiz-edit-form__rating-boundary-inner) .mat-mdc-floating-label,
 mat-form-field:has(.quiz-edit-form__rating-boundary-inner) .mdc-floating-label {
   display: inline-flex !important;

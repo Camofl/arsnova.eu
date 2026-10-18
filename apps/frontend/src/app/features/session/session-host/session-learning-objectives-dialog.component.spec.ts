@@ -7,10 +7,12 @@ import {
   type SessionLearningObjectivesDialogData,
 } from './session-learning-objectives-dialog.component';
 
-const { getLearningObjectivesMock, saveLearningObjectivesMock } = vi.hoisted(() => ({
-  getLearningObjectivesMock: vi.fn(),
-  saveLearningObjectivesMock: vi.fn(),
-}));
+const { getLearningObjectivesMock, saveLearningObjectivesMock, deriveLearningObjectivesMock } =
+  vi.hoisted(() => ({
+    getLearningObjectivesMock: vi.fn(),
+    saveLearningObjectivesMock: vi.fn(),
+    deriveLearningObjectivesMock: vi.fn(),
+  }));
 
 vi.mock('../../../core/trpc.client', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../../core/trpc.client')>();
@@ -23,6 +25,7 @@ vi.mock('../../../core/trpc.client', async (importOriginal) => {
             ...Reflect.get(target, property, receiver),
             getLearningObjectives: { query: getLearningObjectivesMock },
             saveLearningObjectives: { mutate: saveLearningObjectivesMock },
+            deriveLearningObjectives: { mutate: deriveLearningObjectivesMock },
           };
         }
         return Reflect.get(target, property, receiver);
@@ -72,19 +75,39 @@ function existingObjective(text = 'Servertext') {
   };
 }
 
+function confirmedObjective(text = 'Servertext') {
+  return {
+    ...existingObjective(text),
+    confirmation: {
+      state: 'confirmed' as const,
+      confirmedAt: '2026-10-04T10:00:00.000Z',
+      confirmedRevision: 3,
+    },
+  };
+}
+
 describe('SessionLearningObjectivesDialogComponent', () => {
   const dialogRef = { close: vi.fn(), disableClose: false };
   const hasQuizMock = vi.fn(() => true);
+  const modeMock = vi.fn<'quiz' | 'qa'>(() => 'quiz');
+  const focusedQuestionIdMock = vi.fn<string | null>(() => null);
   const data: SessionLearningObjectivesDialogData = {
     code: 'ABC123',
     hasQuiz: hasQuizMock,
+    mode: modeMock,
+    focusedQuestionId: focusedQuestionIdMock,
   };
 
   beforeEach(() => {
     getLearningObjectivesMock.mockReset();
     saveLearningObjectivesMock.mockReset();
+    deriveLearningObjectivesMock.mockReset();
     hasQuizMock.mockReset();
     hasQuizMock.mockReturnValue(true);
+    modeMock.mockReset();
+    modeMock.mockReturnValue('quiz');
+    focusedQuestionIdMock.mockReset();
+    focusedQuestionIdMock.mockReturnValue(null);
     dialogRef.close.mockReset();
     dialogRef.disableClose = false;
     getLearningObjectivesMock.mockResolvedValue(snapshot());
@@ -304,9 +327,9 @@ describe('SessionLearningObjectivesDialogComponent', () => {
       fixture.nativeElement.querySelectorAll(
         '.session-objectives__task-text',
       ) as NodeListOf<HTMLElement>,
-    ).find((element) => element.textContent?.includes('Quizaufgabe 1'))!;
+    ).find((element) => element.textContent?.includes('Frage 1'))!;
     expect(preview.querySelector('strong')?.textContent).toBe('Ableitung');
-    expect(preview.textContent).toContain('Quizaufgabe 1');
+    expect(preview.textContent).toContain('Frage 1');
     expect(preview.textContent).not.toContain('###');
     expect(preview.querySelector('a, img, button')).toBeNull();
   });
@@ -317,9 +340,9 @@ describe('SessionLearningObjectivesDialogComponent', () => {
     const intro = fixture.nativeElement.querySelector(
       '.session-objectives__origin-intro',
     ) as HTMLElement;
-    expect(intro.textContent).toContain('Manuelle Lernziele formulierst du selbst');
-    expect(intro.textContent).toContain('Automatisch aus Aufgaben formulierte Lernziele');
-    expect(intro.textContent).toContain('fachlich geprüft');
+    expect(intro.textContent).toContain('Du kannst Lernziele selbst schreiben');
+    expect(intro.textContent).toContain('automatisch aus deinen Fragen vorschlagen lassen');
+    expect(intro.textContent).toContain('prüfst und bestätigst');
   });
 
   it('erklärt Entwurf und Bestätigt direkt an den Statusoptionen', async () => {
@@ -330,7 +353,205 @@ describe('SessionLearningObjectivesDialogComponent', () => {
     const statusGroup = fixture.nativeElement.querySelector(
       '[aria-label="Status des Lernziels"]',
     ) as HTMLElement;
-    expect(statusGroup.textContent).toContain('Noch nicht fachlich geprüft');
-    expect(statusGroup.textContent).toContain('Relevante Quellenänderungen');
+    expect(statusGroup.textContent).toContain('Noch in Abstimmung');
+    expect(statusGroup.textContent).toContain('zur Prüfung markiert');
+  });
+
+  it('zeigt bei vorhandenem Lernziel die publikumsfreundliche Darstellung ohne KI-Herleitung mit dezentem Bearbeiten-Icon', async () => {
+    const quizQuestionA = 'eb4a99f8-8d86-41ef-960c-130f6d9a48e3';
+    const quizQuestionB = 'fb4a99f8-8d86-41ef-960c-130f6d9a48e4';
+    focusedQuestionIdMock.mockReturnValue(quizQuestionA);
+    getLearningObjectivesMock.mockResolvedValue(
+      snapshot({
+        availableQuizTasks: [
+          {
+            kind: 'quiz-question',
+            questionId: quizQuestionA,
+            order: 0,
+            text: 'Frage A',
+            eligibleForDerivation: true,
+          },
+          {
+            kind: 'quiz-question',
+            questionId: quizQuestionB,
+            order: 1,
+            text: 'Frage B',
+            eligibleForDerivation: true,
+          },
+        ],
+        objectives: [
+          {
+            ...confirmedObjective('Ziel für Frage A'),
+            id: '11111111-1111-4111-8111-111111111111',
+            scope: {
+              kind: 'question-set',
+              taskReferences: [{ kind: 'quiz-question', questionId: quizQuestionA }],
+            },
+          },
+          {
+            ...confirmedObjective('Ziel für Frage B'),
+            id: '22222222-2222-4222-8222-222222222222',
+            scope: {
+              kind: 'question-set',
+              taskReferences: [{ kind: 'quiz-question', questionId: quizQuestionB }],
+            },
+          },
+        ],
+      }),
+    );
+
+    const fixture = await createComponent();
+    expect(fixture.componentInstance.objectives().map((o) => o.text)).toEqual(['Ziel für Frage A']);
+    expect(fixture.nativeElement.querySelector('#session-learning-objective-derive')).toBeNull();
+    expect(fixture.nativeElement.querySelector('#session-learning-objective-add')).toBeNull();
+    expect(
+      fixture.nativeElement.querySelector('.session-objectives__audience-edit-btn'),
+    ).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('.session-objectives__origin-intro')).toBeNull();
+  });
+
+  it('zeigt Entwürfe im Live-Quiz nicht in der publikumsfreundlichen Darstellung', async () => {
+    const quizQuestionA = 'eb4a99f8-8d86-41ef-960c-130f6d9a48e3';
+    focusedQuestionIdMock.mockReturnValue(quizQuestionA);
+    getLearningObjectivesMock.mockResolvedValue(
+      snapshot({
+        availableQuizTasks: [
+          {
+            kind: 'quiz-question',
+            questionId: quizQuestionA,
+            order: 0,
+            text: 'Frage A',
+            eligibleForDerivation: true,
+          },
+        ],
+        objectives: [
+          {
+            ...existingObjective('Ungeprüfter Entwurf zur Frage A'),
+            id: '11111111-1111-4111-8111-111111111111',
+            scope: {
+              kind: 'question-set',
+              taskReferences: [{ kind: 'quiz-question', questionId: quizQuestionA }],
+            },
+          },
+          {
+            ...confirmedObjective('Bestätigtes Ziel zur Frage A'),
+            id: '33333333-3333-4333-8333-333333333333',
+            scope: {
+              kind: 'question-set',
+              taskReferences: [{ kind: 'quiz-question', questionId: quizQuestionA }],
+            },
+          },
+        ],
+      }),
+    );
+
+    const fixture = await createComponent();
+    expect(fixture.componentInstance.isAudiencePresentation()).toBe(true);
+    expect(fixture.componentInstance.visibleObjectives().map((o) => o.text)).toEqual([
+      'Bestätigtes Ziel zur Frage A',
+    ]);
+    expect(fixture.nativeElement.textContent).toContain('Bestätigtes Ziel zur Frage A');
+    expect(fixture.nativeElement.textContent).not.toContain('Ungeprüfter Entwurf zur Frage A');
+    expect(fixture.nativeElement.querySelector('.session-objectives__origin-intro')).toBeNull();
+    expect(fixture.nativeElement.querySelector('#session-learning-objective-add')).toBeNull();
+  });
+
+  it('öffnet bei nur einem Entwurf die Host-Bearbeitung statt der Publikumskarte', async () => {
+    const quizQuestionA = 'eb4a99f8-8d86-41ef-960c-130f6d9a48e3';
+    focusedQuestionIdMock.mockReturnValue(quizQuestionA);
+    getLearningObjectivesMock.mockResolvedValue(
+      snapshot({
+        availableQuizTasks: [
+          {
+            kind: 'quiz-question',
+            questionId: quizQuestionA,
+            order: 0,
+            text: 'Frage A',
+            eligibleForDerivation: true,
+          },
+        ],
+        objectives: [
+          {
+            ...existingObjective('Ungeprüfter Entwurf zur Frage A'),
+            scope: {
+              kind: 'question-set',
+              taskReferences: [{ kind: 'quiz-question', questionId: quizQuestionA }],
+            },
+          },
+        ],
+      }),
+    );
+
+    const fixture = await createComponent();
+    expect(fixture.componentInstance.isAudiencePresentation()).toBe(false);
+    expect(fixture.componentInstance.visibleObjectives().map((o) => o.text)).toEqual([
+      'Ungeprüfter Entwurf zur Frage A',
+    ]);
+    expect(
+      fixture.nativeElement.querySelector('.session-objectives__audience-edit-btn'),
+    ).toBeNull();
+    expect(fixture.nativeElement.querySelector('#session-learning-objective-add')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('.session-objectives__origin-intro')).not.toBeNull();
+  });
+
+  it('bietet die KI-Herleitung an, wenn noch kein Lernziel vorliegt, aber geeignete Quiz-Fragen existieren', async () => {
+    const quizQuestionA = 'eb4a99f8-8d86-41ef-960c-130f6d9a48e3';
+    focusedQuestionIdMock.mockReturnValue(quizQuestionA);
+    getLearningObjectivesMock.mockResolvedValue(
+      snapshot({
+        availableQuizTasks: [
+          {
+            kind: 'quiz-question',
+            questionId: quizQuestionA,
+            order: 0,
+            text: 'Frage A',
+            eligibleForDerivation: true,
+          },
+        ],
+        objectives: [],
+      }),
+    );
+
+    const fixture = await createComponent();
+    expect(fixture.componentInstance.objectives()).toEqual([]);
+    expect(
+      fixture.nativeElement.querySelector('#session-learning-objective-derive'),
+    ).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('#session-learning-objective-add')).not.toBeNull();
+  });
+
+  it('zeigt im Q&A-Modus nur Forum-Aufträge ohne den Begriff Lernziel und ohne KI-Herleitung', async () => {
+    modeMock.mockReturnValue('qa');
+    const quizQuestionA = 'eb4a99f8-8d86-41ef-960c-130f6d9a48e3';
+    getLearningObjectivesMock.mockResolvedValue(
+      snapshot({
+        availableQuizTasks: [
+          {
+            kind: 'quiz-question',
+            questionId: quizQuestionA,
+            order: 0,
+            text: 'Frage A',
+            eligibleForDerivation: true,
+          },
+        ],
+        objectives: [
+          existingObjective('Diskutiert die Praxisfälle im Forum'),
+          {
+            ...existingObjective('Quiz-Lernziel'),
+            id: '33333333-3333-4333-8333-333333333333',
+            projection: 'quiz-projected',
+            scope: { kind: 'quiz-wide' },
+          },
+        ],
+      }),
+    );
+
+    const fixture = await createComponent();
+    expect(fixture.componentInstance.objectives().map((o) => o.text)).toEqual([
+      'Diskutiert die Praxisfälle im Forum',
+    ]);
+    expect(fixture.nativeElement.querySelector('#session-learning-objective-derive')).toBeNull();
+    expect(fixture.nativeElement.textContent).toContain('Auftrag');
+    expect(fixture.nativeElement.textContent).not.toContain('Lernziel');
   });
 });

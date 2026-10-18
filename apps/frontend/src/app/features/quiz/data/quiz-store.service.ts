@@ -1463,7 +1463,7 @@ export class QuizStoreService implements OnDestroy {
     const hasMissingReference = hasMissingScopeReference || hasMissingDerivationReference;
     if (hasMissingReference && input.confirmationState === 'confirmed') {
       throw new Error(
-        $localize`:@@learningObjectives.missingScopeCannotConfirm:Ein Lernziel mit fehlendem Aufgabenverweis kann nicht bestätigt werden.`,
+        $localize`:@@learningObjectives.missingScopeCannotConfirm:Ein Lernziel mit fehlendem Fragenverweis kann nicht bestätigt werden.`,
       );
     }
     const previousConfirmation = existing
@@ -1603,7 +1603,7 @@ export class QuizStoreService implements OnDestroy {
       ]);
       if ([...references].some((questionId) => !knownEnabledQuestionIds.has(questionId))) {
         throw new Error(
-          $localize`:@@learningObjectives.derivationSourceChanged:Mindestens eine verwendete Aufgabe wurde während der automatischen Herleitung geändert oder deaktiviert. Deine Lernziele bleiben unverändert. Starte die Herleitung erneut.`,
+          $localize`:@@learningObjectives.derivationSourceChanged:Mindestens eine verwendete Frage wurde während der automatischen Herleitung geändert oder deaktiviert. Deine Lernziele bleiben unverändert. Starte die Herleitung erneut.`,
         );
       }
     }

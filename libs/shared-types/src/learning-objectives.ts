@@ -666,6 +666,7 @@ export const SessionLearningObjectiveAvailableQuizTaskSchema = z
     questionId: z.uuid(),
     text: z.string().trim().min(1).max(QUIZ_QUESTION_TEXT_MAX_LENGTH),
     order: z.number().int().min(0),
+    eligibleForDerivation: z.boolean().optional(),
   })
   .strict();
 export type SessionLearningObjectiveAvailableQuizTask = z.infer<
@@ -806,4 +807,58 @@ export type SaveSessionLearningObjectivesInput = z.infer<
 export const SaveSessionLearningObjectivesOutputSchema = SessionLearningObjectivesSnapshotSchema;
 export type SaveSessionLearningObjectivesOutput = z.infer<
   typeof SaveSessionLearningObjectivesOutputSchema
+>;
+
+export const DeriveSessionLearningObjectivesInputSchema = z
+  .object({
+    code: z.string().length(6),
+    operationId: z.uuid(),
+    expectedLearningContextRevision: LearningObjectiveRevisionSchema,
+    maximumDrafts: z.number().int().min(1).max(LEARNING_OBJECTIVE_MAX_OBJECTIVES),
+    locale: z.enum(['de', 'en', 'fr', 'es', 'it']),
+    questionId: z.uuid().optional(),
+  })
+  .strict();
+export type DeriveSessionLearningObjectivesInput = z.infer<
+  typeof DeriveSessionLearningObjectivesInputSchema
+>;
+
+const SessionLearningObjectiveDerivationBaseResultSchema = z
+  .object({
+    operationId: z.uuid(),
+    expectedLearningContextRevision: LearningObjectiveRevisionSchema,
+  })
+  .strict();
+
+export const DeriveSessionLearningObjectivesResultSchema = z.discriminatedUnion('status', [
+  SessionLearningObjectiveDerivationBaseResultSchema.extend({
+    status: z.literal('completed'),
+    snapshot: SessionLearningObjectivesSnapshotSchema,
+    appliedCount: z.number().int().min(0).max(LEARNING_OBJECTIVE_MAX_OBJECTIVES),
+    limitations: z.array(z.string().trim().min(1).max(280)).max(6),
+    batchCount: z.number().int().min(1).max(QUIZ_UPLOAD_MAX_QUESTIONS),
+  }).strict(),
+  SessionLearningObjectiveDerivationBaseResultSchema.extend({
+    status: z.literal('busy'),
+    retry: z.literal('manual'),
+  }).strict(),
+  SessionLearningObjectiveDerivationBaseResultSchema.extend({
+    status: z.enum([
+      'disabled',
+      'aborted',
+      'timeout',
+      'unavailable',
+      'invalid_response',
+      'misconfigured',
+      'circuit_open',
+      'no_eligible_questions',
+    ]),
+  }).strict(),
+  SessionLearningObjectiveDerivationBaseResultSchema.extend({
+    status: z.literal('input_too_large'),
+    sourceQuestionId: QuizSourceQuestionIdSchema,
+  }).strict(),
+]);
+export type DeriveSessionLearningObjectivesResult = z.infer<
+  typeof DeriveSessionLearningObjectivesResultSchema
 >;
