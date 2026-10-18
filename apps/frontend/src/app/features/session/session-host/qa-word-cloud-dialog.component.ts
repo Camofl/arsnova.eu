@@ -38,6 +38,7 @@ export type QaWordCloudDialogData = {
   themeModeAvailable: () => boolean;
   themeFallbackHint: () => string | null;
   themeWaitHint?: () => string | null;
+  hasPreparedThemes?: () => boolean;
   sortMode: () => QaQuestionSortMode;
   setSortMode: (mode: QaQuestionSortMode) => void | Promise<void>;
   frozen: () => boolean;
@@ -127,17 +128,20 @@ export class QaWordCloudDialogComponent {
   readonly showThemeRefresh = computed(
     () => this.analysisVariant() === 'SEMANTIC' && this.smoothingStatus() === 'stale',
   );
+  readonly hasPreparedThemes = computed(
+    () => this.data.hasPreparedThemes?.() ?? (this.analysisEntries()?.length ?? 0) > 0,
+  );
   readonly themesPending = computed(
     () =>
       this.analysisVariant() === 'SEMANTIC' &&
       this.smoothingStatus() === 'pending' &&
-      (this.analysisEntries()?.length ?? 0) === 0,
+      !this.hasPreparedThemes(),
   );
   readonly themesRefreshing = computed(
     () =>
       this.analysisVariant() === 'SEMANTIC' &&
       this.smoothingStatus() === 'pending' &&
-      (this.analysisEntries()?.length ?? 0) > 0,
+      this.hasPreparedThemes(),
   );
   readonly themeProgressLabel = $localize`:@@sessionQa.wordCloudSemanticPendingLabel:Themen werden vorbereitet.`;
   readonly themeProgressFallback = $localize`:@@sessionQa.wordCloudSemanticPendingFallback:Es gelten Wörter und Phrasen.`;

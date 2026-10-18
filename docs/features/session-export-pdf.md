@@ -41,8 +41,9 @@ rekonstruiert.
 
 ### Host-Abschlussansicht (`FINISHED`)
 
-- **Primär:** **Ergebnisbericht (PDF)** — Server-PDF via `getSessionExportPdf` (Playwright)
-- **Unter „Mehr“:** **Rohdaten als CSV exportieren** — tabellarische Rohdaten (weniger Kontext als der PDF-Bericht)
+- **Primär:** **Nachbesprechungsplan ansehen** — öffnet das Server-PDF via `getSessionExportPdf` (Profil `visual`) in einem neuen Tab
+- **Unter Exportieren:** Standard-PDF (mit Diagrammen), barrierearmes PDF/UA und Rohdaten-CSV — jeweils als Download
+- Blockiertes Ansehen-Popup fällt auf denselben Download zurück
 
 Fallback, falls das Server-PDF scheitert: Browser-Druckdialog über dasselbe HTML (`printSessionResultsReport`) — ohne eigene Vorschau-UI.
 
@@ -109,15 +110,15 @@ verkleinert, von Metadaten/Polyglot-Anhängen bereinigt und nach WebP
 transkodiert. SVG, Animationen und fehlerhafte Bilder erhalten einen lokalen
 Platzhalter. Es gibt keinen persistenten Bildcache.
 
-| Schicht                                            | Ort                                                                                                                                         |
-| -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| Shared Report-Builder (HTML, Charts, Print-CSS)    | `libs/session-export-report/`                                                                                                               |
-| Berichtslabels DE + Locale-Resolver                | `libs/session-export-report/src/labels-de.ts`, `labels-locale.util.ts`, `labels-i18n.generated.ts`                                          |
-| Fachglossar (Nachbesprechungsplan i18n)            | [`session-export-pdf-i18n-glossary.md`](session-export-pdf-i18n-glossary.md)                                                                |
-| Frontend-Labels (Angular `$localize`)              | `apps/frontend/src/app/core/session-results-report-labels.ts`                                                                               |
-| Frontend-Export-Service (Download, Print-Fallback) | `apps/frontend/src/app/core/session-results-export.service.ts`                                                                              |
-| Server-PDF (Playwright-Wrapper)                    | `apps/backend/src/lib/session-results-report-pdf.ts`                                                                                        |
-| tRPC                                               | `session.getSessionExportPdf`, `session.getExportData`, `session.getLastSessionExportPdfForQuiz`, `session.getLastSessionExportDataForQuiz` |
+| Schicht                                                     | Ort                                                                                                                                         |
+| ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| Shared Report-Builder (HTML, Charts, Print-CSS)             | `libs/session-export-report/`                                                                                                               |
+| Berichtslabels DE + Locale-Resolver                         | `libs/session-export-report/src/labels-de.ts`, `labels-locale.util.ts`, `labels-i18n.generated.ts`                                          |
+| Fachglossar (Nachbesprechungsplan i18n)                     | [`session-export-pdf-i18n-glossary.md`](session-export-pdf-i18n-glossary.md)                                                                |
+| Frontend-Labels (Angular `$localize`)                       | `apps/frontend/src/app/core/session-results-report-labels.ts`                                                                               |
+| Frontend-Export-Service (Ansehen, Download, Print-Fallback) | `apps/frontend/src/app/core/session-results-export.service.ts`                                                                              |
+| Server-PDF (Playwright-Wrapper)                             | `apps/backend/src/lib/session-results-report-pdf.ts`                                                                                        |
+| tRPC                                                        | `session.getSessionExportPdf`, `session.getExportData`, `session.getLastSessionExportPdfForQuiz`, `session.getLastSessionExportDataForQuiz` |
 
 Vor Tests und Backend-Build muss `@arsnova/session-export-report` gebaut sein (`npm run build:libs`).
 

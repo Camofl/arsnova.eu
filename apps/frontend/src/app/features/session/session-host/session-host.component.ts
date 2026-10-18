@@ -260,7 +260,10 @@ import {
 } from '../../../core/export-filename.util';
 import { stripMarkdownToPlainText } from '../../../core/markdown-plain-text.util';
 import { localizeKnownServerError } from '../../../core/localize-known-server-message';
-import { SessionResultsExportService } from '../../../core/session-results-export.service';
+import {
+  SessionResultsExportService,
+  type SessionResultsPdfDisposition,
+} from '../../../core/session-results-export.service';
 import {
   replaceEmojiShortcodes,
   edgeEmojiMarkerPosition,
@@ -2694,6 +2697,8 @@ export class SessionHostComponent implements OnInit, OnDestroy {
           themeModeAvailable: () => this.qaWordCloudThemeModeAvailable(),
           themeFallbackHint: () => this.qaWordCloudThemeFallbackHint(),
           themeWaitHint: () => this.qaWordCloudSemanticWaitHint(),
+          hasPreparedThemes: () =>
+            isSemanticTopicCloudResult(this.qaWordCloudThemeAnalysisResult()),
           sortMode: () => this.qaSortMode(),
           setSortMode: (mode: QaQuestionSortMode) => this.setQaSortMode(mode),
           frozen: () => this.qaWordCloudFrozen(),
@@ -4555,6 +4560,7 @@ export class SessionHostComponent implements OnInit, OnDestroy {
 
     this.freetextWordCloudMode.set(nextMode);
     if (nextMode === 'SEMANTIC') {
+      this.ensureFreetextWordCloudSemanticAnalysis();
       const shouldRefreshLemmaSmoothing = untracked(
         () =>
           this.freetextWordCloudLemmaPreferred() &&
@@ -4562,9 +4568,8 @@ export class SessionHostComponent implements OnInit, OnDestroy {
           this.buildFreetextWordCloudLemmaItems().length > 0,
       );
       if (shouldRefreshLemmaSmoothing) {
-        await this.requestFreetextWordCloudLemmaSmoothing();
+        void this.requestFreetextWordCloudLemmaSmoothing();
       }
-      this.ensureFreetextWordCloudSemanticAnalysis();
       return;
     }
 
@@ -14929,13 +14934,17 @@ export class SessionHostComponent implements OnInit, OnDestroy {
     return $localize`:@@sessionHost.exportPdfPriorityHintPlural:${count}:count: Fragen zur Nachbesprechung empfohlen`;
   }
 
-  async exportSessionResultsPdf(profile: SessionResultsPdfProfile = 'visual'): Promise<void> {
+  async exportSessionResultsPdf(
+    profile: SessionResultsPdfProfile = 'visual',
+    disposition: SessionResultsPdfDisposition = 'download',
+  ): Promise<void> {
     if (!this.code || this.exportExporting()) return;
     this.exportStatus.set(null);
     this.exportExporting.set(true);
     try {
       const result = await this.sessionResultsExport.exportPdfFromSessionCode(this.code, {
         profile,
+        disposition,
         onLargeReportHint: (questionCount) => {
           this.exportStatus.set(
             $localize`:@@sessionHost.exportPdfGeneratingLarge:PDF wird erstellt (${questionCount} Fragen)…`,
@@ -14943,14 +14952,16 @@ export class SessionHostComponent implements OnInit, OnDestroy {
         },
       });
       this.exportStatus.set(
-        result === 'pdf-download'
-          ? $localize`:@@sessionHost.exportPdfDownloadDone:Ergebnis-PDF heruntergeladen.`
-          : $localize`:@@sessionHost.exportPdfPrintDone:Ergebnis-PDF zum Speichern geöffnet.`,
+        result === 'pdf-view'
+          ? $localize`:@@sessionHost.exportPdfViewDone:Nachbesprechungsplan geöffnet.`
+          : result === 'pdf-download'
+            ? $localize`:@@sessionHost.exportPdfDownloadDone:Ergebnis-PDF heruntergeladen.`
+            : $localize`:@@sessionHost.exportPdfPrintDone:Ergebnis-PDF zum Speichern geöffnet.`,
       );
       this.dismissHostSteeringCallout();
     } catch {
       this.openHostSteeringCalloutForExportFailure(
-        () => void this.exportSessionResultsPdf(profile),
+        () => void this.exportSessionResultsPdf(profile, disposition),
       );
     } finally {
       this.exportExporting.set(false);
