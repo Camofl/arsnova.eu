@@ -14643,6 +14643,11 @@ describe('SessionHostComponent', { timeout: 60_000 }, () => {
     expect(
       fixture.componentInstance.qaWordCloudAnalysisEntries()?.map((entry) => entry.label),
     ).toEqual(['Kapitel 4', 'Klausur']);
+    const [, dialogConfig] = dialogOpenMock.mock.calls.at(-1) as [
+      unknown,
+      { data: { hasPreparedThemes?: () => boolean } },
+    ];
+    expect(dialogConfig.data.hasPreparedThemes?.()).toBe(false);
 
     releaseSemantic?.(undefined);
     await vi.waitUntil(
@@ -23601,7 +23606,7 @@ describe('SessionHostComponent', { timeout: 60_000 }, () => {
       finished!.compareDocumentPosition(summary!) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
     expect(finished?.querySelectorAll('.mat-mdc-unelevated-button')).toHaveLength(1);
-    let resolveExport!: (result: 'pdf-download') => void;
+    let resolveExport!: (result: 'pdf-download' | 'pdf-view') => void;
     const exportPlan = vi
       .spyOn(TestBed.inject(SessionResultsExportService), 'exportPdfFromSessionCode')
       .mockImplementationOnce(
@@ -23634,7 +23639,7 @@ describe('SessionHostComponent', { timeout: 60_000 }, () => {
     fixture.detectChanges();
     expect(exportPlan).toHaveBeenCalledWith(
       'ABC123',
-      expect.objectContaining({ profile: 'visual' }),
+      expect.objectContaining({ profile: 'visual', disposition: 'view' }),
     );
     expect(planButton.getAttribute('aria-busy')).toBe('true');
     expect(planButton.getAttribute('aria-disabled')).toBe('true');
@@ -23644,7 +23649,7 @@ describe('SessionHostComponent', { timeout: 60_000 }, () => {
     );
     planButton.click();
     expect(exportPlan).toHaveBeenCalledTimes(1);
-    resolveExport('pdf-download');
+    resolveExport('pdf-view');
     await vi.waitUntil(() => !fixture.componentInstance.exportExporting(), {
       timeout: 1000,
       interval: 10,
@@ -23652,7 +23657,7 @@ describe('SessionHostComponent', { timeout: 60_000 }, () => {
     fixture.detectChanges();
     expect(document.activeElement).toBe(planButton);
     expect(planButton.getAttribute('aria-disabled')).not.toBe('true');
-    expect(fixture.componentInstance.exportStatus()).toBe('Ergebnis-PDF heruntergeladen.');
+    expect(fixture.componentInstance.exportStatus()).toBe('Nachbesprechungsplan geöffnet.');
     const exportTrigger = host.querySelector<HTMLButtonElement>('.session-host__export-more-btn');
     expect(exportTrigger?.textContent).toContain('Exportieren');
     exportTrigger!.focus();
@@ -23677,7 +23682,7 @@ describe('SessionHostComponent', { timeout: 60_000 }, () => {
     fixture.detectChanges();
     expect(exportPlan).toHaveBeenLastCalledWith(
       'ABC123',
-      expect.objectContaining({ profile: 'pdfUa' }),
+      expect.objectContaining({ profile: 'pdfUa', disposition: 'download' }),
     );
     expect(exportTrigger!.disabled).toBe(false);
     expect(exportTrigger!.getAttribute('aria-disabled')).toBe('true');

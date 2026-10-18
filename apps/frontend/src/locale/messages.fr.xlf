@@ -26595,6 +26595,14 @@
           <context context-type="linenumber">14288</context>
         </context-group>
       </trans-unit>
+      <trans-unit id="sessionHost.exportPdfViewDone" datatype="html">
+        <source>Nachbesprechungsplan geöffnet.</source>
+        <target>Plan de débriefing ouvert.</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/features/session/session-host/session-host.component.ts</context>
+          <context context-type="linenumber">14954</context>
+        </context-group>
+      </trans-unit>
       <trans-unit id="sessionHost.exportPdfDownloadDone" datatype="html">
         <source>Ergebnis-PDF heruntergeladen.</source>
         <target>Résultats PDF téléchargés.</target>

@@ -9,10 +9,12 @@ import { getSessionResultsReportLabels } from './session-results-report-labels';
 import { printSessionResultsReport } from './session-results-report-print.util';
 import { trpc } from './trpc.client';
 
-export type SessionResultsPdfExportResult = 'pdf-download' | 'print-fallback';
+export type SessionResultsPdfExportResult = 'pdf-download' | 'pdf-view' | 'print-fallback';
+export type SessionResultsPdfDisposition = 'download' | 'view';
 
 export interface SessionResultsPdfExportOptions {
   profile?: SessionResultsPdfProfile;
+  disposition?: SessionResultsPdfDisposition;
   onLargeReportHint?: (questionCount: number) => void;
 }
 
@@ -48,8 +50,7 @@ export class SessionResultsExportService {
         localeId: this.localeId,
         profile,
       });
-      this.downloadBase64Export(pdf.contentBase64, pdf.fileName, pdf.mimeType);
-      return 'pdf-download';
+      return this.deliverPdf(pdf, options?.disposition ?? 'download');
     } catch {
       return this.exportPdfFromExportData(exportData, options);
     }
@@ -70,8 +71,7 @@ export class SessionResultsExportService {
         localeId: this.localeId,
         profile,
       });
-      this.downloadBase64Export(pdf.contentBase64, pdf.fileName, pdf.mimeType);
-      return 'pdf-download';
+      return this.deliverPdf(pdf, options?.disposition ?? 'download');
     } catch {
       const html = await this.buildPrintableReportHtml(exportData, profile);
       const labels = getSessionResultsReportLabels();
@@ -100,17 +100,53 @@ export class SessionResultsExportService {
   }
 
   downloadBase64Export(contentBase64: string, fileName: string, mimeType: string): void {
-    const binary = atob(contentBase64);
-    const bytes = new Uint8Array(binary.length);
-    for (let index = 0; index < binary.length; index += 1) {
-      bytes[index] = binary.charCodeAt(index);
-    }
-    const blob = new Blob([bytes], { type: mimeType });
-    const url = URL.createObjectURL(blob);
+    const url = this.createBlobUrl(contentBase64, mimeType);
     const anchor = this.document.createElement('a');
     anchor.href = url;
     anchor.download = fileName;
     anchor.click();
     URL.revokeObjectURL(url);
+  }
+
+  private deliverPdf(
+    pdf: { contentBase64: string; fileName: string; mimeType: string },
+    disposition: SessionResultsPdfDisposition,
+  ): SessionResultsPdfExportResult {
+    if (
+      disposition === 'view' &&
+      this.openBase64Export(pdf.contentBase64, pdf.fileName, pdf.mimeType)
+    ) {
+      return 'pdf-view';
+    }
+    this.downloadBase64Export(pdf.contentBase64, pdf.fileName, pdf.mimeType);
+    return 'pdf-download';
+  }
+
+  private openBase64Export(contentBase64: string, fileName: string, mimeType: string): boolean {
+    const view = this.document.defaultView;
+    if (!view) {
+      return false;
+    }
+    const url = this.createBlobUrl(contentBase64, mimeType);
+    const opened = view.open(url, '_blank');
+    if (!opened) {
+      URL.revokeObjectURL(url);
+      return false;
+    }
+    opened.opener = null;
+    if (opened.document) {
+      opened.document.title = fileName;
+    }
+    view.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    return true;
+  }
+
+  private createBlobUrl(contentBase64: string, mimeType: string): string {
+    const binary = atob(contentBase64);
+    const bytes = new Uint8Array(binary.length);
+    for (let index = 0; index < binary.length; index += 1) {
+      bytes[index] = binary.charCodeAt(index);
+    }
+    return URL.createObjectURL(new Blob([bytes], { type: mimeType }));
   }
 }

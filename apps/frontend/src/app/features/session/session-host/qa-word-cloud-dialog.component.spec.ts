@@ -189,9 +189,41 @@ describe('QaWordCloudDialogComponent', () => {
     );
   });
 
+  it('zeigt den Fortschritt auch wenn Wörter und Phrasen als Fallback sichtbar bleiben', () => {
+    const { fixture } = setup('SEMANTIC', {
+      smoothingStatus: () => 'pending',
+      hasPreparedThemes: () => false,
+      themeFallbackHint: () => 'Themen werden vorbereitet. Es gelten Wörter und Phrasen.',
+      analysisEntries: () => [
+        {
+          key: 'kapitel-4',
+          label: 'Kapitel 4',
+          count: 13,
+          basisLabel: 'Kapitel 4',
+          confidence: 0.8,
+          variants: ['Kapitel 4'],
+          members: [],
+        },
+      ],
+    });
+
+    const progress = fixture.nativeElement.querySelector(
+      '.qa-word-cloud-dialog__progress',
+    ) as HTMLElement | null;
+    expect(progress).not.toBeNull();
+    expect(
+      fixture.nativeElement
+        .querySelector('.qa-word-cloud-dialog__status')
+        ?.classList.contains('qa-word-cloud-dialog__status--cover'),
+    ).toBe(true);
+    expect(progress?.querySelector('mat-progress-bar')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('.qa-word-cloud-dialog__sr-status')).toBeNull();
+  });
+
   it('hält bei vorhandenen Themen während eines Sortier-/Refresh-Lauzes einen layoutfreien Live-Status für Screenreader aufrecht', () => {
     const { fixture } = setup('SEMANTIC', {
       smoothingStatus: () => 'pending',
+      hasPreparedThemes: () => true,
       themeFallbackHint: () => 'Themen werden vorbereitet. Es gelten Wörter und Phrasen.',
       analysisEntries: () => [
         {
