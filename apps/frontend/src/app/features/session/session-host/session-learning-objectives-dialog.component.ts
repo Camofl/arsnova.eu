@@ -141,9 +141,10 @@ export class SessionLearningObjectivesDialogComponent {
     if (this.isQaMode()) {
       return all.filter((objective) => isQaForumAssignmentObjective(objective));
     }
+    const learningObjectives = all.filter((objective) => !isQaForumAssignmentObjective(objective));
     const focusedId = this.focusedQuestionId();
     if (focusedId) {
-      return all.filter(
+      return learningObjectives.filter(
         (objective) =>
           objective.scope.kind === 'question-set' &&
           objective.scope.taskReferences.some(
@@ -151,7 +152,7 @@ export class SessionLearningObjectivesDialogComponent {
           ),
       );
     }
-    return all;
+    return learningObjectives;
   });
   readonly confirmedObjectives = computed(() =>
     this.objectives().filter(isConfirmedLearningObjective),
@@ -574,6 +575,7 @@ export class SessionLearningObjectivesDialogComponent {
                   ? { kind: 'session' }
                   : { kind: 'quiz-wide' },
             confirmationState: this.isQaMode() ? 'confirmed' : this.confirmationState(),
+            purpose: this.isQaMode() ? 'forum-assignment' : 'learning-objective',
           },
         ],
       });
@@ -889,11 +891,7 @@ export function isConfirmedLearningObjective(objective: SessionLearningObjective
 }
 
 export function isQaForumAssignmentObjective(objective: SessionLearningObjectiveDTO): boolean {
-  return (
-    objective.origin.kind === 'manual' &&
-    objective.projection === 'session-manual' &&
-    objective.scope.kind === 'session'
-  );
+  return objective.purpose === 'forum-assignment';
 }
 
 function referenceKey(reference: SessionLearningObjectiveResolvedTaskReference): string {

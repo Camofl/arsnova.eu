@@ -847,6 +847,11 @@ enum LearningObjectiveProjection {
   SESSION_OVERRIDE
 }
 
+enum LearningObjectivePurpose {
+  LEARNING_OBJECTIVE
+  FORUM_ASSIGNMENT
+}
+
 enum LearningObjectiveReferenceKind {
   TASK
   DERIVATION
@@ -931,6 +936,8 @@ model SessionLearningObjective {
   previousConfirmationState LearningObjectivePreviousConfirmationState?
   needsReviewReason         LearningObjectiveNeedsReviewReason?
   projection                LearningObjectiveProjection
+  /// Distinguishes Q&A forum assignments from learning objectives. Existing rows stay LEARNING_OBJECTIVE.
+  purpose                   LearningObjectivePurpose                    @default(LEARNING_OBJECTIVE)
   /// Stable local quiz identity for projected rows and their session-owned overrides.
   sourceQuizId              String?                                     @db.Uuid
   /// Internal host-deletion tombstone; suppressed rows are never emitted in the DTO.
@@ -941,6 +948,7 @@ model SessionLearningObjective {
 
   @@unique([sessionId, objectiveId])
   @@index([sessionId, projection])
+  @@index([sessionId, purpose])
 }
 
 model SessionLearningObjectiveReference {

@@ -2592,7 +2592,9 @@
           </span>
           <div class="session-channel-card__header-main">
             <p class="session-channel-card__eyebrow" i18n="@@sessionTabs.forumEyebrow">Forum</p>
-            <h2 class="session-channel-card__title" id="vote-qa-heading">{{ qaHeading() }}</h2>
+            <h2 class="session-channel-card__title" id="vote-qa-heading" tabindex="-1">
+              {{ qaHeading() }}
+            </h2>
           </div>
           @if (qaForumAssignments().length > 0) {
             <button

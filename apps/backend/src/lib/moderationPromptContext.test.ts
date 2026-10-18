@@ -186,6 +186,7 @@ function learningSnapshot(
           confirmedRevision: 2,
         },
         projection: 'session-manual',
+        purpose: 'learning-objective',
         createdAt: '2026-10-05T09:00:00.000Z',
         updatedAt: '2026-10-05T09:30:00.000Z',
       },
@@ -206,6 +207,7 @@ function learningSnapshot(
         },
         confirmation: { state: 'draft' },
         projection: 'quiz-projected',
+        purpose: 'learning-objective',
         createdAt: '2026-10-05T09:00:00.000Z',
         updatedAt: '2026-10-05T09:00:00.000Z',
       },
@@ -295,6 +297,7 @@ function highCardinalityLearningSnapshot(): SessionLearningObjectivesSnapshot {
       origin: { kind: 'manual' },
       confirmation: { state: 'draft' },
       projection: 'quiz-projected',
+      purpose: 'learning-objective',
       createdAt: '2026-10-05T09:00:00.000Z',
       updatedAt: '2026-10-05T09:00:00.000Z',
     })),
@@ -315,6 +318,48 @@ describe('buildModerationPromptContext', () => {
     ]);
     prismaMock.$transaction.mockImplementation(async (callback: (tx: typeof txMock) => unknown) =>
       callback(txMock),
+    );
+  });
+
+  it('does not treat persisted forum assignments as moderation learning objectives', async () => {
+    const assignmentId = '15151515-1515-4515-8515-151515151515';
+    loadLearningMock.mockResolvedValue(
+      learningSnapshot({
+        objectives: [
+          ...learningSnapshot().objectives,
+          {
+            ...learningSnapshot().objectives[0]!,
+            id: assignmentId,
+            text: 'Sammelt zentrale Fragen zum Fallbeispiel.',
+            scope: { kind: 'session' },
+            origin: { kind: 'manual' },
+            projection: 'session-manual',
+            purpose: 'forum-assignment',
+            confirmation: {
+              state: 'confirmed',
+              confirmedAt: '2026-10-05T09:30:00.000Z',
+              confirmedRevision: 2,
+            },
+          },
+        ],
+      }),
+    );
+
+    const result = await buildModerationPromptContext({
+      sessionId: SESSION_ID,
+      locale: 'de',
+      access: { hostToken: 'host-token' },
+    });
+
+    expect(result.context.learningContext).toMatchObject({
+      state: 'available',
+      objectives: expect.arrayContaining([
+        expect.objectContaining({ sourceId: `learning-objective:${OBJECTIVE_ID}` }),
+      ]),
+    });
+    expect(JSON.stringify(result.context.learningContext)).not.toContain(assignmentId);
+    expect(JSON.stringify(result.context.sources)).not.toContain(
+      `learning-objective:${assignmentId}`,
     );
   });
 

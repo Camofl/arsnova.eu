@@ -70,6 +70,7 @@ function existingObjective(text = 'Servertext') {
     origin: { kind: 'manual' as const },
     confirmation: { state: 'draft' as const },
     projection: 'session-manual' as const,
+    purpose: 'learning-objective' as const,
     createdAt: '2026-10-04T10:00:00.000Z',
     updatedAt: '2026-10-04T10:00:00.000Z',
   };
@@ -157,6 +158,7 @@ describe('SessionLearningObjectivesDialogComponent', () => {
             taskReferences: [{ kind: 'qa-question', questionId: QA_QUESTION_ID }],
           },
           confirmationState: 'confirmed',
+          purpose: 'learning-objective',
         }),
       ],
     });
@@ -187,6 +189,7 @@ describe('SessionLearningObjectivesDialogComponent', () => {
           action: 'upsert',
           scope: { kind: 'session' },
           confirmationState: 'confirmed',
+          purpose: 'learning-objective',
         }),
       ],
     });
@@ -535,7 +538,16 @@ describe('SessionLearningObjectivesDialogComponent', () => {
           },
         ],
         objectives: [
-          existingObjective('Diskutiert die Praxisfälle im Forum'),
+          {
+            ...existingObjective('Diskutiert die Praxisfälle im Forum'),
+            purpose: 'forum-assignment',
+            confirmation: {
+              state: 'confirmed',
+              confirmedAt: '2026-10-04T10:00:00.000Z',
+              confirmedRevision: 3,
+            },
+          },
+          existingObjective('Sessionweites manuelles Lernziel im Entwurf'),
           {
             ...existingObjective('Quiz-Lernziel'),
             id: '33333333-3333-4333-8333-333333333333',
@@ -553,5 +565,68 @@ describe('SessionLearningObjectivesDialogComponent', () => {
     expect(fixture.nativeElement.querySelector('#session-learning-objective-derive')).toBeNull();
     expect(fixture.nativeElement.textContent).toContain('Auftrag');
     expect(fixture.nativeElement.textContent).not.toContain('Lernziel');
+  });
+
+  it('legt im Q&A-Modus einen Forumsauftrag mit eigenem purpose an', async () => {
+    modeMock.mockReturnValue('qa');
+    saveLearningObjectivesMock.mockResolvedValue(
+      snapshot({
+        learningContextRevision: 3,
+        objectives: [
+          {
+            ...existingObjective('Sammelt zentrale Fragen zum Fallbeispiel.'),
+            purpose: 'forum-assignment',
+            confirmation: {
+              state: 'confirmed',
+              confirmedAt: '2026-10-04T10:00:00.000Z',
+              confirmedRevision: 3,
+            },
+          },
+        ],
+      }),
+    );
+    const fixture = await createComponent();
+    const component = fixture.componentInstance;
+    component.beginAdd();
+    component.setText('Sammelt zentrale Fragen zum Fallbeispiel.');
+    await component.save();
+
+    expect(saveLearningObjectivesMock).toHaveBeenCalledWith({
+      code: 'ABC123',
+      expectedLearningContextRevision: 2,
+      mutations: [
+        expect.objectContaining({
+          action: 'upsert',
+          scope: { kind: 'session' },
+          confirmationState: 'confirmed',
+          purpose: 'forum-assignment',
+        }),
+      ],
+    });
+  });
+
+  it('blendet Forumsaufträge im Quiz-Lernziel-Dialog aus', async () => {
+    getLearningObjectivesMock.mockResolvedValue(
+      snapshot({
+        objectives: [
+          existingObjective('Sessionweites manuelles Lernziel im Entwurf'),
+          {
+            ...existingObjective('Sammelt zentrale Fragen zum Fallbeispiel.'),
+            id: '44444444-4444-4444-8444-444444444444',
+            purpose: 'forum-assignment',
+            confirmation: {
+              state: 'confirmed',
+              confirmedAt: '2026-10-04T10:00:00.000Z',
+              confirmedRevision: 3,
+            },
+          },
+        ],
+      }),
+    );
+
+    const fixture = await createComponent();
+    expect(fixture.componentInstance.objectives().map((o) => o.text)).toEqual([
+      'Sessionweites manuelles Lernziel im Entwurf',
+    ]);
   });
 });

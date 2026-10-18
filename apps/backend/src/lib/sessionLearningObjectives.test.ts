@@ -36,6 +36,7 @@ vi.mock('../db', () => ({ prisma: prismaMock }));
 
 import {
   buildQuizLearningObjectiveBundleCreate,
+  getSessionForumAssignments,
   getSessionLearningObjectives,
   getSessionLearningObjectivesSnapshotWithDb,
   replaceSessionQuizLearningObjectives,
@@ -86,6 +87,7 @@ function objectiveRow(overrides: Record<string, unknown> = {}) {
     previousConfirmationState: null,
     needsReviewReason: null,
     projection: 'QUIZ_PROJECTED',
+    purpose: 'LEARNING_OBJECTIVE',
     sourceQuizId: SOURCE_QUIZ_ID,
     suppressedAt: null,
     createdAt: new Date('2026-10-04T08:00:00.000Z'),
@@ -223,7 +225,13 @@ describe('session learning-objective service', () => {
     prismaMock.session.findUnique.mockResolvedValue(sessionRow());
     prismaMock.sessionLearningObjective.findMany.mockResolvedValue([]);
     prismaMock.question.findMany.mockResolvedValue([
-      { id: NEW_QUESTION_ID, text: 'Was ist die Änderungsrate?', order: 3 },
+      {
+        id: NEW_QUESTION_ID,
+        text: 'Was ist die Änderungsrate?',
+        order: 3,
+        type: 'SINGLE_CHOICE',
+        answers: [{ isCorrect: true }],
+      },
     ]);
 
     const snapshot = await getSessionLearningObjectives('abc123', NOW);
@@ -234,12 +242,68 @@ describe('session learning-objective service', () => {
         questionId: NEW_QUESTION_ID,
         text: 'Was ist die Änderungsrate?',
         order: 3,
+        eligibleForDerivation: true,
       },
     ]);
     expect(prismaMock.question.findMany).toHaveBeenCalledWith({
       where: { quizId: QUIZ_A_ID },
-      select: { id: true, text: true, order: true },
+      select: {
+        id: true,
+        text: true,
+        order: true,
+        type: true,
+        answers: { select: { isCorrect: true } },
+      },
       orderBy: [{ order: 'asc' }, { id: 'asc' }],
+    });
+  });
+
+  it('marks survey-like quiz tasks ineligible for derivation instead of omitting the flag', async () => {
+    prismaMock.session.findUnique.mockResolvedValue(sessionRow());
+    prismaMock.sessionLearningObjective.findMany.mockResolvedValue([]);
+    prismaMock.question.findMany.mockResolvedValue([
+      { id: NEW_QUESTION_ID, text: 'Wie zufrieden?', order: 0, type: 'SURVEY', answers: [] },
+      {
+        id: OLD_QUESTION_ID,
+        text: 'Offene Einschätzung',
+        order: 1,
+        type: 'FREETEXT',
+        answers: [],
+      },
+      {
+        id: SOURCE_QUESTION_ID,
+        text: 'Skala',
+        order: 2,
+        type: 'RATING',
+        answers: [],
+      },
+    ]);
+
+    const snapshot = await getSessionLearningObjectives('abc123', NOW);
+
+    expect(snapshot.availableQuizTasks.map((task) => task.eligibleForDerivation)).toEqual([
+      false,
+      false,
+      false,
+    ]);
+  });
+
+  it('projects only persisted forum assignments and ignores session-wide learning objectives', async () => {
+    prismaMock.sessionLearningObjective.findMany.mockResolvedValue([
+      { text: 'Sammelt zentrale Fragen zum Fallbeispiel.' },
+    ]);
+
+    await expect(getSessionForumAssignments(SESSION_ID)).resolves.toEqual([
+      'Sammelt zentrale Fragen zum Fallbeispiel.',
+    ]);
+    expect(prismaMock.sessionLearningObjective.findMany).toHaveBeenCalledWith({
+      where: {
+        sessionId: SESSION_ID,
+        suppressedAt: null,
+        purpose: 'FORUM_ASSIGNMENT',
+      },
+      select: { text: true },
+      orderBy: [{ createdAt: 'asc' }, { objectiveId: 'asc' }],
     });
   });
 
@@ -1398,5 +1462,111 @@ describe('session learning-objective service', () => {
       ),
     ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
     expect(prismaMock.sessionLearningObjective.update).not.toHaveBeenCalled();
+  });
+
+  it('persists a forum assignment with an explicit purpose instead of inferring it from session-manual rows', async () => {
+    const created = objectiveRow({
+      origin: 'MANUAL',
+      modelId: null,
+      modelVersion: null,
+      derivationVersion: null,
+      scope: 'SESSION',
+      projection: 'SESSION_MANUAL',
+      purpose: 'FORUM_ASSIGNMENT',
+      revision: 0,
+      confirmationState: 'CONFIRMED',
+      confirmationRevision: 0,
+      confirmationAt: NOW,
+      createdAt: NOW,
+      updatedAt: NOW,
+      references: [],
+      text: 'Sammelt zentrale Fragen zum Fallbeispiel.',
+    });
+    prismaMock.session.findUnique
+      .mockResolvedValueOnce({ id: SESSION_ID })
+      .mockResolvedValueOnce(sessionRow({ quizId: null }));
+    prismaMock.sessionLearningObjective.findMany
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([created]);
+    prismaMock.question.findMany.mockResolvedValue([]);
+    prismaMock.session.update.mockResolvedValue(
+      sessionRow({ quizId: null, learningContextRevision: 5 }),
+    );
+
+    const snapshot = await saveSessionLearningObjectives(
+      {
+        code: 'ABC123',
+        expectedLearningContextRevision: 4,
+        mutations: [
+          {
+            action: 'upsert',
+            objectiveId: OBJECTIVE_ID,
+            expectedRevision: null,
+            text: 'Sammelt zentrale Fragen zum Fallbeispiel.',
+            scope: { kind: 'session' },
+            confirmationState: 'confirmed',
+            purpose: 'forum-assignment',
+          },
+        ],
+      },
+      NOW,
+    );
+
+    expect(prismaMock.sessionLearningObjective.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        purpose: 'FORUM_ASSIGNMENT',
+        projection: 'SESSION_MANUAL',
+        scope: 'SESSION',
+        origin: 'MANUAL',
+        text: 'Sammelt zentrale Fragen zum Fallbeispiel.',
+      }),
+    });
+    expect(snapshot.objectives[0]).toMatchObject({
+      purpose: 'forum-assignment',
+      projection: 'session-manual',
+      scope: { kind: 'session' },
+    });
+  });
+
+  it('rejects converting a session-wide manual learning objective into a forum assignment', async () => {
+    prismaMock.session.findUnique
+      .mockResolvedValueOnce({ id: SESSION_ID })
+      .mockResolvedValueOnce(sessionRow({ quizId: null }));
+    prismaMock.sessionLearningObjective.findMany.mockResolvedValue([
+      objectiveRow({
+        origin: 'MANUAL',
+        modelId: null,
+        modelVersion: null,
+        derivationVersion: null,
+        scope: 'SESSION',
+        projection: 'SESSION_MANUAL',
+        purpose: 'LEARNING_OBJECTIVE',
+        confirmationState: 'DRAFT',
+        references: [],
+      }),
+    ]);
+
+    await expect(
+      saveSessionLearningObjectives(
+        {
+          code: 'ABC123',
+          expectedLearningContextRevision: 4,
+          mutations: [
+            {
+              action: 'upsert',
+              objectiveId: OBJECTIVE_ID,
+              expectedRevision: 2,
+              text: 'Sammelt zentrale Fragen zum Fallbeispiel.',
+              scope: { kind: 'session' },
+              confirmationState: 'confirmed',
+              purpose: 'forum-assignment',
+            },
+          ],
+        },
+        NOW,
+      ),
+    ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+    expect(prismaMock.sessionLearningObjective.update).not.toHaveBeenCalled();
+    expect(prismaMock.sessionLearningObjective.create).not.toHaveBeenCalled();
   });
 });

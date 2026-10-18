@@ -497,6 +497,12 @@ export type SessionLearningObjectiveProjection = z.infer<
   typeof SessionLearningObjectiveProjectionSchema
 >;
 
+export const SessionLearningObjectivePurposeSchema = z.enum([
+  'learning-objective',
+  'forum-assignment',
+]);
+export type SessionLearningObjectivePurpose = z.infer<typeof SessionLearningObjectivePurposeSchema>;
+
 export const SessionLearningObjectiveDTOSchema = z
   .object({
     id: LearningObjectiveIdSchema,
@@ -506,6 +512,7 @@ export const SessionLearningObjectiveDTOSchema = z
     origin: SessionLearningObjectiveOriginSchema,
     confirmation: LearningObjectiveConfirmationSchema,
     projection: SessionLearningObjectiveProjectionSchema,
+    purpose: SessionLearningObjectivePurposeSchema.default('learning-objective'),
     createdAt: LearningObjectiveTimestampSchema,
     updatedAt: LearningObjectiveTimestampSchema,
   })
@@ -542,6 +549,29 @@ export const SessionLearningObjectiveDTOSchema = z
         path: ['origin', 'kind'],
         message: 'Sessionmanuelle Ziele benötigen manuelle Herkunft.',
       });
+    }
+    if (value.purpose === 'forum-assignment') {
+      if (value.origin.kind !== 'manual') {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['origin', 'kind'],
+          message: 'Q&A-Forumsaufträge benötigen manuelle Herkunft.',
+        });
+      }
+      if (value.projection !== 'session-manual') {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['projection'],
+          message: 'Q&A-Forumsaufträge müssen sessionmanuell persistiert sein.',
+        });
+      }
+      if (value.scope.kind !== 'session') {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['scope', 'kind'],
+          message: 'Q&A-Forumsaufträge gelten für die gesamte Session.',
+        });
+      }
     }
     if (value.projection === 'quiz-projected') {
       if (value.scope.kind === 'session') {
@@ -758,8 +788,18 @@ const SessionLearningObjectiveUpsertSchema = z
     text: LearningObjectiveTextSchema,
     scope: SessionLearningObjectiveWriteScopeSchema,
     confirmationState: z.enum(['draft', 'confirmed']),
+    purpose: SessionLearningObjectivePurposeSchema.optional(),
   })
-  .strict();
+  .strict()
+  .superRefine((value, ctx) => {
+    if (value.purpose === 'forum-assignment' && value.scope.kind !== 'session') {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['scope', 'kind'],
+        message: 'Q&A-Forumsaufträge gelten für die gesamte Session.',
+      });
+    }
+  });
 
 const SessionLearningObjectiveDeleteSchema = z
   .object({

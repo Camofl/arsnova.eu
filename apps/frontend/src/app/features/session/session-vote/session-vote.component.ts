@@ -3580,6 +3580,21 @@ export class SessionVoteComponent implements OnInit, OnDestroy {
     this.qaAssignmentExpanded.update((open) => !open);
   }
 
+  private isQaAssignmentFocusActive(): boolean {
+    const active = globalThis.document?.activeElement;
+    if (!(active instanceof HTMLElement)) return false;
+    return Boolean(
+      active.closest('[data-testid="vote-qa-assignment-toggle"]') ||
+      active.closest('[data-testid="vote-qa-assignment-panel"]'),
+    );
+  }
+
+  private restoreFocusAfterQaAssignmentRemoved(): void {
+    const heading = globalThis.document?.getElementById('vote-qa-heading');
+    if (!(heading instanceof HTMLElement) || heading.hasAttribute('disabled')) return;
+    heading.focus();
+  }
+
   renderQaAssignmentMarkdown(value: string): SafeHtml {
     const cacheKey = `qa-assignment\u0000${value}`;
     const cached = this.markdownCache.get(cacheKey);
@@ -5284,9 +5299,16 @@ export class SessionVoteComponent implements OnInit, OnDestroy {
     if (snapshot.quota) {
       this.qaQuota.set(snapshot.quota);
     }
-    this.qaForumAssignments.set(snapshot.forumAssignments ?? []);
-    if (!snapshot.forumAssignments || snapshot.forumAssignments.length === 0) {
+    const nextAssignments = snapshot.forumAssignments ?? [];
+    const assignmentUiRemoved =
+      this.qaForumAssignments().length > 0 && nextAssignments.length === 0;
+    const assignmentFocusActive = this.isQaAssignmentFocusActive();
+    this.qaForumAssignments.set(nextAssignments);
+    if (nextAssignments.length === 0) {
       this.qaAssignmentExpanded.set(false);
+    }
+    if (assignmentUiRemoved && assignmentFocusActive) {
+      this.restoreFocusAfterQaAssignmentRemoved();
     }
     if (snapshot.state !== 'ACTIVE') {
       this.qaQuestions.set([]);

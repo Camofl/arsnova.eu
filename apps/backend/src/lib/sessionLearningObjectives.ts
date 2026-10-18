@@ -311,6 +311,7 @@ function objectiveFromRow(row: SessionObjectiveRow): SessionLearningObjectiveDTO
         : row.projection === 'SESSION_OVERRIDE'
           ? 'session-override'
           : 'session-manual',
+    purpose: row.purpose === 'FORUM_ASSIGNMENT' ? 'forum-assignment' : 'learning-objective',
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   };
@@ -361,7 +362,56 @@ async function loadAvailableQaTaskCatalog(db: LearningObjectiveDb, sessionId: st
   };
 }
 
-function isStoredQuestionEligibleForDerivation(question: LearningSourceQuestion): boolean {
+function persistedPurpose(
+  purpose: 'LEARNING_OBJECTIVE' | 'FORUM_ASSIGNMENT' | null | undefined,
+): 'LEARNING_OBJECTIVE' | 'FORUM_ASSIGNMENT' {
+  return purpose === 'FORUM_ASSIGNMENT' ? 'FORUM_ASSIGNMENT' : 'LEARNING_OBJECTIVE';
+}
+
+function purposeToDb(
+  purpose: 'learning-objective' | 'forum-assignment' | undefined,
+  existingPurpose?: 'LEARNING_OBJECTIVE' | 'FORUM_ASSIGNMENT' | null,
+): 'LEARNING_OBJECTIVE' | 'FORUM_ASSIGNMENT' {
+  if (purpose === 'forum-assignment') return 'FORUM_ASSIGNMENT';
+  if (purpose === 'learning-objective') return 'LEARNING_OBJECTIVE';
+  return persistedPurpose(existingPurpose);
+}
+
+function assertForumAssignmentWrite(input: {
+  purpose: 'LEARNING_OBJECTIVE' | 'FORUM_ASSIGNMENT';
+  scope: SessionLearningObjectiveWriteScope;
+  existing?: Pick<SessionObjectiveRow, 'purpose' | 'origin' | 'projection' | 'scope'>;
+}): void {
+  if (input.existing && persistedPurpose(input.existing.purpose) !== input.purpose) {
+    throw new TRPCError({
+      code: 'BAD_REQUEST',
+      message: 'Lernziele und Q&A-Aufträge können nicht ineinander umgewandelt werden.',
+    });
+  }
+  if (input.purpose !== 'FORUM_ASSIGNMENT') return;
+  if (input.scope.kind !== 'session') {
+    throw new TRPCError({
+      code: 'BAD_REQUEST',
+      message: 'Q&A-Aufträge gelten für die gesamte Session.',
+    });
+  }
+  if (
+    input.existing &&
+    (input.existing.origin !== 'MANUAL' ||
+      input.existing.projection !== 'SESSION_MANUAL' ||
+      input.existing.scope !== 'SESSION')
+  ) {
+    throw new TRPCError({
+      code: 'BAD_REQUEST',
+      message: 'Q&A-Aufträge müssen als sessionmanuelle Forumsaufträge persistiert sein.',
+    });
+  }
+}
+
+function isStoredQuestionEligibleForDerivation(question: {
+  type: string;
+  answers?: { isCorrect: boolean }[] | null;
+}): boolean {
   switch (question.type) {
     case 'MULTIPLE_CHOICE':
     case 'SINGLE_CHOICE':
@@ -488,7 +538,13 @@ async function snapshotWithDb(
     session.quizId
       ? db.question.findMany({
           where: { quizId: session.quizId },
-          select: { id: true, text: true, order: true },
+          select: {
+            id: true,
+            text: true,
+            order: true,
+            type: true,
+            answers: { select: { isCorrect: true } },
+          },
           orderBy: [{ order: 'asc' }, { id: 'asc' }],
         })
       : [],
@@ -505,13 +561,7 @@ async function snapshotWithDb(
       questionId: question.id,
       text: question.text,
       order: question.order,
-      ...(typeof (question as { type?: unknown }).type === 'string'
-        ? {
-            eligibleForDerivation: isStoredQuestionEligibleForDerivation(
-              question as LearningSourceQuestion,
-            ),
-          }
-        : {}),
+      eligibleForDerivation: isStoredQuestionEligibleForDerivation(question),
     })),
     availableQaTasks: availableQaTaskCatalog.tasks.map((question) => ({
       kind: 'qa-question' as const,
@@ -753,6 +803,8 @@ export async function saveSessionLearningObjectives(
         continue;
       }
       if (!existing) {
+        const purpose = purposeToDb(mutation.purpose);
+        assertForumAssignmentWrite({ purpose, scope: mutation.scope });
         const objectiveRowId = randomUUID();
         await tx.sessionLearningObjective.create({
           data: {
@@ -768,6 +820,7 @@ export async function saveSessionLearningObjectives(
             derivationVersion: null,
             ...requestedConfirmationToDb(mutation.confirmationState, 0, now),
             projection: 'SESSION_MANUAL',
+            purpose,
             sourceQuizId: scopeUsesQuiz(mutation.scope) ? currentSourceQuizId : null,
             createdAt: now,
             updatedAt: now,
@@ -777,6 +830,8 @@ export async function saveSessionLearningObjectives(
         continue;
       }
 
+      const purpose = purposeToDb(mutation.purpose, existing.purpose);
+      assertForumAssignmentWrite({ purpose, scope: mutation.scope, existing });
       assertRevisionCanAdvance(existing.revision);
       const nextRevision = existing.revision + 1;
       const oldScope = persistedScope(existing);
@@ -1414,9 +1469,7 @@ export async function getSessionForumAssignments(sessionId: string): Promise<str
     where: {
       sessionId,
       suppressedAt: null,
-      origin: 'MANUAL',
-      projection: 'SESSION_MANUAL',
-      scope: 'SESSION',
+      purpose: 'FORUM_ASSIGNMENT',
     },
     select: {
       text: true,
@@ -1525,6 +1578,7 @@ export async function deriveSessionLearningObjectives(
   const questionById = new Map(storedQuestions.map((question) => [question.id, question]));
 
   const applied = await prisma.$transaction(async (tx) => {
+    const writeNow = options.now ?? new Date();
     await tx.$executeRaw`SELECT 1 FROM "Session" WHERE id = ${session.id} FOR UPDATE`;
     const lockedSession = await tx.session.findUnique({
       where: { id: session.id },
@@ -1541,7 +1595,7 @@ export async function deriveSessionLearningObjectives(
     if (!lockedSession) {
       throw new TRPCError({ code: 'NOT_FOUND', message: 'Session nicht gefunden.' });
     }
-    if (isSessionEffectivelyFinished(lockedSession, now)) {
+    if (isSessionEffectivelyFinished(lockedSession, writeNow)) {
       throw new TRPCError({
         code: 'BAD_REQUEST',
         message: 'Beendete Sessions können nicht mehr verändert werden.',
@@ -1623,10 +1677,11 @@ export async function deriveSessionLearningObjectives(
           previousConfirmationState: null,
           needsReviewReason: null,
           projection: 'SESSION_OVERRIDE',
+          purpose: 'LEARNING_OBJECTIVE',
           sourceQuizId: currentSourceQuizId,
           suppressedAt: null,
-          createdAt: now,
-          updatedAt: now,
+          createdAt: writeNow,
+          updatedAt: writeNow,
           references: { create: references },
         },
       });
@@ -1653,7 +1708,7 @@ export async function deriveSessionLearningObjectives(
         : lockedSession;
 
     return {
-      snapshot: await snapshotWithDb(tx, nextSession, now),
+      snapshot: await snapshotWithDb(tx, nextSession, writeNow),
       appliedCount: unseenDrafts.length,
     };
   });

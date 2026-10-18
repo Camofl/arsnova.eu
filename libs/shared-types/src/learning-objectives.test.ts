@@ -96,6 +96,7 @@ function validSessionObjective() {
       confirmedRevision: 2,
     },
     projection: 'session-manual' as const,
+    purpose: 'learning-objective' as const,
     createdAt: CREATED_AT,
     updatedAt: UPDATED_AT,
   };
@@ -496,6 +497,60 @@ describe('session learning-objective host contract', () => {
       SessionLearningObjectiveDTOSchema.safeParse({
         ...override,
         projection: 'quiz-projected',
+      }).success,
+    ).toBe(false);
+  });
+
+  it('defaults omitted purpose to a learning objective and keeps forum assignments distinct', () => {
+    const parsed = SessionLearningObjectiveDTOSchema.parse({
+      id: OBJECTIVE_A_ID,
+      revision: 2,
+      text: 'Die Studierenden können lineare Regressionsmodelle anwenden.',
+      scope: { kind: 'session' },
+      origin: { kind: 'manual' },
+      confirmation: {
+        state: 'confirmed',
+        confirmedAt: UPDATED_AT,
+        confirmedRevision: 2,
+      },
+      projection: 'session-manual',
+      createdAt: CREATED_AT,
+      updatedAt: UPDATED_AT,
+    });
+    expect(parsed.purpose).toBe('learning-objective');
+
+    expect(
+      SessionLearningObjectiveDTOSchema.safeParse({
+        ...validSessionObjective(),
+        purpose: 'forum-assignment',
+      }).success,
+    ).toBe(true);
+
+    expect(
+      SessionLearningObjectiveDTOSchema.safeParse({
+        ...validSessionObjective(),
+        purpose: 'forum-assignment',
+        scope: { kind: 'quiz-wide' },
+      }).success,
+    ).toBe(false);
+  });
+
+  it('rejects a forum-assignment upsert that is not session-wide', () => {
+    expect(
+      SaveSessionLearningObjectivesInputSchema.safeParse({
+        code: 'ABC123',
+        expectedLearningContextRevision: 3,
+        mutations: [
+          {
+            action: 'upsert',
+            objectiveId: OBJECTIVE_A_ID,
+            expectedRevision: null,
+            text: 'Sammelt zentrale Fragen zum Fallbeispiel.',
+            scope: { kind: 'quiz-wide' },
+            confirmationState: 'confirmed',
+            purpose: 'forum-assignment',
+          },
+        ],
       }).success,
     ).toBe(false);
   });
