@@ -61,7 +61,10 @@ const de: Messages = {
         title: 'Zuerst fürs Handy',
         text: 'Quiz in allen Formaten erstellen und live steuern — vom Smartphone her gedacht, nicht vom Desktop geschrumpft',
       },
-      { title: 'Q&A mit Fragenwand', text: 'Moderation, Abstimmung und Themen-Wortwolke' },
+      {
+        title: 'Q&A mit Fragenwand',
+        text: 'Moderation, Abstimmung, Wortwolke und Moderationskompass',
+      },
       {
         title: 'Selbsteinschätzung & Nachbereitung',
         text: 'Fehlkonzepte erkennen, Ergebnisbericht als PDF',
@@ -154,8 +157,8 @@ const de: Messages = {
         text: 'Wörter und Phrasen werden nach Unterstützung, Zustimmung oder Kontroverse gewichtet.',
       },
       {
-        label: 'Als Nächstes: Moderationskompass',
-        text: 'Deterministische Signale kommen zuerst; optionale sprachliche Auswertung und Zusammenfassung bleiben Ausbaustufen.',
+        label: 'Moderationskompass',
+        text: 'Ein Blick, und du siehst den nächsten Schritt — aus Fragen, Wortwolke, Quiz und Tempo.',
       },
     ],
     docsLink: 'Q&A-Bewertung und Kontroversität auf GitHub öffnen',
@@ -197,7 +200,48 @@ const de: Messages = {
       { label: 'Klärungsbedarf', className: 'text-xl text-landing-status-violet' },
     ],
     nextStep:
-      'Nächster Schritt: ein deterministischer Moderationskompass, optional ergänzt durch asynchrone sprachliche Auswertung und Zusammenfassungen mit Bezug zu den jeweiligen Fragen.',
+      'Im Kompass steht als Nächstes: die umstrittene Frage ins Plenum holen — ein Tipp, und du springst dorthin.',
+  },
+  compass: {
+    eyebrow: 'Jetzt live in der Session',
+    title: 'Der Moderationskompass zeigt, wo der Raum gerade steht',
+    lead: 'Mitten in der Veranstaltung ein Blick — und du siehst den nächsten sinnvollen Schritt. Aus offenen Fragen, Wortwolke, Quiz und Tempo. Kein Dashboard zum Studieren: ein Vorschlag, den du sofort im Raum ausprobieren kannst.',
+    summary: [
+      'Tippe »Kompass« in jeder Live-Ansicht.',
+      'Oben steht »Als Nächstes«: ein klarer Handlungsschritt.',
+      'Darunter Signale zu Tempo, umstrittenen Fragen und Klärungsbedarf.',
+      'Springe direkt zur Frage, zur Wortwolke oder zum Ergebnis.',
+      'Du entscheidest. Der Kompass steuert nichts von selbst.',
+    ],
+    docsLink: 'So arbeitet der Kompass',
+    tryLink: 'Jetzt in der App ausprobieren',
+    demoAria: 'Beispiel des Moderationskompasses mit nächstem Schritt und Live-Signalen',
+    hostView: 'Host-Ansicht',
+    demoTitle: 'Moderationskompass',
+    nextLabel: 'Als Nächstes',
+    nextTitle: 'Die umstrittene Frage ins Plenum holen',
+    nextText:
+      '»Sollten wir Ergebnisse vor der Diskussion wirklich ausblenden?« polarisiert. Kläre sie jetzt, bevor du weitergehst.',
+    cards: [
+      {
+        label: 'Umstrittene Fragen',
+        text: 'Die Gruppe ist gespalten — viele Stimmen dafür und dagegen.',
+        tone: 'rose',
+      },
+      {
+        label: 'Feedback zum Vortragstempo',
+        text: 'Mehrere kommen nicht mehr mit. Kurz innehalten lohnt sich.',
+        tone: 'amber',
+      },
+      {
+        label: 'Noch klären',
+        text: 'Eine stark unterstützte Frage wartet noch auf deine Antwort.',
+        tone: 'violet',
+      },
+    ],
+    sourcesLabel: 'Direkt springen',
+    sources: ['Q&A', 'Wortwolke', 'Quiz', 'Blitzlicht'],
+    note: 'Der Kompass liest nur, was du als Host sowieso siehst. Keine Bewertung einzelner Personen.',
   },
   workflow: {
     eyebrow: 'Für Unterricht, Training und Workshops',
@@ -227,7 +271,7 @@ const de: Messages = {
         number: '04',
         title: 'Live moderieren',
         description:
-          'Du gehst frei im Raum und steuerst die laufende Veranstaltung vom Handy. Die Host-Ansicht ist dafür gebaut, nicht vom Desktop heruntergebrochen. Teilnehmende stimmen ab, stellen Fragen und setzen gemeinsam Prioritäten. Host und Presenter zeigen Quiz, Q&A, Blitzlicht, Wortwolke, Lesephase, Countdown, zweite Runde und Ergebnisse in einem Ablauf.',
+          'Du gehst frei im Raum und steuerst die laufende Veranstaltung vom Handy. Die Host-Ansicht ist dafür gebaut, nicht vom Desktop heruntergebrochen. Teilnehmende stimmen ab, stellen Fragen und setzen gemeinsam Prioritäten. Der Moderationskompass zeigt den nächsten Schritt. Host und Presenter zeigen Quiz, Q&A, Blitzlicht, Wortwolke, Lesephase, Countdown, zweite Runde und Ergebnisse in einem Ablauf.',
       },
       {
         number: '05',
@@ -314,6 +358,12 @@ const de: Messages = {
         description:
           'Freitext und Q&A werden als Wörter und Phrasen verdichtet; die Fragenwand gewichtet nach Zustimmung, klarer Mehrheitsbewertung oder Kontroverse.',
         icon: 'cloud',
+      },
+      {
+        title: 'Moderationskompass in der Live-Session',
+        description:
+          'Ein Blick, und du weißt, was der Raum jetzt braucht: Tempo, umstrittene Fragen oder ein offenes Quiz-Ergebnis. Tippe »Kompass« und probiere den nächsten Schritt direkt aus.',
+        icon: 'compass',
       },
       {
         title: 'Für unterschiedliche Einsatzkontexte',
@@ -481,7 +531,7 @@ const de: Messages = {
       {
         title: 'Mehr Interaktionsformate',
         description:
-          'Neben Quiz auch Zuordnen, Sortieren, Kategorisieren, numerische Schätzfragen, Lesephase, Peer Instruction, Blitzlicht, Q&A-Fragenwand und gewichtete Wortwolke in derselben Plattform statt nur Folien-Abstimmungen.',
+          'Neben Quiz auch Zuordnen, Sortieren, Kategorisieren, numerische Schätzfragen, Lesephase, Peer Instruction, Blitzlicht, Q&A-Fragenwand, gewichtete Wortwolke und Moderationskompass in derselben Plattform statt nur Folien-Abstimmungen.',
       },
       {
         title: 'Mehr Kontrolle über Daten und Zugang',
@@ -554,6 +604,11 @@ const de: Messages = {
           'Sie verdichtet sichtbare Fragen zu Wörtern und Phrasen und übernimmt die aktive Sortierlogik. Dadurch zeigt sie nicht nur häufige Begriffe, sondern Themengruppen aus unterstützten, klar positiv bewerteten oder kontroversen Fragen.',
       },
       {
+        question: 'Was macht der Moderationskompass?',
+        answer:
+          'Während der Session zeigt er dir den nächsten sinnvollen Schritt — aus offenen Fragen, Wortwolke, Quiz-Ergebnissen und Tempo-Rückmeldungen. Oben steht »Als Nächstes«, darunter die Signale. Du springst zur Quelle und entscheidest selbst; der Kompass startet keine Aktion von allein. Tippe in der Live-Ansicht auf »Kompass« und probiere ihn mit ein paar Stimmen aus.',
+      },
+      {
         question: 'Für wen ist die Plattform gedacht?',
         answer:
           'Für Live-Interaktion in Bildung und Organisationen: Schule, Hochschule, Weiterbildung, Training, Workshop, Veranstaltung oder Besprechung.',
@@ -568,7 +623,7 @@ const de: Messages = {
   },
   ctaSection: {
     title: 'Bereit für die nächste Live-Session?',
-    lead: 'Teste den Live-Ablauf direkt in der App oder wirf einen Blick auf den offenen Code, die Q&A-Logik, die Wortwolken-Verarbeitung und die technischen Grundlagen für Bereitstellung und Betrieb.',
+    lead: 'Teste den Live-Ablauf und den Moderationskompass direkt in der App — oder wirf einen Blick auf den offenen Code, die Q&A-Logik, die Wortwolken-Verarbeitung und die technischen Grundlagen für Bereitstellung und Betrieb.',
   },
   jsonLd: {
     websiteName: 'arsnova.eu – Informationen',
@@ -580,6 +635,7 @@ const de: Messages = {
       'Ergebnisbericht (PDF) und Nachbesprechung nach Session-Ende',
       'Numerische Schätzfragen mit zwei Runden und Statistik',
       'Q&A-Fragenwand mit Moderation, Zustimmungs- und Ablehnungsstimmen',
+      'Moderationskompass mit nächstem Handlungsschritt aus Live-Signalen',
       'Warteraum, Presenter, QR/Code',
       'Quiz-Erstellung und Host-Ansicht zuerst fürs Smartphone — alle Frageformate, produktiver Modus für Lehrende',
       'Session-Steuerung vom Smartphone oder Tablet (Host-Pairing)',

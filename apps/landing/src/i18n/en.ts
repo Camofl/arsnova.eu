@@ -61,7 +61,10 @@ const en: Messages = {
         title: 'Create and host on a phone',
         text: 'Build every question format and run the live session — designed for a phone, not a desktop console squeezed down',
       },
-      { title: 'Q&A with a question wall', text: 'Moderation, voting and topic word cloud' },
+      {
+        title: 'Q&A with a question wall',
+        text: 'Moderation, voting, word cloud and moderation compass',
+      },
       {
         title: 'Confidence rating & follow-up',
         text: 'Spot misconceptions, export a PDF results report',
@@ -154,8 +157,8 @@ const en: Messages = {
         text: 'Words and phrases are weighted by support, agreement or controversy.',
       },
       {
-        label: 'Coming next: moderation compass',
-        text: 'Deterministic signals come first; optional language analysis and summarisation remain extensions.',
+        label: 'Moderation compass',
+        text: 'One glance, and you see the next move — from questions, the word cloud, the quiz and pace.',
       },
     ],
     docsLink: 'Open Q&A scoring and controversy docs on GitHub',
@@ -197,7 +200,48 @@ const en: Messages = {
       { label: 'Need for clarification', className: 'text-xl text-landing-status-violet' },
     ],
     nextStep:
-      'Next step: a deterministic moderation compass, optionally complemented by asynchronous language-analysis signals and summaries grounded in the submitted questions.',
+      'Up next in the compass: bring the controversial question to the room — tap once and you jump there.',
+  },
+  compass: {
+    eyebrow: 'Now in the live session',
+    title: 'The moderation compass shows where the room stands',
+    lead: 'Mid-session, one glance and you see the next useful move — from open questions, the word cloud, the quiz and pace. Not a dashboard to study: one suggestion you can try in the room right away.',
+    summary: [
+      'Tap “Compass” in any live view.',
+      'At the top is “Up next”: one clear action.',
+      'Below it: signals on pace, controversial questions and what still needs clarifying.',
+      'Jump straight to the question, the word cloud or the results.',
+      'You decide. The compass never runs the session on its own.',
+    ],
+    docsLink: 'How the compass works',
+    tryLink: 'Try it in the app',
+    demoAria: 'Sample moderation compass with the next step and live signals',
+    hostView: 'Facilitator view',
+    demoTitle: 'Moderation compass',
+    nextLabel: 'Up next',
+    nextTitle: 'Bring the controversial question to the room',
+    nextText:
+      '“Should we really hide results before the discussion?” is splitting the group. Clear it now, before you move on.',
+    cards: [
+      {
+        label: 'Controversial questions',
+        text: 'The room is split — many votes for and against.',
+        tone: 'rose',
+      },
+      {
+        label: 'Feedback on presentation pace',
+        text: 'Several people are falling behind. A short pause will help.',
+        tone: 'amber',
+      },
+      {
+        label: 'To clarify',
+        text: 'A strongly supported question is still waiting for your answer.',
+        tone: 'violet',
+      },
+    ],
+    sourcesLabel: 'Jump straight in',
+    sources: ['Q&A', 'Word cloud', 'Quiz', 'Pulse Check'],
+    note: 'The compass reads only what you already see as facilitator. It never rates individual people.',
   },
   workflow: {
     eyebrow: 'For teaching, training and workshops',
@@ -227,7 +271,7 @@ const en: Messages = {
         number: '04',
         title: 'Moderate live',
         description:
-          'You move around the room and run the live session from your phone. The host view is built for that — not scaled down from a desktop. Participants vote, ask questions and prioritise together. The facilitator and presenter show the quiz, Q&A wall, word cloud, Pulse Check, reading phase, countdown, second round and results in one flow.',
+          'You move around the room and run the live session from your phone. The host view is built for that — not scaled down from a desktop. Participants vote, ask questions and prioritise together. The moderation compass shows the next move. The facilitator and presenter show the quiz, Q&A wall, word cloud, Pulse Check, reading phase, countdown, second round and results in one flow.',
       },
       {
         number: '05',
@@ -314,6 +358,12 @@ const en: Messages = {
         description:
           'Free text and Q&A are condensed into words and phrases; the wall weights by agreement, clear majority score or controversy.',
         icon: 'cloud',
+      },
+      {
+        title: 'Moderation compass in the live session',
+        description:
+          'One glance, and you know what the room needs now: pace, a controversial question or an open quiz result. Tap “Compass” and try the next step straight away.',
+        icon: 'compass',
       },
       {
         title: 'For different settings',
@@ -478,7 +528,7 @@ const en: Messages = {
       {
         title: 'More interaction formats',
         description:
-          'Alongside quizzes: matching, ordering, categorisation, numeric estimation questions, reading phase, Peer Instruction, Pulse Check, Q&A wall and weighted word cloud in one platform — not only slide polls.',
+          'Alongside quizzes: matching, ordering, categorisation, numeric estimation questions, reading phase, Peer Instruction, Pulse Check, Q&A wall, weighted word cloud and moderation compass in one platform — not only slide polls.',
       },
       {
         title: 'More control over data and access',
@@ -550,6 +600,11 @@ const en: Messages = {
           'It condenses visible questions into words and phrases and follows the active sort logic. So it shows not only frequent terms, but topic groups from supported, clearly high-scoring or controversial questions.',
       },
       {
+        question: 'What does the moderation compass do?',
+        answer:
+          'During the session it shows the next useful move — from open questions, the word cloud, quiz results and pace feedback. “Up next” sits at the top, the signals below. You jump to the source and decide; the compass never starts an action on its own. Tap “Compass” in the live view and try it with a few votes.',
+      },
+      {
         question: 'Who is the platform for?',
         answer:
           'For live interaction in education and organisations: school, university, continuing education, training, workshop, event or meeting.',
@@ -564,7 +619,7 @@ const en: Messages = {
   },
   ctaSection: {
     title: 'Ready for the next live session?',
-    lead: 'Try the live flow directly in the app, or take a look at the open source code, the Q&A logic, the word-cloud processing pipeline and the technical foundations for deployment and operations.',
+    lead: 'Try the live flow and the moderation compass directly in the app — or take a look at the open source code, the Q&A logic, the word-cloud processing pipeline and the technical foundations for deployment and operations.',
   },
   jsonLd: {
     websiteName: 'arsnova.eu – Information',
@@ -576,6 +631,7 @@ const en: Messages = {
       'Results report (PDF) and debriefing after the session ends',
       'Numeric estimation questions with two rounds and statistics',
       'Q&A wall with moderation, upvoting and downvoting',
+      'Moderation compass with a next-step suggestion from live signals',
       'Waiting room, presenter, QR/code',
       'Quiz creation and session hosting designed for smartphones — every question format, a productive mode for teachers and presenters',
       'Host pairing: live-session control from a phone or tablet',

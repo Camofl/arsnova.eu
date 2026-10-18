@@ -15,6 +15,7 @@ const legacyAliases = [
   'schaetzfrage',
   'selbsteinschaetzung',
   'fragenwand',
+  'moderationskompass',
   'ablauf',
   'barrierefreiheit',
   'vertrauen',
@@ -28,6 +29,7 @@ const canonicalAnchors = [
   'numeric-estimate',
   'confidence',
   'qa-wall',
+  'moderation-compass',
   'accessibility',
   'trust',
   'comparison',
@@ -42,6 +44,7 @@ const sectionOrder = [
   'numeric-estimate',
   'confidence',
   'qa-wall',
+  'moderation-compass',
   'accessibility',
   'trust',
   'comparison',
@@ -117,7 +120,13 @@ const tryNowLabels = {
   it: 'Provalo ora',
   es: 'Probar ahora',
 };
-const removedNavAnchors = ['numeric-estimate', 'qa-wall', 'confidence', 'host-pairing'];
+const removedNavAnchors = [
+  'numeric-estimate',
+  'qa-wall',
+  'moderation-compass',
+  'confidence',
+  'host-pairing',
+];
 const deSmokePhrases = [
   'Jetzt ausprobieren',
   'Zum Inhalt springen',
@@ -298,6 +307,8 @@ const localeContentSmoke = {
       'Aussagekräftige Wortwolke',
       'Live-Aktualisierung pausiert',
       'Was arsnova.eu auszeichnet',
+      'Der Moderationskompass zeigt, wo der Raum gerade steht',
+      'Was macht der Moderationskompass?',
       'Zuerst fürs Handy',
       'Erstellen und hosten zuerst fürs Handy',
       'Kann ich Quiz und Session wirklich komplett vom Handy machen',
@@ -346,7 +357,8 @@ const localeContentSmoke = {
       'With the confidence rating,',
       'Confidently wrong answers may indicate misconceptions.',
       'Pedagogical analysis',
-      'Coming next: moderation compass',
+      'The moderation compass shows where the room stands',
+      'What does the moderation compass do?',
       'Built on an established foundation',
       'The facilitator and presenter show the quiz, Q&amp;A wall, word cloud',
       'Create and host on a phone',
@@ -401,7 +413,8 @@ const localeContentSmoke = {
       'Sans compte sur le téléphone',
       'Pas d’identifiants à partager',
       'Publier les questions uniquement lorsqu’elles sont pertinentes dans le contexte pédagogique.',
-      'À venir : boussole de modération',
+      'La boussole de modération te dit où en est la salle',
+      'Que fait la boussole de modération ?',
       'L’animateur et le présentateur affichent le quiz,',
       'indiquent les priorités, les désaccords et les besoins de clarification',
       'Vue Q&amp;A de l’animateur',
@@ -452,7 +465,8 @@ const localeContentSmoke = {
     editorial: [
       'un valore di riferimento, un intervallo di immissione e una tolleranza',
       'spazio di moderazione',
-      'In arrivo: bussola di moderazione',
+      'La bussola di moderazione ti mostra dove è la sala',
+      'Cosa fa la bussola di moderazione?',
       'si adattano a contesti che vanno dalla classe e dal seminario al workshop',
       'mostrano il quiz, la bacheca delle domande',
       'Pensata per lo smartphone',
@@ -508,7 +522,8 @@ const localeContentSmoke = {
       'estimaciones aceptables desde el punto de vista de la materia',
       'espacio de moderación',
       'un recurso útil',
-      'Próximamente: brújula de moderación',
+      'La brújula de moderación te muestra cómo está la sala',
+      '¿Qué hace la brújula de moderación?',
       'El Q&amp;A permite premoderar',
       'infraestructura de despliegue y operación de la plataforma',
       'El anfitrión y el presentador muestran el cuestionario',
@@ -692,7 +707,7 @@ function extractMainSectionOrder(html) {
   if (!mainMatch) return null;
   const order = [];
   const re =
-    /id="(workflow|features|host-pairing|structured-question-types|numeric-estimate|confidence|qa-wall|accessibility|trust|comparison|faq)"/g;
+    /id="(workflow|features|host-pairing|structured-question-types|numeric-estimate|confidence|qa-wall|moderation-compass|accessibility|trust|comparison|faq)"/g;
   let match;
   while ((match = re.exec(mainMatch[1])) !== null) {
     order.push(match[1]);
@@ -808,7 +823,8 @@ function checkNavAndSectionOrder() {
     if (
       order.indexOf('features') > order.indexOf('numeric-estimate') ||
       order.indexOf('features') > order.indexOf('confidence') ||
-      order.indexOf('features') > order.indexOf('qa-wall')
+      order.indexOf('features') > order.indexOf('qa-wall') ||
+      order.indexOf('features') > order.indexOf('moderation-compass')
     ) {
       fail(`/${locale}/ #features must start the feature block before spotlights`);
     }

@@ -19,6 +19,7 @@ const CANONICAL_ANCHORS = [
   'numeric-estimate',
   'confidence',
   'qa-wall',
+  'moderation-compass',
   'accessibility',
   'trust',
   'comparison',
@@ -32,6 +33,7 @@ const LEGACY_ALIASES = {
   schaetzfrage: 'numeric-estimate',
   selbsteinschaetzung: 'confidence',
   fragenwand: 'qa-wall',
+  moderationskompass: 'moderation-compass',
   barrierefreiheit: 'accessibility',
   vertrauen: 'trust',
   vergleich: 'comparison',
@@ -109,7 +111,7 @@ async function assertSwitcher(page, buttonId, label, hash = '#qa-wall') {
   }
 
   // Spotlight deep links must survive language switching even when not in main nav.
-  for (const spotlight of ['numeric-estimate', 'confidence', 'qa-wall']) {
+  for (const spotlight of ['numeric-estimate', 'confidence', 'qa-wall', 'moderation-compass']) {
     await page.evaluate((id) => {
       window.location.hash = `#${id}`;
     }, spotlight);
