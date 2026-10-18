@@ -42,6 +42,7 @@ const { prismaMock, hostAuthMocks, learningObjectivesMocks } = vi.hoisted(() => 
     save: vi.fn(),
     replace: vi.fn(),
     snapshot: vi.fn(),
+    derive: vi.fn(),
   },
 }));
 
@@ -59,6 +60,7 @@ vi.mock('../lib/sessionLearningObjectives', () => ({
   initializeSessionLearningObjectivesFromQuiz: vi.fn(),
   replaceSessionQuizLearningObjectives: learningObjectivesMocks.replace,
   getSessionLearningObjectivesSnapshotWithDb: learningObjectivesMocks.snapshot,
+  deriveSessionLearningObjectives: learningObjectivesMocks.derive,
 }));
 
 vi.mock('../lib/hostAuth', async () => {
@@ -188,6 +190,12 @@ describe('session.attachQuizToSession', () => {
       availableQaTasksTruncated: false,
       objectives: [],
     });
+    learningObjectivesMocks.derive.mockResolvedValue({
+      operationId: OPERATION_ID,
+      expectedLearningContextRevision: 0,
+      status: 'busy',
+      retry: 'manual',
+    });
     prismaMock.$transaction.mockImplementation(async (fn: (tx: typeof prismaMock) => unknown) =>
       fn(prismaMock),
     );
@@ -272,6 +280,65 @@ describe('session.attachQuizToSession', () => {
       ).resolves.toMatchObject({ learningContextRevision: 1, configured: true });
       expect(learningObjectivesMocks.save).toHaveBeenCalledWith(
         expect.objectContaining({ code: 'ABC123', expectedLearningContextRevision: 0 }),
+      );
+    },
+  );
+
+  trpcDodIt(
+    {
+      procedure: 'session.deriveLearningObjectives',
+      case: 'error',
+      mode: 'direct',
+      contract: 'UNAUTHORIZED',
+      title: 'schützt die Session-Lernzielherleitung mit der Host-Capability',
+    },
+    async () => {
+      hostAuthMocks.isHostSessionTokenValidMock.mockResolvedValue(false);
+      await expect(
+        caller.deriveLearningObjectives({
+          code: 'ABC123',
+          operationId: OPERATION_ID,
+          expectedLearningContextRevision: 0,
+          maximumDrafts: 4,
+          locale: 'de',
+        }),
+      ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+      expect(learningObjectivesMocks.derive).not.toHaveBeenCalled();
+    },
+  );
+
+  trpcDodIt(
+    {
+      procedure: 'session.deriveLearningObjectives',
+      case: 'happy',
+      mode: 'direct',
+      title: 'leitet Session-Lernziele für einen autorisierten Host ein',
+    },
+    async () => {
+      hostAuthMocks.isHostSessionTokenValidMock.mockResolvedValue(true);
+      await expect(
+        caller.deriveLearningObjectives({
+          code: 'ABC123',
+          operationId: OPERATION_ID,
+          expectedLearningContextRevision: 0,
+          maximumDrafts: 4,
+          locale: 'de',
+        }),
+      ).resolves.toEqual({
+        operationId: OPERATION_ID,
+        expectedLearningContextRevision: 0,
+        status: 'busy',
+        retry: 'manual',
+      });
+      expect(learningObjectivesMocks.derive).toHaveBeenCalledWith(
+        {
+          code: 'ABC123',
+          operationId: OPERATION_ID,
+          expectedLearningContextRevision: 0,
+          maximumDrafts: 4,
+          locale: 'de',
+        },
+        { signal: undefined },
       );
     },
   );

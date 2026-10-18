@@ -294,7 +294,7 @@
     },
     "qa.list": {
       "kind": "query",
-      "fingerprint": "sha256:4918f0d48258eb07761ecf6215fa2d5b645c78537fa06d1564da4b30f3fe34b7",
+      "fingerprint": "sha256:13fb1c79607d8c4c00ca6b8d20b026d073ba5515750dc82ef679517709153064",
       "missing": []
     },
     "qa.moderate": {
@@ -550,6 +550,11 @@
     "session.deleteBonusTokenForQuiz": {
       "kind": "mutation",
       "fingerprint": "sha256:4fae60479b1b039ca77a16c00a27c3f12e7469138cb740a9b17c730c19f8d0ad",
+      "missing": []
+    },
+    "session.deriveLearningObjectives": {
+      "kind": "mutation",
+      "fingerprint": "sha256:b9d13c5d090ee7195a9ac9de251f50e0b1672d9c58759dbb12c68d6070a175a3",
       "missing": []
     },
     "session.dismissFinishProjection": {
@@ -874,7 +879,7 @@
     },
     "session.saveLearningObjectives": {
       "kind": "mutation",
-      "fingerprint": "sha256:0886717a994398b1128006574c05a928cf5b1f1f811385a44dadad7838a76b66",
+      "fingerprint": "sha256:4b34eaf2e7d413b35d9d83987d39743e5e22bf0815a7e22e12da4be79c079a0b",
       "missing": []
     },
     "session.searchParticipants": {
