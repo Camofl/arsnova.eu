@@ -362,6 +362,12 @@ sudo certbot certonly --nginx --cert-name arsnova.eu \
 # /etc/letsencrypt/live/arsnova.eu/{fullchain,privkey}.pem zeigen lassen,
 # server_name ohne tote Domains, dann:
 sudo nginx -t && sudo systemctl reload nginx
+# Altes Lineage mit toter SAN entfernen (Name aus `certbot certificates`,
+# hier typisch click.arsnova.eu). Sonst versucht `certbot renew` weiter die
+# obsolete Lineage und meldet weiterhin NXDOMAIN-Fehler.
+sudo certbot delete --cert-name click.arsnova.eu
+sudo certbot certificates
+sudo certbot renew --dry-run
 ```
 
 <a id="platte-voll" name="platte-voll"></a>
