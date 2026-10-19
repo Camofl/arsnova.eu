@@ -30417,6 +30417,37 @@
           <context context-type="linenumber">334</context>
         </context-group>
       </trans-unit>
+      <trans-unit id="learningObjectives.confirmAllGenerated" datatype="html">
+        <source>Alle Vorschläge bestätigen</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/features/quiz/quiz-learning-objectives/quiz-learning-objectives.component.html</context>
+          <context context-type="linenumber">461</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="learningObjectives.confirmAllGeneratedDone" datatype="html">
+        <source>Alle KI-Vorschläge wurden bestätigt.</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/features/quiz/quiz-learning-objectives/quiz-learning-objectives.component.ts</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="learningObjectives.confirmAllGeneratedPartialOne" datatype="html">
+        <source>Ein KI-Vorschlag wurde bestätigt. Die übrigen bleiben offen.</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/features/quiz/quiz-learning-objectives/quiz-learning-objectives.component.ts</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="learningObjectives.confirmAllGeneratedPartialMany" datatype="html">
+        <source><x id="count" equiv-text="confirmed"/> KI-Vorschläge wurden bestätigt. Die übrigen bleiben offen.</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/features/quiz/quiz-learning-objectives/quiz-learning-objectives.component.ts</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="learningObjectives.confirmAllGeneratedFailed" datatype="html">
+        <source>Die Vorschläge konnten nicht bestätigt werden.</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/features/quiz/quiz-learning-objectives/quiz-learning-objectives.component.ts</context>
+        </context-group>
+      </trans-unit>
       <trans-unit id="learningObjectives.deleteConfirmGroup" datatype="html">
         <source>Löschen bestätigen</source>
         <context-group purpose="location">

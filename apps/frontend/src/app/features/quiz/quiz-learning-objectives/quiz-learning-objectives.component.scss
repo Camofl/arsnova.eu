@@ -249,12 +249,23 @@
 
 .learning-objectives__actions,
 .learning-objectives__delete-confirm,
-.learning-objectives__form-actions {
+.learning-objectives__form-actions,
+.learning-objectives__footer-actions {
   align-items: center;
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
   justify-content: flex-end;
+}
+
+.learning-objectives__footer-actions {
+  margin-block-start: 1.5rem;
+}
+
+.learning-objectives__footer-actions button {
+  flex: 0 1 auto;
+  max-width: 100%;
+  white-space: normal;
 }
 
 .learning-objectives__delete-confirm {
@@ -381,8 +392,7 @@ button[mat-stroked-button] {
 
   .learning-objectives__actions button,
   .learning-objectives__form-actions button,
-  .learning-objectives__derivation-actions button,
-  #learning-objective-add {
+  .learning-objectives__derivation-actions button {
     flex: 1 1 auto;
     max-width: 100%;
     white-space: normal;

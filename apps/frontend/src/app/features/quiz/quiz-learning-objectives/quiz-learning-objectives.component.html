@@ -116,7 +116,7 @@
           </p>
           <div class="learning-objectives__derivation-actions">
             <button
-              mat-flat-button
+              mat-stroked-button
               type="button"
               id="learning-objective-derive"
               aria-describedby="learning-objective-derivation-description"
@@ -437,16 +437,42 @@
           </div>
         </form>
       } @else {
-        <button
-          mat-stroked-button
-          type="button"
-          id="learning-objective-add"
-          [disabled]="allObjectives().length >= maxObjectives"
-          (click)="beginAdd()"
-        >
-          <mat-icon aria-hidden="true">add</mat-icon>
-          <span i18n="@@learningObjectives.add">Lernziel hinzufügen</span>
-        </button>
+        @if (errorMessage()) {
+          <p
+            id="learning-objective-confirm-all-error"
+            class="learning-objectives__error"
+            role="alert"
+          >
+            {{ errorMessage() }}
+          </p>
+        }
+        <div class="learning-objectives__footer-actions">
+          @if (confirmableGeneratedObjectives().length > 0) {
+            <button
+              mat-button
+              type="button"
+              id="learning-objective-confirm-all"
+              [disabled]="derivationIsPending() || confirmAllInProgress()"
+              [attr.aria-describedby]="
+                errorMessage() ? 'learning-objective-confirm-all-error' : null
+              "
+              (click)="confirmAllGeneratedObjectives()"
+              i18n="@@learningObjectives.confirmAllGenerated"
+            >
+              Alle Vorschläge bestätigen
+            </button>
+          }
+          <button
+            mat-stroked-button
+            type="button"
+            id="learning-objective-add"
+            [disabled]="allObjectives().length >= maxObjectives"
+            (click)="beginAdd()"
+          >
+            <mat-icon aria-hidden="true">add</mat-icon>
+            <span i18n="@@learningObjectives.add">Lernziel hinzufügen</span>
+          </button>
+        </div>
       }
     </mat-card-content>
   </mat-expansion-panel>

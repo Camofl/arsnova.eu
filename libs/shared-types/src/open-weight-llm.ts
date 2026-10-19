@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import {
-  QUIZ_UPLOAD_MAX_OPTIONS_PER_QUESTION,
+  SHORT_TEXT_MAX_SOLUTIONS,
   QaSummaryInferenceRequestSchema,
   QaSummaryLocaleEnum,
   QaSummaryModelOutputSchema,
@@ -143,7 +143,7 @@ export const OpenWeightLlmLearningQuestionSchema = z
           })
           .strict(),
       )
-      .max(QUIZ_UPLOAD_MAX_OPTIONS_PER_QUESTION),
+      .max(SHORT_TEXT_MAX_SOLUTIONS),
     solutionExplanation: z.string().trim().min(1).max(2_000).optional(),
   })
   .strict();

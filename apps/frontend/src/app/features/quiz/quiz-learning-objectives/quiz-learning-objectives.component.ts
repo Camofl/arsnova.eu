@@ -221,6 +221,23 @@ export class QuizLearningObjectivesComponent {
   readonly derivationMessage = signal<string | null>(null);
   readonly derivationLimitations = signal<readonly string[]>([]);
   readonly derivationIsPending = computed(() => this.derivationStatus() === 'pending');
+  readonly confirmAllInProgress = signal(false);
+  readonly confirmableGeneratedObjectives = computed(() => {
+    const knownQuestionIds = this.questionIds();
+    const editingId = this.editingId();
+    return this.objectives().filter((objective) => {
+      if (objective.id === editingId) return false;
+      if (objective.origin.kind !== 'model-derived') return false;
+      if (objective.confirmation.state === 'confirmed') return false;
+      if (this.hasSyncConflict(objective.id)) return false;
+      const scopeQuestionIds =
+        objective.scope.kind === 'question-set' ? objective.scope.sourceQuestionIds : [];
+      if (scopeQuestionIds.some((questionId) => !knownQuestionIds.has(questionId))) return false;
+      return !objective.origin.derivedFromSourceQuestionIds.some(
+        (questionId) => !knownQuestionIds.has(questionId),
+      );
+    });
+  });
   readonly derivationCanRetry = computed(() =>
     [
       'busy',
@@ -448,6 +465,61 @@ export class QuizLearningObjectivesComponent {
     this.statusMessage.set(null);
     this.formOpen.set(true);
     this.focusTextArea();
+  }
+
+  confirmAllGeneratedObjectives(): void {
+    if (this.derivationIsPending() || this.confirmAllInProgress()) return;
+    const targets = this.confirmableGeneratedObjectives();
+    if (targets.length === 0) return;
+
+    this.confirmAllInProgress.set(true);
+    this.errorMessage.set(null);
+    this.statusMessage.set(null);
+    let confirmed = 0;
+    let failureMessage: string | null = null;
+    try {
+      for (const objective of targets) {
+        this.quizStore.saveQuizLearningObjective(
+          this.quizId(),
+          {
+            text: objective.text,
+            scope: objective.scope,
+            confirmationState: 'confirmed',
+          },
+          { objectiveId: objective.id, expectedRevision: objective.revision },
+        );
+        confirmed += 1;
+      }
+    } catch (error) {
+      failureMessage =
+        error instanceof Error
+          ? error.message
+          : $localize`:@@learningObjectives.confirmAllGeneratedFailed:Die Vorschläge konnten nicht bestätigt werden.`;
+    } finally {
+      this.confirmAllInProgress.set(false);
+    }
+
+    if (confirmed > 0) {
+      const remainingGenerated = this.objectives().filter(
+        (objective) =>
+          objective.origin.kind === 'model-derived' && objective.confirmation.state !== 'confirmed',
+      ).length;
+      this.statusMessage.set(
+        remainingGenerated === 0
+          ? $localize`:@@learningObjectives.confirmAllGeneratedDone:Alle KI-Vorschläge wurden bestätigt.`
+          : confirmed === 1
+            ? $localize`:@@learningObjectives.confirmAllGeneratedPartialOne:Ein KI-Vorschlag wurde bestätigt. Die übrigen bleiben offen.`
+            : $localize`:@@learningObjectives.confirmAllGeneratedPartialMany:${confirmed}:count: KI-Vorschläge wurden bestätigt. Die übrigen bleiben offen.`,
+      );
+    }
+    if (failureMessage) {
+      // Formular ist geschlossen: Fehler sichtbar und in der Live-Region, nicht nur im Formularfeld.
+      this.errorMessage.set(failureMessage);
+      if (confirmed === 0) {
+        this.statusMessage.set(failureMessage);
+      }
+    }
+    this.focusAfterConfirmAll();
   }
 
   cancelEdit(): void {
@@ -779,6 +851,23 @@ export class QuizLearningObjectivesComponent {
     const focus = (): void => this.textArea()?.nativeElement.focus();
     queueMicrotask(focus);
     afterNextRender(focus, { injector: this.injector });
+  }
+
+  private focusAfterConfirmAll(): void {
+    if (this.formOpen()) return;
+    if (this.confirmableGeneratedObjectives().length > 0) {
+      this.focusElement('learning-objective-confirm-all');
+      return;
+    }
+    const addButton = globalThis.document?.getElementById('learning-objective-add');
+    if (addButton instanceof HTMLButtonElement && !addButton.disabled) {
+      this.focusElement('learning-objective-add');
+      return;
+    }
+    const firstObjective = this.objectives()[0];
+    if (firstObjective) {
+      this.focusElement(`learning-objective-edit-${firstObjective.id}`);
+    }
   }
 
   private focusElement(id: string): void {

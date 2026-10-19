@@ -26400,6 +26400,38 @@ describe('SessionHostComponent', { timeout: 60_000 }, () => {
       fixture.destroy();
     });
 
+    it('blendet den Kompass in der Quiz-Gesamtauswertung aus und zeigt ihn in einem anderen Kanal', async () => {
+      getInfoQueryMock.mockResolvedValue({
+        ...defaultSession,
+        status: 'FINISHED',
+        channels: {
+          quiz: { enabled: true },
+          qa: { enabled: true, open: true, title: 'Fragen', moderationMode: true },
+          quickFeedback: { enabled: false, open: false },
+        },
+      });
+
+      const fixture = setup();
+      fixture.detectChanges();
+      await fixture.whenStable();
+      await flushComponentAfterStable(fixture, 50);
+      const component = fixture.componentInstance;
+      component.activeChannel.set('quiz');
+      fixture.detectChanges();
+
+      expect(
+        fixture.nativeElement.querySelector('[data-testid="host-moderation-compass"]'),
+      ).toBeNull();
+
+      component.activeChannel.set('qa');
+      fixture.detectChanges();
+
+      expect(
+        fixture.nativeElement.querySelector('[data-testid="host-moderation-compass"]'),
+      ).not.toBeNull();
+      fixture.destroy();
+    });
+
     it('blendet den Kompass im reinen Blitzlicht aus und zeigt ihn neben einem anderen Kanal', async () => {
       getInfoQueryMock.mockResolvedValue({
         ...defaultSession,

@@ -14,6 +14,7 @@ import wordCloudQuiz from '../../../../../../../docs/examples/quiz-import/quiz-w
 import mixedQuiz from '../../../../../../../docs/examples/quiz-import/quiz-mixed-realistisch.json';
 import compactFeedbackQuiz from '../../../../../../../docs/examples/quiz-import/quiz-unterrichtsfeedback-kompakt.json';
 import arsnovaClickMaximalExport from '../../../../../../../docs/examples/quiz-import/arsnova-click-maximal-export.json';
+import legacyWeek03Quiz from '../../../../../../../docs/didaktik/Modulkonzept Statistik/ARSnova/P0-03_ARSnova_Woche_03.json';
 
 type QuestionType =
   'SINGLE_CHOICE' | 'MULTIPLE_CHOICE' | 'SURVEY' | 'FREETEXT' | 'RATING' | 'NUMERIC_ESTIMATE';
@@ -202,5 +203,16 @@ describe('Quiz example imports (all formats)', () => {
       numericMax: null,
       numericTwoRounds: false,
     });
+  });
+
+  it('importiert ein Legacy-Quiz mit mehr als acht Kurzantwort-Musterlösungen', () => {
+    const service = TestBed.inject(QuizStoreService);
+
+    const imported = service.importQuiz(legacyWeek03Quiz).quiz;
+    const shortText = imported.questions.find((question) => question.type === 'SHORT_TEXT');
+
+    expect(imported.questions).toHaveLength(10);
+    expect(shortText?.answers).toHaveLength(9);
+    expect(service.getUploadPayload(imported.id).questions).toHaveLength(10);
   });
 });

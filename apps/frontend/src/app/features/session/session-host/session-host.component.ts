@@ -2809,6 +2809,12 @@ export class SessionHostComponent implements OnInit, OnDestroy {
   readonly showModerationCompass = computed(
     () => this.activeChannel() !== 'quickFeedback' || this.channels().quiz || this.channels().qa,
   );
+  /** Die Quiz-Gesamtauswertung zeigt den Kompass nicht. */
+  readonly showModerationCompassButton = computed(
+    () =>
+      this.showModerationCompass() &&
+      !(this.activeChannel() === 'quiz' && this.effectiveStatus() === 'FINISHED'),
+  );
   readonly showHostModerationStack = computed(
     () => this.moderationCompassReturn() !== null || this.showModerationCompass(),
   );

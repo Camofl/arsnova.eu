@@ -34385,6 +34385,26 @@
           <context context-type="linenumber">334</context>
         </context-group>
       </trans-unit>
+      <trans-unit id="learningObjectives.confirmAllGenerated" datatype="html">
+        <source>Alle Vorschläge bestätigen</source>
+        <target>Confirmar todas las propuestas</target>
+      </trans-unit>
+      <trans-unit id="learningObjectives.confirmAllGeneratedDone" datatype="html">
+        <source>Alle KI-Vorschläge wurden bestätigt.</source>
+        <target>Se han confirmado todas las propuestas de la IA.</target>
+      </trans-unit>
+      <trans-unit id="learningObjectives.confirmAllGeneratedPartialOne" datatype="html">
+        <source>Ein KI-Vorschlag wurde bestätigt. Die übrigen bleiben offen.</source>
+        <target>Se ha confirmado una propuesta de la IA. Las demás siguen abiertas.</target>
+      </trans-unit>
+      <trans-unit id="learningObjectives.confirmAllGeneratedPartialMany" datatype="html">
+        <source><x id="count" equiv-text="confirmed"/> KI-Vorschläge wurden bestätigt. Die übrigen bleiben offen.</source>
+        <target>Se han confirmado <x id="count" equiv-text="confirmed"/> propuestas de la IA. Las demás siguen abiertas.</target>
+      </trans-unit>
+      <trans-unit id="learningObjectives.confirmAllGeneratedFailed" datatype="html">
+        <source>Die Vorschläge konnten nicht bestätigt werden.</source>
+        <target>No se han podido confirmar las propuestas.</target>
+      </trans-unit>
       <trans-unit id="learningObjectives.deleteConfirmGroup" datatype="html">
         <source>Löschen bestätigen</source>
         <target>Confirmar eliminación</target>

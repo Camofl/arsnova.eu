@@ -80,6 +80,7 @@ import {
   SHORT_TEXT_DEFAULT_EVALUATION_MODE,
   SHORT_TEXT_DEFAULT_TOLERANCE_LEVEL,
   SHORT_TEXT_MAX_LENGTH_LIMIT,
+  SHORT_TEXT_MAX_SOLUTIONS,
   CONFIDENCE_SCALE_MAX,
   CONFIDENCE_SCALE_MIN,
   evaluateNumericAnswer,
@@ -2259,9 +2260,10 @@ export class QuizEditComponent implements OnDestroy {
   }
 
   canAddAnswer(): boolean {
-    return (
-      this.hasAnswerOptions() && this.answersArray.length < QUIZ_UPLOAD_MAX_OPTIONS_PER_QUESTION
-    );
+    const limit = this.isShortTextType()
+      ? SHORT_TEXT_MAX_SOLUTIONS
+      : QUIZ_UPLOAD_MAX_OPTIONS_PER_QUESTION;
+    return this.hasAnswerOptions() && this.answersArray.length < limit;
   }
 
   canRemoveAnswer(): boolean {
@@ -3997,10 +3999,7 @@ export class QuizEditComponent implements OnDestroy {
     }
 
     if (question.type === 'SHORT_TEXT') {
-      if (
-        question.answers.length < 1 ||
-        question.answers.length > QUIZ_UPLOAD_MAX_OPTIONS_PER_QUESTION
-      ) {
+      if (question.answers.length < 1 || question.answers.length > SHORT_TEXT_MAX_SOLUTIONS) {
         return false;
       }
 
