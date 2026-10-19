@@ -1035,6 +1035,54 @@ describe('QuizLearningObjectivesComponent', () => {
       'Ein KI-Vorschlag wurde bestätigt. Die übrigen bleiben offen.',
     );
   });
+
+  it('meldet fehlgeschlagene Sammelbestätigung außerhalb des Formulars', () => {
+    const store = TestBed.inject(QuizStoreService);
+    const quiz = store.createQuiz({ name: 'Sammelfehler' });
+    const question = store.addQuestion(quiz.id, {
+      text: 'Was ist ein Median?',
+      type: 'SINGLE_CHOICE',
+      difficulty: 'EASY',
+      answers: [
+        { text: 'Ein Lagemaß', isCorrect: true },
+        { text: 'Ein Diagramm', isCorrect: false },
+      ],
+    });
+    store.applyDerivedLearningObjectiveDrafts(
+      quiz.id,
+      store.getLearningObjectiveBundle(quiz.id).revision,
+      '50000000-0000-4000-8000-0000000000cc',
+      [derivedDraft('50000000-0000-4000-8000-000000000031', question.id, 'Mediane erklären')],
+    );
+    const fixture = TestBed.createComponent(QuizLearningObjectivesComponent);
+    fixture.componentRef.setInput('quizId', quiz.id);
+    fixture.componentRef.setInput('questions', [question]);
+    fixture.detectChanges();
+
+    const saveSpy = vi.spyOn(store, 'saveQuizLearningObjective').mockImplementation(() => {
+      throw new Error('Das Lernziel wurde inzwischen geändert.');
+    });
+
+    (
+      fixture.nativeElement.querySelector('#learning-objective-confirm-all') as HTMLButtonElement
+    ).click();
+    fixture.detectChanges();
+
+    const alert = fixture.nativeElement.querySelector(
+      '#learning-objective-confirm-all-error',
+    ) as HTMLElement | null;
+    expect(alert).not.toBeNull();
+    expect(alert?.getAttribute('role')).toBe('alert');
+    expect(alert?.textContent).toContain('Das Lernziel wurde inzwischen geändert.');
+    expect(fixture.componentInstance.statusMessage()).toContain(
+      'Das Lernziel wurde inzwischen geändert.',
+    );
+    expect(fixture.componentInstance.formOpen()).toBe(false);
+    expect(store.getLearningObjectiveBundle(quiz.id).objectives[0]?.confirmation.state).toBe(
+      'draft',
+    );
+    saveSpy.mockRestore();
+  });
 });
 
 function derivedDraft(id: string, questionId: string, text: string) {

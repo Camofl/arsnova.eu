@@ -474,7 +474,9 @@ export class QuizLearningObjectivesComponent {
 
     this.confirmAllInProgress.set(true);
     this.errorMessage.set(null);
+    this.statusMessage.set(null);
     let confirmed = 0;
+    let failureMessage: string | null = null;
     try {
       for (const objective of targets) {
         this.quizStore.saveQuizLearningObjective(
@@ -489,11 +491,10 @@ export class QuizLearningObjectivesComponent {
         confirmed += 1;
       }
     } catch (error) {
-      this.errorMessage.set(
+      failureMessage =
         error instanceof Error
           ? error.message
-          : $localize`:@@learningObjectives.confirmAllGeneratedFailed:Die Vorschläge konnten nicht bestätigt werden.`,
-      );
+          : $localize`:@@learningObjectives.confirmAllGeneratedFailed:Die Vorschläge konnten nicht bestätigt werden.`;
     } finally {
       this.confirmAllInProgress.set(false);
     }
@@ -510,6 +511,13 @@ export class QuizLearningObjectivesComponent {
             ? $localize`:@@learningObjectives.confirmAllGeneratedPartialOne:Ein KI-Vorschlag wurde bestätigt. Die übrigen bleiben offen.`
             : $localize`:@@learningObjectives.confirmAllGeneratedPartialMany:${confirmed}:count: KI-Vorschläge wurden bestätigt. Die übrigen bleiben offen.`,
       );
+    }
+    if (failureMessage) {
+      // Formular ist geschlossen: Fehler sichtbar und in der Live-Region, nicht nur im Formularfeld.
+      this.errorMessage.set(failureMessage);
+      if (confirmed === 0) {
+        this.statusMessage.set(failureMessage);
+      }
     }
     this.focusAfterConfirmAll();
   }

@@ -437,6 +437,15 @@
           </div>
         </form>
       } @else {
+        @if (errorMessage()) {
+          <p
+            id="learning-objective-confirm-all-error"
+            class="learning-objectives__error"
+            role="alert"
+          >
+            {{ errorMessage() }}
+          </p>
+        }
         <div class="learning-objectives__footer-actions">
           @if (confirmableGeneratedObjectives().length > 0) {
             <button
@@ -444,6 +453,9 @@
               type="button"
               id="learning-objective-confirm-all"
               [disabled]="derivationIsPending() || confirmAllInProgress()"
+              [attr.aria-describedby]="
+                errorMessage() ? 'learning-objective-confirm-all-error' : null
+              "
               (click)="confirmAllGeneratedObjectives()"
               i18n="@@learningObjectives.confirmAllGenerated"
             >
