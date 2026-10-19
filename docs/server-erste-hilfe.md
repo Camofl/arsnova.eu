@@ -294,6 +294,44 @@ dig +short www.arsnova.eu AAAA
 
 ### Erneuern
 
+Zuerst prüfen, ob ACME auf Port 80 **ohne** HTTPS-Redirect erreichbar ist. Ein
+Certbot-`if ($host = …) { return 301 https://…; }` vor `location /.well-known/acme-challenge/`
+leitet Challenges auf HTTPS um; ohne Challenge-Location im 443-Server schlägt
+`certbot renew` fehl — auch schon in den 30 Tagen vor Ablauf — und das Zertifikat
+läuft ab.
+
+```bash
+curl -sI http://arsnova.eu/.well-known/acme-challenge/ping | head
+# Erwartet: 404/200 von Nginx auf Port 80, nicht 301 nach https://…
+```
+
+Wenn Port 80 noch umleitet: im HTTP-`server`-Block die Certbot-`if`-Redirects
+entfernen und nur noch:
+
+```nginx
+location ^~ /.well-known/acme-challenge/ {
+    root /var/www/certbot;
+    allow all;
+    default_type "text/plain";
+}
+
+location / {
+    return 301 https://$host$request_uri;
+}
+```
+
+Dann erneuern:
+
+```bash
+sudo nginx -t && sudo systemctl reload nginx
+sudo certbot renew --force-renewal --no-random-sleep-on-renew
+sudo nginx -t && sudo systemctl reload nginx
+sudo certbot certificates
+curl -fsSI https://arsnova.eu/ | head
+```
+
+Routine (Zertifikat noch gültig, ACME-Pfad bereits korrekt):
+
 ```bash
 sudo certbot renew --dry-run
 sudo certbot renew
@@ -305,8 +343,32 @@ Wenn Certbot scheitert:
 
 - DNS zeigt noch auf falsche IP.
 - Port 80 ist von Firewall oder Nginx-Regel blockiert.
-- Nginx-Konfiguration für `/.well-known/acme-challenge/` fehlt oder wird nicht erreicht.
+- Nginx-Konfiguration für `/.well-known/acme-challenge/` fehlt, wird nicht erreicht
+  oder wird per `if`/`return` nach HTTPS umgeleitet (siehe oben).
 - Zertifikat wurde für andere Domain ausgestellt als Nginx `server_name`.
+- Das Lineage enthält eine **tote SAN-Domain** (z. B. historisches
+  `click.arsnova.eu` ohne A/AAAA → Let's Encrypt meldet `NXDOMAIN`). Dann kein
+  `renew` des alten Lineages, sondern neu nur für erreichbare Namen:
+
+```bash
+# DNS muss für jede -d Domain auflösen (A oder AAAA).
+dig +short arsnova.eu A
+dig +short www.arsnova.eu A
+# click.arsnova.eu darf NXDOMAIN sein und gehört nicht mehr aufs Zertifikat.
+
+sudo certbot certonly --nginx --cert-name arsnova.eu \
+  -d arsnova.eu -d www.arsnova.eu --force-renewal
+# ssl_certificate / ssl_certificate_key in Nginx auf
+# /etc/letsencrypt/live/arsnova.eu/{fullchain,privkey}.pem zeigen lassen,
+# server_name ohne tote Domains, dann:
+sudo nginx -t && sudo systemctl reload nginx
+# Altes Lineage mit toter SAN entfernen (Name aus `certbot certificates`,
+# hier typisch click.arsnova.eu). Sonst versucht `certbot renew` weiter die
+# obsolete Lineage und meldet weiterhin NXDOMAIN-Fehler.
+sudo certbot delete --cert-name click.arsnova.eu
+sudo certbot certificates
+sudo certbot renew --dry-run
+```
 
 <a id="platte-voll" name="platte-voll"></a>
 
