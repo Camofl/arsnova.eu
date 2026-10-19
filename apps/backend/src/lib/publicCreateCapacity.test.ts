@@ -24,7 +24,7 @@ describe('quiz upload learning-objective capacity', () => {
   });
 
   it('keeps one schema-maximal upload below the global complexity window', () => {
-    expect(QUIZ_UPLOAD_MAX_COMPLEXITY).toBe(21_901);
+    expect(QUIZ_UPLOAD_MAX_COMPLEXITY).toBe(22_301);
     expect(QUIZ_UPLOAD_GLOBAL_COMPLEXITY_PER_WINDOW_DEFAULT).toBeGreaterThanOrEqual(
       QUIZ_UPLOAD_MAX_COMPLEXITY,
     );

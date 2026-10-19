@@ -6,6 +6,7 @@ import {
   PublicSessionCodeLookupInputSchema,
   previewMaxCorrectScoreAtElapsedSeconds,
   QUIZ_UPLOAD_MAX_OPTIONS_PER_QUESTION,
+  SHORT_TEXT_MAX_SOLUTIONS,
   QUIZ_UPLOAD_MAX_PAYLOAD_BYTES,
   QUIZ_UPLOAD_MAX_QUESTIONS,
   QuizUploadInputSchema,
@@ -290,6 +291,52 @@ describe('öffentliche Contract-Schemas', () => {
           order,
           answers: [{ text: 'Antwort', isCorrect: true }],
         })),
+      }).success,
+    ).toBe(false);
+  });
+
+  it('erlaubt bis zu zehn Kurzantwort-Musterlösungen und weist elf zurück', () => {
+    expect(SHORT_TEXT_MAX_SOLUTIONS).toBe(10);
+    const shortText = {
+      text: 'Interquartilsabstand',
+      type: 'SHORT_TEXT' as const,
+      difficulty: 'HARD' as const,
+      order: 0,
+      shortTextEvaluationKind: 'text' as const,
+      shortTextMaxLength: 24,
+      shortTextCaseSensitive: false,
+      shortTextEvaluationMode: 'exact' as const,
+      shortTextToleranceLevel: 'none' as const,
+      shortTextAllowPartialCredit: false,
+      shortTextTrimWhitespace: true,
+      shortTextNormalizeWhitespace: true,
+    };
+    expect(
+      QuizUploadInputSchema.safeParse({
+        ...quizUploadBase,
+        questions: [
+          {
+            ...shortText,
+            answers: Array.from({ length: SHORT_TEXT_MAX_SOLUTIONS }, (_, index) => ({
+              text: `Variante ${index}`,
+              isCorrect: true,
+            })),
+          },
+        ],
+      }).success,
+    ).toBe(true);
+    expect(
+      QuizUploadInputSchema.safeParse({
+        ...quizUploadBase,
+        questions: [
+          {
+            ...shortText,
+            answers: Array.from({ length: SHORT_TEXT_MAX_SOLUTIONS + 1 }, (_, index) => ({
+              text: `Variante ${index}`,
+              isCorrect: true,
+            })),
+          },
+        ],
       }).success,
     ).toBe(false);
   });

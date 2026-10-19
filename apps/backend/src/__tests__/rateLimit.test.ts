@@ -73,7 +73,7 @@ describe('RATE_LIMIT_ENV – Umgebungsvariablen-Defaults (Story 0.5)', () => {
     );
     // 100 questions/options plus the strict worst-case 100 learning goals with
     // bounded task and derivation references must fit one accepted upload.
-    expect(QUIZ_UPLOAD_MAX_COMPLEXITY).toBe(21_901);
+    expect(QUIZ_UPLOAD_MAX_COMPLEXITY).toBe(22_301);
   });
 
   it('behält ohne neue Env-Variable die produktive Rollout-Kapazität', async () => {

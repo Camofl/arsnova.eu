@@ -846,7 +846,12 @@ describe('QuizLearningObjectivesComponent', () => {
     });
     fixture.componentRef.setInput('questions', [surveyQuestion, scoredQuestion]);
     fixture.detectChanges();
-    expect(fixture.nativeElement.querySelector('#learning-objective-derive')).not.toBeNull();
+    const derive = fixture.nativeElement.querySelector(
+      '#learning-objective-derive',
+    ) as HTMLButtonElement;
+    expect(derive).not.toBeNull();
+    expect(derive.classList.contains('mat-mdc-outlined-button')).toBe(true);
+    expect(derive.textContent).toContain('Automatisch aus Fragen formulieren');
   });
 
   it('zeigt bei fokussierter Frage nur deren Lernziele und ordnet neue Ziele dieser Frage zu', () => {
@@ -903,4 +908,151 @@ describe('QuizLearningObjectivesComponent', () => {
       'Weiteres Ziel zu Frage 1',
     ]);
   });
+
+  it('bestätigt alle offenen KI-Vorschläge und lässt manuelle Entwürfe unverändert', () => {
+    const store = TestBed.inject(QuizStoreService);
+    const quiz = store.createQuiz({ name: 'Sammelbestätigung' });
+    const first = store.addQuestion(quiz.id, {
+      text: 'Was ist ein Mittelwert?',
+      type: 'SINGLE_CHOICE',
+      difficulty: 'EASY',
+      answers: [
+        { text: 'Ein Lagemaß', isCorrect: true },
+        { text: 'Ein Diagramm', isCorrect: false },
+      ],
+    });
+    const second = store.addQuestion(quiz.id, {
+      text: 'Was ist eine Varianz?',
+      type: 'SINGLE_CHOICE',
+      difficulty: 'MEDIUM',
+      answers: [
+        { text: 'Ein Streuungsmaß', isCorrect: true },
+        { text: 'Ein Mittelwert', isCorrect: false },
+      ],
+    });
+    store.applyDerivedLearningObjectiveDrafts(
+      quiz.id,
+      store.getLearningObjectiveBundle(quiz.id).revision,
+      '50000000-0000-4000-8000-0000000000aa',
+      [
+        derivedDraft('50000000-0000-4000-8000-000000000011', first.id, 'Mittelwerte erklären'),
+        derivedDraft('50000000-0000-4000-8000-000000000012', second.id, 'Streuung erklären'),
+      ],
+    );
+    store.saveQuizLearningObjective(quiz.id, {
+      text: 'Manuell formuliert',
+      scope: { kind: 'quiz-wide' },
+      confirmationState: 'draft',
+    });
+
+    const fixture = TestBed.createComponent(QuizLearningObjectivesComponent);
+    fixture.componentRef.setInput('quizId', quiz.id);
+    fixture.componentRef.setInput('questions', [first, second]);
+    fixture.detectChanges();
+
+    const footer = fixture.nativeElement.querySelector(
+      '.learning-objectives__footer-actions',
+    ) as HTMLElement;
+    const confirmAll = footer.querySelector('#learning-objective-confirm-all') as HTMLButtonElement;
+    const add = footer.querySelector('#learning-objective-add') as HTMLButtonElement;
+    expect(confirmAll.textContent).toContain('Alle Vorschläge bestätigen');
+    expect(confirmAll.classList.contains('mat-mdc-unelevated-button')).toBe(false);
+    expect(confirmAll.classList.contains('mat-mdc-outlined-button')).toBe(false);
+    expect(confirmAll.compareDocumentPosition(add) & Node.DOCUMENT_POSITION_FOLLOWING).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    );
+    expect(add.classList.contains('mat-mdc-outlined-button')).toBe(true);
+    expect(
+      (fixture.nativeElement.querySelector('mat-card-content') as HTMLElement).lastElementChild,
+    ).toBe(footer);
+
+    confirmAll.click();
+    fixture.detectChanges();
+
+    const objectives = store.getLearningObjectiveBundle(quiz.id).objectives;
+    expect(
+      objectives
+        .filter((objective) => objective.origin.kind === 'model-derived')
+        .map((objective) => objective.confirmation.state),
+    ).toEqual(['confirmed', 'confirmed']);
+    expect(
+      objectives.find((objective) => objective.origin.kind === 'manual')?.confirmation.state,
+    ).toBe('draft');
+    expect(fixture.nativeElement.querySelector('#learning-objective-confirm-all')).toBeNull();
+    expect(fixture.nativeElement.textContent).toContain('Alle KI-Vorschläge wurden bestätigt.');
+  });
+
+  it('bestätigt nur KI-Vorschläge mit gültigen Fragenverweisen', () => {
+    const store = TestBed.inject(QuizStoreService);
+    const quiz = store.createQuiz({ name: 'Teilbestätigung' });
+    const kept = store.addQuestion(quiz.id, {
+      text: 'Was bleibt?',
+      type: 'SINGLE_CHOICE',
+      difficulty: 'EASY',
+      answers: [
+        { text: 'A', isCorrect: true },
+        { text: 'B', isCorrect: false },
+      ],
+    });
+    const removed = store.addQuestion(quiz.id, {
+      text: 'Was fällt weg?',
+      type: 'SINGLE_CHOICE',
+      difficulty: 'EASY',
+      answers: [
+        { text: 'C', isCorrect: true },
+        { text: 'D', isCorrect: false },
+      ],
+    });
+    store.applyDerivedLearningObjectiveDrafts(
+      quiz.id,
+      store.getLearningObjectiveBundle(quiz.id).revision,
+      '50000000-0000-4000-8000-0000000000bb',
+      [
+        derivedDraft('50000000-0000-4000-8000-000000000021', kept.id, 'Bleibendes Ziel'),
+        derivedDraft('50000000-0000-4000-8000-000000000022', removed.id, 'Verwaistes Ziel'),
+      ],
+    );
+    store.deleteQuestion(quiz.id, removed.id);
+
+    const fixture = TestBed.createComponent(QuizLearningObjectivesComponent);
+    fixture.componentRef.setInput('quizId', quiz.id);
+    fixture.componentRef.setInput('questions', [kept]);
+    fixture.detectChanges();
+
+    (
+      fixture.nativeElement.querySelector('#learning-objective-confirm-all') as HTMLButtonElement
+    ).click();
+    fixture.detectChanges();
+
+    const objectives = store.getLearningObjectiveBundle(quiz.id).objectives;
+    expect(
+      objectives.find((objective) => objective.text === 'Bleibendes Ziel')?.confirmation.state,
+    ).toBe('confirmed');
+    expect(
+      objectives.find((objective) => objective.text === 'Verwaistes Ziel')?.confirmation.state,
+    ).toBe('needs-review');
+    expect(fixture.nativeElement.textContent).toContain(
+      'Ein KI-Vorschlag wurde bestätigt. Die übrigen bleiben offen.',
+    );
+  });
 });
+
+function derivedDraft(id: string, questionId: string, text: string) {
+  return {
+    id,
+    revision: 0 as const,
+    text,
+    scope: { kind: 'question-set' as const, sourceQuestionIds: [questionId] },
+    origin: {
+      kind: 'model-derived' as const,
+      modelId: 'local-model',
+      modelVersion: '1',
+      derivationVersion: 'learning-objectives-v1',
+      derivedFromSourceQuestionIds: [questionId],
+      sourceDigest: 'c'.repeat(64),
+    },
+    confirmation: { state: 'draft' as const },
+    createdAt: '2026-10-05T12:00:00.000Z',
+    updatedAt: '2026-10-05T12:00:00.000Z',
+  };
+}

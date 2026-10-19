@@ -1450,6 +1450,12 @@ export type HostRecoveryCardDTO = z.infer<typeof HostRecoveryCardDTOSchema>;
 
 /** Schema für eine einzelne Antwortoption beim Hinzufügen/Bearbeiten */
 export const QUIZ_UPLOAD_MAX_OPTIONS_PER_QUESTION = 8;
+/**
+ * Musterlösungen einer Kurzantwort. Das ist kein Teilnehmer-Optionsraster:
+ * Legacy-Importe und der KI-Vertrag brauchen Einheiten- und Schreibvarianten
+ * über das Auswahl-Limit von 8 hinaus.
+ */
+export const SHORT_TEXT_MAX_SOLUTIONS = 10;
 export const QUIZ_UPLOAD_MAX_PAYLOAD_BYTES = 1_250_000;
 /** KI-Paste-Import: produktseitig max. 30 Fragen (Hörsaal-taugliche Pakete). */
 export const QUIZ_AI_IMPORT_MAX_QUESTIONS = 30;
@@ -1909,7 +1915,7 @@ export const AddQuestionInputSchema = z
     difficulty: DifficultyEnum.optional().default('MEDIUM'),
     order: z.number().int().min(0),
     // Bei SHORT_TEXT werden hier die gültigen Musterlösungen/Varianten gespeichert.
-    answers: z.array(AnswerOptionInputSchema).max(QUIZ_UPLOAD_MAX_OPTIONS_PER_QUESTION),
+    answers: z.array(AnswerOptionInputSchema).max(SHORT_TEXT_MAX_SOLUTIONS),
     skipReadingPhase: z.boolean().optional(),
     ratingMin: z.number().int().min(0).max(10).optional(), // Nur bei RATING
     ratingMax: z.number().int().min(1).max(10).optional(), // Nur bei RATING
@@ -1960,6 +1966,17 @@ export const AddQuestionInputSchema = z
     categorizationShuffleItems: z.boolean().optional(),
   })
   .superRefine((value, ctx) => {
+    if (
+      value.type !== 'SHORT_TEXT' &&
+      value.answers.length > QUIZ_UPLOAD_MAX_OPTIONS_PER_QUESTION
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['answers'],
+        message: `Höchstens ${QUIZ_UPLOAD_MAX_OPTIONS_PER_QUESTION} Antwortoptionen.`,
+      });
+    }
+
     const hasConfidenceConfig =
       value.confidenceEnabled === true ||
       value.confidenceLabelLow !== undefined ||
