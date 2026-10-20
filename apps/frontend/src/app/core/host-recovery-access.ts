@@ -529,7 +529,7 @@ export function markHostRecoveryNewCardSaved(supportId: string): void {
 
 export function markHostRecoveryActivationUnconfirmed(supportId: string): void {
   const resume = getHostRecoveryResume(supportId);
-  if (!resume) return;
+  if (!resume || resume.phase === 'activated') return;
   persistHostRecoveryResume({ ...resume, phase: 'activation_unconfirmed' });
 }
 
@@ -548,9 +548,9 @@ export function markHostRecoveryActivated(supportId: string, capability?: string
       return;
     }
     promoteHostRecoveryCandidate(resume.code, capability);
+    persistHostRecoveryResume({ ...resume, phase: 'activated' });
     clearPendingHostRecoveryCard(resume.code);
     clearStagedHostRecoveryCard(resume.code);
-    persistHostRecoveryResume({ ...resume, phase: 'activated' });
   }
   clearPendingHostCredentialActivation(supportId);
   clearRecoveryExchangeId(supportId);

@@ -870,4 +870,28 @@ describe('HostRecoveryComponent', () => {
     expect(reopenedComponent.view()).toBe('newCard');
     expect(reopenedComponent.prepared()?.browserCapability).toBe(thirdBrowserCapability);
   });
+
+  it('behält Kartenmaterial bei fehlgeschlagenem Token-Schreiben nach erfolgreicher Aktivierung bis zum erfolgreichen Resume', async () => {
+    const current = render();
+    const component = current.componentInstance;
+    await prepareFlow(component);
+    component.newCardSaved.set(true);
+
+    setHostTokenMock.mockImplementationOnce(() => {
+      throw new Error('QuotaExceededError');
+    });
+
+    await component.activateAccess();
+
+    expect(component.view()).toBe('activationUnconfirmed');
+    expect(getHostRecoveryResume(SUPPORT_ID)?.phase).toBe('activation_unconfirmed');
+    expect(getPendingHostCredentialActivation(SUPPORT_ID)?.recoveryCard.recoveryCode).toBe(
+      NEW_RECOVERY_CODE,
+    );
+
+    await component.resumeRecovery();
+    expect(component.view()).toBe('success');
+    expect(getHostRecoveryResume(SUPPORT_ID)?.phase).toBe('activated');
+    expect(getPendingHostCredentialActivation(SUPPORT_ID)).toBeNull();
+  });
 });

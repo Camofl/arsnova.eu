@@ -390,8 +390,8 @@ export class HostRecoveryComponent implements AfterViewChecked, OnDestroy {
         supportId: prepared.recoveryCard.supportId,
         browserCapability: prepared.browserCapability,
       });
-      markHostRecoveryActivated(prepared.recoveryCard.supportId, prepared.browserCapability);
       setHostToken(prepared.code, activated.hostToken);
+      markHostRecoveryActivated(prepared.recoveryCard.supportId, prepared.browserCapability);
       if (this.destroyed || seq !== this.requestSeq) return;
       this.sessionCode.set(prepared.code);
       this.showNewCodeHint.set(true);
@@ -671,8 +671,8 @@ export class HostRecoveryComponent implements AfterViewChecked, OnDestroy {
     showNewCodeHint: boolean;
     seq: number;
   }): void {
-    markHostRecoveryActivated(params.supportId, params.capability);
     setHostToken(params.code, params.hostToken);
+    markHostRecoveryActivated(params.supportId, params.capability);
     if (this.destroyed || params.seq !== this.requestSeq) return;
     this.sessionCode.set(params.code);
     this.showNewCodeHint.set(params.showNewCodeHint);
