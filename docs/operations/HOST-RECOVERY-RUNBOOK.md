@@ -173,10 +173,11 @@ openssl rand -base64 32
 ```
 
 Das Backend bricht den Produktionsstart ohne gültigen Schlüssel ab. Eine
-Rotation erst durchführen, wenn keine höchstens 15 Minuten alten
-Host-Austausche und keine höchstens 10 Minuten alten Join-Replays mehr offen
-sind; sonst kann nur deren verschlüsseltes Replay-Material nicht mehr gelesen
-werden. Die zugrunde liegenden gehashten Capabilities bleiben gültig.
+Rotation erst durchführen, wenn keine offenen Admin-Übergabecodes (höchstens 24
+Stunden gültig), keine höchstens 15 Minuten alten Host-Austausche und keine
+höchstens 10 Minuten alten Join-Replays mehr bestehen; sonst kann nur deren
+verschlüsseltes Replay-Material nicht mehr gelesen werden. Die zugrunde
+liegenden gehashten Capabilities bleiben gültig.
 
 Beim Rolling Deployment vergibt ein PostgreSQL-Trigger Teilnehmernummern für
 ältere Images. Neue Host-Tokens werden zusätzlich kurzzeitig in das alte
