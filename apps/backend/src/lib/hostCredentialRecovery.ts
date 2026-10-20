@@ -27,6 +27,7 @@ import { invalidateHostPairingForSession } from './hostPairing';
 import { buildSessionRetentionTimeline } from './sessionLifecycle';
 
 export const HOST_CREDENTIAL_EXCHANGE_MS = 15 * 60 * 1000;
+export const HOST_ADMIN_HANDOFF_MS = 24 * 60 * 60 * 1000;
 
 type InitialHostCredentialMaterial = {
   browserCapability: string;
@@ -633,7 +634,7 @@ export async function resetSessionHostAccess(params: {
         hostSupportId: supportId,
       },
     });
-    const expiresAt = new Date(now.getTime() + HOST_CREDENTIAL_EXCHANGE_MS);
+    const expiresAt = new Date(now.getTime() + HOST_ADMIN_HANDOFF_MS);
     const output: AdminResetSessionHostAccessOutput = {
       sessionId: session.id,
       code: session.code,

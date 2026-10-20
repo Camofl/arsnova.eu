@@ -101,7 +101,7 @@ die vollständige Session-Kennung `ARS-XXXX-XXXX`. Eine Session-Kennung darf
 nicht still auf sechs Zeichen gekürzt werden.
 
 Der Operator erhält ausschließlich eine Übergabe-Capability, keine dauerhafte
-Host-Capability. Die 15 Minuten gelten für die **erste Einlösung** dieses
+Host-Capability. Die 24 Stunden gelten für die **erste Einlösung** dieses
 Übergabecodes. Nach erfolgreichem Prepare beginnt ein separates
 Aktivierungsfenster von 15 Minuten. Die Oberfläche nennt dabei jeweils
 Datum und lokale Uhrzeit (`{deadline}` / `{expiryTime}`). Die Aktivierungsfrist

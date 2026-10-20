@@ -83,8 +83,6 @@ function readStoredExchangeId(binding: string): string | null {
   if (fromLocal) {
     if (typeof fromLocal.expiresAt === 'string' && !isFutureTimestamp(fromLocal.expiresAt)) {
       localStorage.removeItem(key);
-      if (canUseSessionStorage()) sessionStorage.removeItem(key);
-      return null;
     } else if (typeof fromLocal.id === 'string' && fromLocal.id.trim()) {
       return fromLocal.id;
     }

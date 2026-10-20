@@ -592,7 +592,7 @@ describe.skipIf(!RUN_PG)('host and participant capabilities (PostgreSQL + Redis)
         operationId: expiredOperationId,
       },
     });
-    await cleanupExpiredHostCredentialMaterial(new Date(Date.now() + 16 * 60 * 1000));
+    await cleanupExpiredHostCredentialMaterial(new Date(Date.now() + 24 * 60 * 60 * 1000 + 60_000));
     const afterCleanup = await prisma.session.findUniqueOrThrow({
       where: { id: expiredSession.id },
       select: { hostCredentialVersion: true },

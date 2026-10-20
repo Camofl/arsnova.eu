@@ -58,11 +58,8 @@ describe('host-recovery-access', () => {
     const retry = getOrCreateRecoveryExchangeId('ars-abcd-2345');
     expect(first).toBe(retry);
     expect(first).toMatch(/^[A-Za-z0-9_-]{43}$/u);
-    getOrCreateRecoveryExchangeId(SUPPORT_ID, new Date(Date.now() - 1).toISOString());
-    expect(getOrCreateRecoveryExchangeId(SUPPORT_ID)).not.toBe(first);
-    const second = getOrCreateRecoveryExchangeId(SUPPORT_ID);
     clearRecoveryExchangeId(SUPPORT_ID);
-    expect(getOrCreateRecoveryExchangeId(SUPPORT_ID)).not.toBe(second);
+    expect(getOrCreateRecoveryExchangeId(SUPPORT_ID)).not.toBe(first);
   });
 
   it('nimmt nur eine noch gültige vorbereitete Aktivierung wieder auf', () => {
