@@ -253,7 +253,7 @@ Für die Lehrmaterialien wird ein schlanker, dokumentierter Datensatz geführt. 
 | `confidence`                        | ordinal          | 4                  | Bei aktivierter Zusatzfunktion für die Abgabe erforderlich; alternative Teilnahme ohne diese Erhebung anbieten. |
 | `actual_class`                      | nominal          | Technik            | kuratierte Klassifikationsdaten                                                                                 |
 | `predicted_class`                   | nominal          | Organisation       | kuratierte Klassifikationsdaten                                                                                 |
-| `latency_ms`                        | metrisch         | $121$              | Einzelrequest nur bei vorliegenden Rohmessungen; $p_{95}=121\,\mathrm{ms}$ ist kein Einzelrequest.              |
+| `latency_ms`                        | metrisch         | $121$              | Einzelrequest nur bei vorliegenden Rohmessungen; $p_{95}=121\thinspace\mathrm{ms}$ ist kein Einzelrequest.      |
 | `source_kind`, `source_ref`         | nominal          | REPO, Commit/Datei | LIVE/REPO/LEHRDATEN und Herkunft                                                                                |
 | `unit`, `aggregation_round`         | nominal          | Frage, 2           | Beobachtungseinheit und ausgewertete Runde                                                                      |
 | `n_round1`, `n_round2`, `n_pairs`   | metrisch-diskret | 30, 26, 25         | Rundenumfänge getrennt; `n_pairs` nur bei tatsächlich vorliegenden LEHRDATEN-Paaren                             |
@@ -283,11 +283,11 @@ $$
 s=s_{\mathrm{des}}\sqrt{\frac{n}{n-1}}
 $$
 
-ARSnova verwendet für Quartile die sortierten Werte an den nullbasierten Indizes $\mathrm{floor}(n/4)$ und $\min(\mathrm{floor}(3n/4),\,n-1)$. Tabellenprogramme und JASP können andere Konventionen verwenden. Diese app-spezifische Implementierung ist Vertiefung V2 und nur nach gesichertem Kern zu vergleichen; sie ist weder summativ prüfbar noch ein Pflichtrechenverfahren. Für Handrechnungen wird die verwendete Konvention in der Aufgabe genannt; die Softwareanzeige ist keine universelle Quartilsdefinition (Q3).
+ARSnova verwendet für Quartile die sortierten Werte an den nullbasierten Indizes $\mathrm{floor}(n/4)$ und $\min(\mathrm{floor}(3n/4),\thinspace{}n-1)$. Tabellenprogramme und JASP können andere Konventionen verwenden. Diese app-spezifische Implementierung ist Vertiefung V2 und nur nach gesichertem Kern zu vergleichen; sie ist weder summativ prüfbar noch ein Pflichtrechenverfahren. Für Handrechnungen wird die verwendete Konvention in der Aufgabe genannt; die Softwareanzeige ist keine universelle Quartilsdefinition (Q3).
 
 **Zwei Runden und Paarung unterscheiden.** Hauptergebnis und Confidence-Auswertung verwenden Runde 2, sobald Runde-2-Antworten vorliegen; fehlende Zweitantworten werden dort nicht mit Erstantworten aufgefüllt. Zusätzlich enthält die numerische Auswertung aggregierte Rundenvergleiche. Deren Vorhandensein bedeutet nicht, dass eine personweise Paartabelle exportiert wird. Für den gepaarten t-Test sind vollständige Paare separat erforderlich. Aus $n$, Mittelwert und Standardabweichung beider Runden allein lässt sich die Streuung der individuellen Differenzen nicht bestimmen (Q3–Q5, Q10).
 
-**Nenner sichtbar halten.** Die Zahlen der eingeschriebenen Studierenden, der anwesenden Personen, der verbundenen Geräte, der Antworten und der vollständigen Paare sind verschieden. MC-Optionshäufigkeiten können sich auf mehr als $100\,\%$ summieren. Für den Anteil fachlich korrekter Antworten verwenden wir correctCount und incorrectCount, nicht Quizpunkte oder die Summe korrekter Optionsnennungen (Q3).
+**Nenner sichtbar halten.** Die Zahlen der eingeschriebenen Studierenden, der anwesenden Personen, der verbundenen Geräte, der Antworten und der vollständigen Paare sind verschieden. MC-Optionshäufigkeiten können sich auf mehr als $100\thinspace\char37$ summieren. Für den Anteil fachlich korrekter Antworten verwenden wir correctCount und incorrectCount, nicht Quizpunkte oder die Summe korrekter Optionsnennungen (Q3).
 
 **Selbsteinschätzung ist ordinal.** Die Confidence-Matrix verwendet 1–2 / 3 / 4–5. Ein eigenständiges RATING zur allgemeinen Sicherheit ist keine automatisch mit einer konkreten Antwort verknüpfte Confidence-Messung. Bei aktivierter Confidence ist deren Angabe Bestandteil der Abgabe; die Lehrperson kann sie deaktivieren. Abschlussaggregate und Export unterdrücken Confidence-Fragen mit weniger als fünf entsprechenden Antworten. Kleine bzw. unterdrückte Zellen werden nicht als Nullwerte interpretiert (Q4, Q5, Q12).
 
@@ -449,7 +449,7 @@ C1/C2 sind die einfache Wald-Näherung: nur bei ausreichend großen erwarteten E
 **C3 – Konfidenzintervall für einen Mittelwert**
 
 $$
-KI_\mu=\bar{x}\pm t_{1-\alpha/2;\,n-1}\frac{s}{\sqrt{n}}
+KI_\mu=\bar{x}\pm t_{1-\alpha/2;\thinspace{}n-1}\frac{s}{\sqrt{n}}
 $$
 
 **C4 – Teststatistik des gepaarten t-Tests**
@@ -512,7 +512,7 @@ $$
 Die Präsenzlehre besteht aus **24 Vorlesungs- beziehungsweise Lerneinheiten à 90 Minuten**. Jede LE umfasst genau zwei aufeinanderfolgende UE. W01, W02, W04, W06, W08 und W10 enthalten je zwei LE beziehungsweise vier UE; W03, W05, W07 und W09 je drei LE beziehungsweise sechs UE. Damit gilt:
 
 $$
-6\cdot 2\,\text{LE}+4\cdot 3\,\text{LE}=24\,\text{LE}=48\,\text{UE}=36\,\text{Stunden Präsenz}.
+6\cdot 2\thinspace\text{LE}+4\cdot 3\thinspace\text{LE}=24\thinspace\text{LE}=48\thinspace\text{UE}=36\thinspace\text{Stunden Präsenz}.
 $$
 
 Die jeweils letzte UE einer Woche ist verbindlich der gemeinsame MC-Test-Abschluss: 32 Minuten erster Durchlauf im Modus `practice`, 10 Minuten Besprechung aggregierter Ergebnisse, Lösungen und Distraktoren sowie 3 Minuten Sicherung des Spaced-Repetition-Auftrags. Der Test ist technisch untimiert; die 32 Minuten sind ein organisatorischer Richtwert. Die fachliche Erarbeitung und der JASP-Wochenertrag werden in der ersten UE dieser letzten LE abgeschlossen.
@@ -596,7 +596,7 @@ JASP 0.98.1 ist in jeder Woche verbindlich. Studierende installieren die frei ve
 
 ## Woche 6 – Schätzen und Konfidenzintervalle
 
-**Wochenziele:** Die Studierenden unterscheiden Punkt- und Intervallschätzung, berechnen einfache Intervalle mit Formelsammlung und vermeiden Fehlinterpretationen eines $95\,\%$-Konfidenzintervalls.
+**Wochenziele:** Die Studierenden unterscheiden Punkt- und Intervallschätzung, berechnen einfache Intervalle mit Formelsammlung und vermeiden Fehlinterpretationen eines $95\thinspace\char37$-Konfidenzintervalls.
 
 | LE (UE)          | Inhalt und Ablauf                                                                                                                                                                                      | ARSnova-/JASP-Bezug                                                                                                                             | Lernprodukt/Evidenz                                                                              |
 | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
@@ -713,7 +713,7 @@ Die Klausur prüft nicht das Auswendiglernen von Formeln, sondern deren angemess
 
 ### 9.3 Beispiel für eine integrierte Klausuraufgabe
 
-> In einem konstruierten LEHRDATEN-Auszug (`source_ref=P0-03-PROBEKLAUSUR-A3-WILSON-V1`) beantworten 37 von 52 Studierenden eine Frage korrekt. Ein $95\,\%$-Wilson-Konfidenzintervall für den zugrunde liegenden Anteil wird gerundet mit $[0{,}58;0{,}82]$ angegeben.
+> In einem konstruierten LEHRDATEN-Auszug (`source_ref=P0-03-PROBEKLAUSUR-A3-WILSON-V1`) beantworten 37 von 52 Studierenden eine Frage korrekt. Ein $95\thinspace\char37$-Wilson-Konfidenzintervall für den zugrunde liegenden Anteil wird gerundet mit $[0{,}58;0{,}82]$ angegeben.
 >
 > 1. Berechnen Sie den beobachteten Anteil korrekter Antworten.
 > 2. Interpretieren Sie das Intervall im Kontext.

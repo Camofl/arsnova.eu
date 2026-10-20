@@ -220,8 +220,8 @@ Entscheidungen müssen vor der Ergebnisdeutung feststehen.
 
 Dabei werden die Verfahren benannt, zum Beispiel:
 
-- „$95\,\%$-**Wilson**-Konfidenzintervall $[L;U]$“,
-- „$95\,\%$-$t$-Konfidenzintervall für $\mu$“,
+- „$95\thinspace\char37$-**Wilson**-Konfidenzintervall $[L;U]$“,
+- „$95\thinspace\char37$-$t$-Konfidenzintervall für $\mu$“,
 - „gepaarter $t$-Test: $t(df)=\ldots,\ p=\ldots$“,
 - „Pearson-$r$, Regressionsgerade und Residuum“,
 - „Accuracy, Precision, Recall und F1 auf den Testdaten“.

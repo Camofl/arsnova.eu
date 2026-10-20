@@ -16,19 +16,19 @@ Die IDs sind feste technische Zeilen- oder Fallbezeichner. Sie identifizieren ke
 
 Die folgenden konstruierten `source_ref` stehen ausschließlich im Aufgabenstamm der Probeklausur und sind **keine** Zeilen oder Ableitungen der sieben CSV-Dateien:
 
-| `source_ref`                          | Gegenstand                                             |
-| ------------------------------------- | ------------------------------------------------------ |
-| `P0-03-PROBEKLAUSUR-A1-OPTIONEN-V1`   | nominale 48-Antworten-Tabelle                          |
-| `P0-03-PROBEKLAUSUR-A1-SCHAETZUNG-V1` | fünf numerische Schätzwerte                            |
-| `P0-03-PROBEKLAUSUR-A2-TAFEL-V1`      | 100-Fälle-Kontingenztafel                              |
-| `P0-03-PROBEKLAUSUR-A3-WILSON-V1`     | $37/52$-Anteilsfall mit Wilson-Leseintervall           |
-| `P0-03-PROBEKLAUSUR-A3-MITTELWERT-V1` | unabhängiger Mittelwert-Lehrfall                       |
-| `P0-03-PROBEKLAUSUR-A4-PAARE-V1`      | zehn gepaarte Fehlerwerte als JASP-Auszug              |
-| `P0-03-PROBEKLAUSUR-A5-REGRESSION-V1` | zwölf synthetische Regressionsläufe                    |
-| `P0-03-PROBEKLAUSUR-A6-MATRIX-V1`     | binäre 100-Fälle-Testmatrix                            |
-| `P0-03-PROBEKLAUSUR-A6-TRAINTEST-V1`  | eigenständiger $98\,\%$-/$87\,\%$-Train/Test-Vergleich |
+| `source_ref`                          | Gegenstand                                                                       |
+| ------------------------------------- | -------------------------------------------------------------------------------- |
+| `P0-03-PROBEKLAUSUR-A1-OPTIONEN-V1`   | nominale 48-Antworten-Tabelle                                                    |
+| `P0-03-PROBEKLAUSUR-A1-SCHAETZUNG-V1` | fünf numerische Schätzwerte                                                      |
+| `P0-03-PROBEKLAUSUR-A2-TAFEL-V1`      | 100-Fälle-Kontingenztafel                                                        |
+| `P0-03-PROBEKLAUSUR-A3-WILSON-V1`     | $37/52$-Anteilsfall mit Wilson-Leseintervall                                     |
+| `P0-03-PROBEKLAUSUR-A3-MITTELWERT-V1` | unabhängiger Mittelwert-Lehrfall                                                 |
+| `P0-03-PROBEKLAUSUR-A4-PAARE-V1`      | zehn gepaarte Fehlerwerte als JASP-Auszug                                        |
+| `P0-03-PROBEKLAUSUR-A5-REGRESSION-V1` | zwölf synthetische Regressionsläufe                                              |
+| `P0-03-PROBEKLAUSUR-A6-MATRIX-V1`     | binäre 100-Fälle-Testmatrix                                                      |
+| `P0-03-PROBEKLAUSUR-A6-TRAINTEST-V1`  | eigenständiger $98\thinspace\char37$-/$87\thinspace\char37$-Train/Test-Vergleich |
 
-Insbesondere ist A5 nicht mit den 16 Zeilen aus `P0-03-S5-LAST-LATENZ-V1` identisch. Die A6-Matrix ist nicht mit den 80 Zeilen aus `P0-03-S6-KLASSIFIKATION-V1` identisch, und A6-Train/Test ist nicht das W09-Zahlenbeispiel $98\,\%/71\,\%$. Gleiche oder ähnliche Kennwerte begründen keine gemeinsame Datenquelle.
+Insbesondere ist A5 nicht mit den 16 Zeilen aus `P0-03-S5-LAST-LATENZ-V1` identisch. Die A6-Matrix ist nicht mit den 80 Zeilen aus `P0-03-S6-KLASSIFIKATION-V1` identisch, und A6-Train/Test ist nicht das W09-Zahlenbeispiel $98\thinspace\char37/71\thinspace\char37$. Gleiche oder ähnliche Kennwerte begründen keine gemeinsame Datenquelle.
 
 ## 2. Gemeinsame CSV- und Rundungskonventionen
 
@@ -168,18 +168,18 @@ $$
 - **Umfang und fehlende Werte:** 16 vollständige Läufe, keine fehlenden Werte.
 - **Provenienz:** Last und Medianlatenz wurden für eine einfache lineare Lehrregression konstruiert. Sie wurden weder aus veröffentlichten $p_{95}$-/$p_{99}$-Werten rekonstruiert noch an einem realen System gemessen. Die Ausreißervariante ist eine didaktische Kopie der Basisreihe, in der genau ein Ergebnis verändert ist.
 
-| Spalte                        | Typ und Skala           | Einheit                             | Definition                                                                                            |
-| ----------------------------- | ----------------------- | ----------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| `lauf_id`                     | Text, nominal           | keine                               | Stabile ID des synthetischen Lastlaufs.                                                               |
-| `last_vu`                     | Ganzzahl, metrisch      | gleichzeitige virtuelle Nutzer (VU) | Kontrolliert gesetztes Lastniveau des Lehrmodells.                                                    |
-| `median_latenz_basis_ms`      | Ganzzahl, metrisch      | Millisekunden                       | Konstruierte Medianlatenz der Basisvariante.                                                          |
-| `median_latenz_ausreisser_ms` | Ganzzahl, metrisch      | Millisekunden                       | Alternative Lehrreihe; entspricht der Basis bis auf `S5-LAUF-013` mit $230$ statt $142\,\mathrm{ms}$. |
-| `ausreisser_geaendert`        | Ganzzahl, nominal-binär | keine                               | `1` kennzeichnet die eine didaktisch geänderte Zelle der Ausreißervariante, sonst `0`.                |
-| `szenario_id`                 | Text, nominal           | keine                               | Kontrolliertes Lehrszenario; immer `S5-KONTROLLIERT`.                                                 |
-| `hardwareprofil`              | Text, nominal           | keine                               | Konstant gehaltenes fiktives Hardwareprofil; immer `H1`.                                              |
-| `requestmix`                  | Text, nominal           | keine                               | Konstant gehaltener fiktiver Requestmix; immer `RM1`.                                                 |
-| `source_kind`                 | Text, nominal           | keine                               | Datenstatus; immer `LEHRDATEN`.                                                                       |
-| `source_ref`                  | Text, nominal           | keine                               | Konstruktionsversion; immer `P0-03-S5-LAST-LATENZ-V1`.                                                |
+| Spalte                        | Typ und Skala           | Einheit                             | Definition                                                                                                    |
+| ----------------------------- | ----------------------- | ----------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `lauf_id`                     | Text, nominal           | keine                               | Stabile ID des synthetischen Lastlaufs.                                                                       |
+| `last_vu`                     | Ganzzahl, metrisch      | gleichzeitige virtuelle Nutzer (VU) | Kontrolliert gesetztes Lastniveau des Lehrmodells.                                                            |
+| `median_latenz_basis_ms`      | Ganzzahl, metrisch      | Millisekunden                       | Konstruierte Medianlatenz der Basisvariante.                                                                  |
+| `median_latenz_ausreisser_ms` | Ganzzahl, metrisch      | Millisekunden                       | Alternative Lehrreihe; entspricht der Basis bis auf `S5-LAUF-013` mit $230$ statt $142\thinspace\mathrm{ms}$. |
+| `ausreisser_geaendert`        | Ganzzahl, nominal-binär | keine                               | `1` kennzeichnet die eine didaktisch geänderte Zelle der Ausreißervariante, sonst `0`.                        |
+| `szenario_id`                 | Text, nominal           | keine                               | Kontrolliertes Lehrszenario; immer `S5-KONTROLLIERT`.                                                         |
+| `hardwareprofil`              | Text, nominal           | keine                               | Konstant gehaltenes fiktives Hardwareprofil; immer `H1`.                                                      |
+| `requestmix`                  | Text, nominal           | keine                               | Konstant gehaltener fiktiver Requestmix; immer `RM1`.                                                         |
+| `source_kind`                 | Text, nominal           | keine                               | Datenstatus; immer `LEHRDATEN`.                                                                               |
+| `source_ref`                  | Text, nominal           | keine                               | Konstruktionsversion; immer `P0-03-S5-LAST-LATENZ-V1`.                                                        |
 
 **Zulässige Aussage:** Für den konstruierten Bereich $50$–$425$ VU dürfen Korrelation, Regressionsgerade, Residuen und Ausreißerempfindlichkeit verglichen werden. Die beiden Latenzspalten sind alternative Ergebnisvarianten und dürfen nicht gemeinsam als zwei unabhängige Messungen gezählt werden. Nicht zulässig sind Produktions-SLOs, reale Kapazitätsprognosen, Kausalaussagen oder Extrapolationen außerhalb des Lehrbereichs.
 
@@ -232,8 +232,8 @@ $$
 
 Diese Sollwerte dienen der Import- und Rechenkontrolle:
 
-- S1 Servicezeiten: $n=20$, Summe $=2400\,\mathrm{s}$, Mittelwert $=120{,}000\,\mathrm{s}$, Median $=120{,}000\,\mathrm{s}$, Stichproben-SD $=31{,}486\,\mathrm{s}$.
-- S1 Paare: $n=30$, mittlerer absoluter Fehler R1 $=16{,}200\,\mathrm{s}$, R2 $=8{,}667\,\mathrm{s}$; mittlere Differenz R1 minus R2 $=7{,}533\,\mathrm{s}$, Stichproben-SD der Differenzen $=6{,}410\,\mathrm{s}$; gepaarter t-Wert $t(29)=6{,}437$.
+- S1 Servicezeiten: $n=20$, Summe $=2400\thinspace\mathrm{s}$, Mittelwert $=120{,}000\thinspace\mathrm{s}$, Median $=120{,}000\thinspace\mathrm{s}$, Stichproben-SD $=31{,}486\thinspace\mathrm{s}$.
+- S1 Paare: $n=30$, mittlerer absoluter Fehler R1 $=16{,}200\thinspace\mathrm{s}$, R2 $=8{,}667\thinspace\mathrm{s}$; mittlere Differenz R1 minus R2 $=7{,}533\thinspace\mathrm{s}$, Stichproben-SD der Differenzen $=6{,}410\thinspace\mathrm{s}$; gepaarter t-Wert $t(29)=6{,}437$.
 - S2: $34$ von $60$ Antworten sind korrekt. Niedrig: $6/22$, mittel: $7/12$, hoch: $21/26$.
 - S3: `S3-SNP-002` hat bei $N=100$, $U=D=40$ den Netto-Score $0$, Zustimmung $0{,}500000$, Wilson-Untergrenze $0{,}392972$ und Kontroversität $0{,}888889$.
 - S5 Basis: $r=0{,}995822$, $R^2=0{,}991661$, $\hat y=80{,}135294+0{,}182588x$. Ausreißervariante: $r=0{,}794976$, $R^2=0{,}631987$, $\hat y=74{,}570588+0{,}229176x$.

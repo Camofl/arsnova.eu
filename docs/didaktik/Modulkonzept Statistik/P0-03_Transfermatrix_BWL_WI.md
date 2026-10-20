@@ -56,7 +56,7 @@ Von 60 anwesenden App-Nutzenden beantworten 42 freiwillig eine Frage zu einer ne
 2. Berechnen Sie Antwortquote unter den Anwesenden und Zustimmungsanteil unter den Antwortenden.
 3. Nennen Sie zwei Gründe, warum 30 von 42 nicht auf die gesamte registrierte Nutzungsgruppe verallgemeinert werden dürfen.
 
-**Gemeinsamer Erwartungshorizont – 5 Punkte:** Beobachtungseinheit = eine gültige Antwort; Stichprobe $n=42$; Zielpopulation $N=240$; Antwortquote $42/60=70\,\%$; Zustimmung $30/42\approx71{,}4\,\%$; zwei Grenzen aus Freiwilligkeit/Selbstselektion, Nonresponse, Anwesenheitsauswahl oder unklarer Repräsentativität.
+**Gemeinsamer Erwartungshorizont – 5 Punkte:** Beobachtungseinheit = eine gültige Antwort; Stichprobe $n=42$; Zielpopulation $N=240$; Antwortquote $42/60=70\thinspace\char37$; Zustimmung $30/42\approx71{,}4\thinspace\char37$; zwei Grenzen aus Freiwilligkeit/Selbstselektion, Nonresponse, Anwesenheitsauswahl oder unklarer Repräsentativität.
 
 ### MZ2 / LI05–LI08 – Daten beschreiben und visualisieren
 
@@ -76,7 +76,7 @@ Fünf Antwortlatenzen eines digitalen Dienstes lauten $100,110,120,130,140$ Mill
 2. Berechnen Sie die Stichprobenstandardabweichung mit Division durch $n-1$.
 3. Wählen Sie eine geeignete Darstellung für die fünf metrischen Werte und nennen Sie eine Grenze der kleinen Stichprobe.
 
-**Gemeinsamer Erwartungshorizont – 5 Punkte:** Mittelwert und Median $=120$ in der jeweiligen Einheit; $s=\sqrt{1\,000/4}\approx15{,}81$; Punktdiagramm oder Boxplot mit Begründung; keine Generalisierung oder Verteilungsbehauptung aus fünf konstruierten Werten.
+**Gemeinsamer Erwartungshorizont – 5 Punkte:** Mittelwert und Median $=120$ in der jeweiligen Einheit; $s=\sqrt{1\thinspace000/4}\approx15{,}81$; Punktdiagramm oder Boxplot mit Begründung; keine Generalisierung oder Verteilungsbehauptung aus fünf konstruierten Werten.
 
 ### MZ3 / LI09–LI12 – Wahrscheinlichkeit und Stichprobenunsicherheit
 

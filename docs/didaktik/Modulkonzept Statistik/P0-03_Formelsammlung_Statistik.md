@@ -20,9 +20,9 @@ Aufgabe angegeben. Zur Orientierung:
 
 | Zweiseitiges Konfidenzniveau | $z_{1-\alpha/2}$ |
 | ---------------------------- | ---------------: |
-| $90\,\%$                     |        $1{,}645$ |
-| $95\,\%$                     |        $1{,}960$ |
-| $99\,\%$                     |        $2{,}576$ |
+| $90\thinspace\char37$        |        $1{,}645$ |
+| $95\thinspace\char37$        |        $1{,}960$ |
+| $99\thinspace\char37$        |        $2{,}576$ |
 
 Für $t$-Werte müssen zusätzlich die Freiheitsgrade bekannt sein. Es ist keine
 Tabelle auswendig zu lernen.
@@ -52,16 +52,16 @@ Tabelle auswendig zu lernen.
 $$
 h_i=\frac{n_i}{n},
 \qquad
-h_i(\%)=100\cdot h_i
+h_i(\char37)=100\cdot h_i
 $$
 
 - **Größen:** $n_i$ = Zahl der Beobachtungen in Kategorie $i$;
   $n$ = Bezugsgröße; $h_i$ = relativer Anteil.
 - **Voraussetzungen:** Zähler und Nenner beziehen sich auf dieselbe
   Beobachtungseinheit und Auswahl.
-- **Einheit:** $h_i$ ist einheitenlos; $h_i(\%)$ wird in Prozent angegeben.
+- **Einheit:** $h_i$ ist einheitenlos; $h_i(\char37)$ wird in Prozent angegeben.
 - **Warnung:** Bei Multiple Choice können Personen mehrere Optionen nennen;
-  Optionsanteile müssen dann nicht $100\,\%$ ergeben. Immer den tatsächlichen
+  Optionsanteile müssen dann nicht $100\thinspace\char37$ ergeben. Immer den tatsächlichen
   Nenner nennen.
 
 ### 1.2 Arithmetisches Mittel
@@ -85,7 +85,7 @@ Für sortierte Werte $x_{(1)}\le \dots\le x_{(n)}$:
 $$
 \widetilde x=
 \begin{cases}
-x_{\left(\frac{n+1}{2}\right)}, & n\text{ ungerade},\\[4pt]
+x_{\left(\frac{n+1}{2}\right)}, & n\text{ ungerade},\\\\[4pt]
 \dfrac{x_{\left(\frac n2\right)}+x_{\left(\frac n2+1\right)}}{2},
 & n\text{ gerade}.
 \end{cases}
@@ -120,8 +120,8 @@ $$
 IQR=Q_3-Q_1
 $$
 
-- **Größen:** $Q_1$ = $25\,\%$-Quantil; $Q_3$ = $75\,\%$-Quantil;
-  $IQR$ = Breite der mittleren $50\,\%$.
+- **Größen:** $Q_1$ = $25\thinspace\char37$-Quantil; $Q_3$ = $75\thinspace\char37$-Quantil;
+  $IQR$ = Breite der mittleren $50\thinspace\char37$.
 - **Voraussetzungen:** mindestens ordinale Daten; die Quartilskonvention stammt
   aus der Aufgabe oder aus der benannten JASP-Ausgabe.
 - **Einheit:** dieselbe Einheit wie $x$.
@@ -447,7 +447,7 @@ $$
 In Aufgaben erscheint beispielsweise:
 
 $$
-\text{95\,\%-Wilson-KI für }p=[L_W;U_W]
+\text{95\thinspace\char37-Wilson-KI für }p=[L_W;U_W]
 $$
 
 - **Größen:** $L_W$ = Wilson-Untergrenze; $U_W$ = Wilson-Obergrenze;
@@ -460,30 +460,30 @@ $$
   Ranking ist weder $\hat p$ noch ein vollständiges Intervall. Ein Intervall
   korrigiert keine Selbstselektion.
 
-Sichere Interpretation eines $95\,\%$-Intervalls:
+Sichere Interpretation eines $95\thinspace\char37$-Intervalls:
 
 > Das Verfahren erzeugt bei sehr vielen gleichartigen Stichproben in ungefähr
-> $95\,\%$ der Fälle Intervalle, die den festen Populationsparameter enthalten.
+> $95\thinspace\char37$ der Fälle Intervalle, die den festen Populationsparameter enthalten.
 > Für die vorliegenden Daten reichen die mit dem Modell vereinbaren
 > Parameterwerte von der Unter- bis zur Obergrenze.
 
-Nicht korrekt ist: „Mit $95\,\%$ Wahrscheinlichkeit liegt dieser bereits feste
+Nicht korrekt ist: „Mit $95\thinspace\char37$ Wahrscheinlichkeit liegt dieser bereits feste
 Parameter in genau diesem berechneten Intervall.“
 
 ### 3.5 $t$-Konfidenzintervall für einen Mittelwert
 
 $$
 KI_\mu
-=\bar x\pm t_{1-\alpha/2;\,n-1}\frac{s}{\sqrt n}
+=\bar x\pm t_{1-\alpha/2;\thinspace{}n-1}\frac{s}{\sqrt n}
 $$
 
 - **Größen:** $\bar x$ = Stichprobenmittelwert; $s$ =
   Stichprobenstandardabweichung mit $n-1$;
-  $t_{1-\alpha/2;\,n-1}$ = in der Aufgabe angegebener kritischer Wert.
+  $t_{1-\alpha/2;\thinspace{}n-1}$ = in der Aufgabe angegebener kritischer Wert.
 - **Voraussetzungen:** metrische Daten, unabhängige Beobachtungen; bei kleinem
   $n$ eine mit der Normalverteilung verträgliche Form ohne dominierende Ausreißer.
 - **Einheit:** dieselbe Einheit wie $x$.
-- **Warnung:** Das Intervall betrifft den Populationsmittelwert, nicht $95\,\%$ der
+- **Warnung:** Das Intervall betrifft den Populationsmittelwert, nicht $95\thinspace\char37$ der
   Einzelwerte. Repräsentativität folgt nicht aus einer schmalen Intervallbreite.
 
 ### 3.6 Gepaarter $t$-Test
