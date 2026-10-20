@@ -29,6 +29,18 @@ import { buildSessionRetentionTimeline } from './sessionLifecycle';
 export const HOST_CREDENTIAL_EXCHANGE_MS = 15 * 60 * 1000;
 export const HOST_ADMIN_HANDOFF_MS = 24 * 60 * 60 * 1000;
 
+function computeBoundedExpiry(
+  now: Date,
+  durationMs: number,
+  postProcessingEndsAt: Date | null,
+): Date {
+  const unboundedMs = now.getTime() + durationMs;
+  if (postProcessingEndsAt) {
+    return new Date(Math.min(unboundedMs, postProcessingEndsAt.getTime()));
+  }
+  return new Date(unboundedMs);
+}
+
 type InitialHostCredentialMaterial = {
   browserCapability: string;
   recoveryCard: HostRecoveryCardDTO;
@@ -323,7 +335,11 @@ async function prepareExchange(params: {
     }
     const browserCapability = createOpaqueCapability();
     const recoveryCode = createOpaqueCapability();
-    const pendingExpiresAt = new Date(now.getTime() + HOST_CREDENTIAL_EXCHANGE_MS);
+    const pendingExpiresAt = computeBoundedExpiry(
+      now,
+      HOST_CREDENTIAL_EXCHANGE_MS,
+      retention.postProcessingEndsAt,
+    );
     const target = await tx.hostCredential.create({
       data: {
         sessionId: session.id,
@@ -634,7 +650,11 @@ export async function resetSessionHostAccess(params: {
         hostSupportId: supportId,
       },
     });
-    const expiresAt = new Date(now.getTime() + HOST_ADMIN_HANDOFF_MS);
+    const expiresAt = computeBoundedExpiry(
+      now,
+      HOST_ADMIN_HANDOFF_MS,
+      retention.postProcessingEndsAt,
+    );
     const output: AdminResetSessionHostAccessOutput = {
       sessionId: session.id,
       code: session.code,
