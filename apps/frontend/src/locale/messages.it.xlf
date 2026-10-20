@@ -6857,8 +6857,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="hostRecovery.handoffValidity" datatype="html">
-        <source> Der Code vom Support ist ab seiner Ausstellung 15 Minuten gültig. Ist er abgelaufen, bitte den Support um einen neuen Code.</source>
-        <target>Il codice fornito dall’assistenza è valido per 15 minuti da quando viene generato. Se è scaduto, chiedi un nuovo codice all’assistenza.</target>
+        <source> Der Code vom Support ist ab seiner Ausstellung 24 Stunden gültig. Ist er abgelaufen, bitte den Support um einen neuen Code.</source>
+        <target>Il codice fornito dall’assistenza è valido per 24 ore da quando viene generato. Se è scaduto, chiedi un nuovo codice all’assistenza.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/features/admin/admin.component.html</context>
           <context context-type="linenumber">544,548</context>

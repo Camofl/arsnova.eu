@@ -271,8 +271,8 @@ const statements = [
   `ALTER TABLE "Session" ALTER COLUMN "expiresAt" SET NOT NULL`,
   `ALTER TABLE "Session" ALTER COLUMN "expiresAt" SET DEFAULT (CURRENT_TIMESTAMP + INTERVAL '24 hours')`,
 
-  // Host-Admin-Übergabe: Operations-ID und verschlüsseltes Envelope
-  // (Migration 20260918150000; lokal oft ohne prisma migrate deploy).
+  // Host-Admin-Übergabe: Operations-ID, verschlüsseltes Envelope und 24h-Frist
+  // (Migrationen 20260918150000 & 20261020184500; lokal oft ohne prisma migrate deploy).
   `DO $$ BEGIN
      IF to_regclass('public."HostAdminHandoff"') IS NULL THEN
        RETURN;
@@ -283,6 +283,10 @@ const statements = [
      ALTER TABLE "HostAdminHandoff" ALTER COLUMN "operationId" SET NOT NULL;
      CREATE UNIQUE INDEX IF NOT EXISTS "HostAdminHandoff_operationId_key"
        ON "HostAdminHandoff"("operationId");
+     ALTER TABLE "HostAdminHandoff" DROP CONSTRAINT IF EXISTS "HostAdminHandoff_bounded_expiry";
+     ALTER TABLE "HostAdminHandoff"
+       ADD CONSTRAINT "HostAdminHandoff_bounded_expiry"
+       CHECK ("expiresAt" > "createdAt" AND "expiresAt" <= "createdAt" + INTERVAL '24 hours');
    END $$`,
 
   // Story 12.1: Invite-Fingerprint und persistente Submit-/Follow-up-Idempotenz
