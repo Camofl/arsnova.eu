@@ -66,7 +66,7 @@ h_B=\frac{n_B}{n}=\frac{24}{48}=0{,}500
 $$
 
 $$
-h_B(\%)=100\cdot0{,}500=50{,}0\,\%
+h_B(\char37)=100\cdot0{,}500=50{,}0\thinspace\char37
 $$
 
 - passender Zähler und Nenner: 1 Punkt
@@ -86,7 +86,7 @@ Längenachse bei null beginnen. (1 Punkt)
 
 ### d) Stichprobenvarianz und Stichprobenstandardabweichung – 3 Punkte
 
-Der Mittelwert ist $\bar x=120\,\mathrm{s}$. Die Abweichungen und Quadrate sind:
+Der Mittelwert ist $\bar x=120\thinspace\mathrm{s}$. Die Abweichungen und Quadrate sind:
 
 | $x_i$ in $\mathrm{s}$ | $x_i-\bar x$ in $\mathrm{s}$ | $(x_i-\bar x)^2$ in $\mathrm{s}^2$ |
 | --------------------: | ---------------------------: | ---------------------------------: |
@@ -95,12 +95,12 @@ Der Mittelwert ist $\bar x=120\,\mathrm{s}$. Die Abweichungen und Quadrate sind:
 |                 $120$ |                          $0$ |                                $0$ |
 |                 $130$ |                         $10$ |                              $100$ |
 |                 $140$ |                         $20$ |                              $400$ |
-|             **Summe** |                      **$0$** |                       **$1\,000$** |
+|             **Summe** |                      **$0$** |               **$1\thinspace000$** |
 
 Für die Stichprobenschätzung wird durch $n-1=4$ geteilt:
 
 $$
-s^2=\frac{1\,000}{5-1}=250{,}00\ \mathrm{s}^2
+s^2=\frac{1\thinspace000}{5-1}=250{,}00\ \mathrm{s}^2
 $$
 
 $$
@@ -112,7 +112,7 @@ Die ARSnova-Anzeige beschreibt dagegen genau die fünf Werte mit Division durch
 $n$:
 
 $$
-s_{\mathrm{des}}^2=\frac{1\,000}{5}=200{,}00\ \mathrm{s}^2,
+s_{\mathrm{des}}^2=\frac{1\thinspace000}{5}=200{,}00\ \mathrm{s}^2,
 \qquad
 s_{\mathrm{des}}=\sqrt{200}\approx14{,}14\ \mathrm{s}.
 $$
@@ -165,7 +165,7 @@ Kontrolle über absolute Häufigkeiten:
 $(20+24-16)/100=28/100$.
 
 - Additionsregel einschließlich Überschneidung: 1 Punkt
-- Ergebnis $0{,}280=28{,}0\,\%$: 1 Punkt
+- Ergebnis $0{,}280=28{,}0\thinspace\char37$: 1 Punkt
 
 ### b) Zwei bedingte Wahrscheinlichkeiten – 3 Punkte
 
@@ -207,7 +207,7 @@ P(X=2)
 $$
 
 - richtige Binomialformel und Einsetzung: 1 Punkt
-- Ergebnis $0{,}441=44{,}1\,\%$: 1 Punkt
+- Ergebnis $0{,}441=44{,}1\thinspace\char37$: 1 Punkt
 
 ### d) Bedingungen des Binomialmodells – 2 Punkte
 
@@ -254,13 +254,13 @@ nicht durch ein Wald-Intervall ersetzt.
 Musterformulierung:
 
 > Auf Grundlage der 52 Antworten reicht das ausdrücklich mit dem
-> Wilson-Verfahren bestimmte $95\,\%$-Konfidenzintervall für den modellierten
+> Wilson-Verfahren bestimmte $95\thinspace\char37$-Konfidenzintervall für den modellierten
 > zugrunde liegenden Anteil korrekter Antworten von $0{,}577$ bis $0{,}817$, also von
-> $57{,}7\,\%$ bis $81{,}7\,\%$.
+> $57{,}7\thinspace\char37$ bis $81{,}7\thinspace\char37$.
 
 Ergänzend korrekt:
 
-> Bei sehr vielen gleichartigen Stichproben würden ungefähr $95\,\%$ der nach
+> Bei sehr vielen gleichartigen Stichproben würden ungefähr $95\thinspace\char37$ der nach
 > diesem Verfahren gebildeten Intervalle den festen Populationsanteil
 > enthalten.
 
@@ -273,7 +273,7 @@ Ergänzend korrekt:
 Je ein Punkt für zwei fachlich getrennte Einwände:
 
 1. Das Intervall beschreibt plausible Werte **eines Anteilsparameters**. Es
-   sagt nicht, dass $95\,\%$ einzelner Studierender zwischen zwei Prozentwerten
+   sagt nicht, dass $95\thinspace\char37$ einzelner Studierender zwischen zwei Prozentwerten
    liegen.
 2. Die 52 freiwillig bzw. gelegenheitsbedingt Antwortenden sind nicht
    automatisch repräsentativ für alle BWL-Studierenden. Das Wilson-Verfahren
@@ -317,7 +317,7 @@ Musterinterpretation:
 
 > Unter den Modellvoraussetzungen reichen die mit diesen Lehrdaten
 > vereinbaren Werte für die mittlere Servicezeit der betrachteten Population
-> bei $95\,\%$-Konfidenzniveau von $110{,}47$ bis $129{,}53$ Sekunden.
+> bei $95\thinspace\char37$-Konfidenzniveau von $110{,}47$ bis $129{,}53$ Sekunden.
 
 - Standardfehler bzw. Fehlerspanne korrekt: 1 Punkt
 - beide Intervallgrenzen mit Einheit korrekt: 1 Punkt
@@ -387,7 +387,7 @@ $$
 \lvert t\rvert=2{,}530>t_{0{,}975;9}=2{,}262.
 $$
 
-Damit wird $H_0$ auf dem $5\,\%$-Niveau verworfen. (1 Punkt)
+Damit wird $H_0$ auf dem $5\thinspace\char37$-Niveau verworfen. (1 Punkt)
 
 Musterinterpretation:
 
@@ -438,7 +438,7 @@ Die Steigung $b_1=0{,}180$ bedeutet:
 
 (1 Punkt)
 
-Der Achsenabschnitt $b_0=40{,}000\,\mathrm{ms}$ ist die rechnerische Vorhersage bei
+Der Achsenabschnitt $b_0=40{,}000\thinspace\mathrm{ms}$ ist die rechnerische Vorhersage bei
 $x=0$. Der beobachtete Bereich beginnt aber bei $x=100$; daher muss
 $b_0$ keine beobachtete oder sachlich sinnvolle Betriebssituation
 beschreiben. (1 Punkt)
@@ -467,11 +467,11 @@ e=y-\hat y
 =+6{,}00\ \mathrm{ms}.
 $$
 
-Das positive Residuum bedeutet, dass die beobachtete Medianlatenz $6{,}00\,\mathrm{ms}$
+Das positive Residuum bedeutet, dass die beobachtete Medianlatenz $6{,}00\thinspace\mathrm{ms}$
 **über** der Modellvorhersage liegt.
 
-- richtige Gerade und Vorhersage $94{,}00\,\mathrm{ms}$: 1 Punkt
-- Residuum $+6{,}00\,\mathrm{ms}$ mit richtiger Reihenfolge: 1 Punkt
+- richtige Gerade und Vorhersage $94{,}00\thinspace\mathrm{ms}$: 1 Punkt
+- Residuum $+6{,}00\thinspace\mathrm{ms}$ mit richtiger Reihenfolge: 1 Punkt
 - Vorzeichen korrekt interpretiert: 1 Punkt
 
 ### d) Einwände gegen die Produktionsprognose – 2 Punkte
@@ -603,8 +603,8 @@ zudem ist nur eine Teststichprobe gezeigt. (**1 Punkt MZ7-Datenkritik**)
 
 Eine mögliche Zwei-Satz-Lösung:
 
-> Auf den 100 synthetischen Testfällen erreicht das Modell $87{,}0\,\%$ Accuracy und
-> $90{,}0\,\%$ Recall für technische Fälle; bei hohen Kosten übersehener Technikfälle
+> Auf den 100 synthetischen Testfällen erreicht das Modell $87{,}0\thinspace\char37$ Accuracy und
+> $90{,}0\thinspace\char37$ Recall für technische Fälle; bei hohen Kosten übersehener Technikfälle
 > sollte deshalb Recall vorrangig überwacht und die Schwelle gegen den
 > Prüfaufwand abgewogen werden. Die kleine synthetische Testauswertung belegt
 > keine Produktionsqualität und muss vor einem realen Einsatz mit

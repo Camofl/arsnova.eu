@@ -12,12 +12,12 @@ In der Klausur gelten die Rundungsregeln der [Formelsammlung](./P0-03_Formelsamm
 Dieselbe Anzahl ist je nach Nenner ein anderer Anteil. In einem Kursbeispiel stimmen $28$ von $40$ Antwortenden zu, und $50$ Personen sind anwesend:
 
 $$
-\frac{28}{40}=0{,}70=70{,}0\,\%,
+\frac{28}{40}=0{,}70=70{,}0\thinspace\char37,
 \qquad
-\frac{28}{50}=0{,}56=56{,}0\,\%.
+\frac{28}{50}=0{,}56=56{,}0\thinspace\char37.
 $$
 
-Beide Brüche verwenden den Zähler $28$. Der erste Nenner ist die Gruppe der Antwortenden, der zweite die Gruppe der Anwesenden. $70{,}0\,\%$ und $56{,}0\,\%$ beschreiben deshalb zwei verschiedene Bezugsgruppen.
+Beide Brüche verwenden den Zähler $28$. Der erste Nenner ist die Gruppe der Antwortenden, der zweite die Gruppe der Anwesenden. $70{,}0\thinspace\char37$ und $56{,}0\thinspace\char37$ beschreiben deshalb zwei verschiedene Bezugsgruppen.
 
 Dieselbe Unterscheidung gilt bei einer bedingten Wahrscheinlichkeit. In der Transferaufgabe zu Modulziel 3 sieht die Vierfeldertafel so aus:
 
@@ -29,16 +29,16 @@ Dieselbe Unterscheidung gilt bei einer bedingten Wahrscheinlichkeit. In der Tran
 Die Spalte »Hinweis« summiert sich zu $16+8=24$, die Zeile »Qualitätsproblem« zu $20$. Damit gelten
 
 $$
-\frac{16}{24}=0{,}666\ldots\approx 0{,}667=66{,}7\,\%,
+\frac{16}{24}=0{,}666\ldots\approx 0{,}667=66{,}7\thinspace\char37,
 \qquad
-\frac{16}{20}=0{,}800=80{,}0\,\%.
+\frac{16}{20}=0{,}800=80{,}0\thinspace\char37.
 $$
 
 Der erste Bruch ist der Anteil der tatsächlichen Ereignisse unter den markierten Fällen. Der zweite ist der Anteil der markierten Fälle unter den tatsächlichen Ereignissen. Dafür sind Zelle, Zeilensumme und Spaltensumme abzulesen. Welche der beiden Bedingungen die Frage verlangt, übt der Kurs.
 
 ## 2. Klammern, Quadrat und Quadratwurzel
 
-Fünf Bearbeitungszeiten lauten $100$, $110$, $120$, $130$ und $140$ Sekunden. Der Mittelwert ist $120\,\mathrm{s}$. Für die Stichprobenstandardabweichung werden zuerst die Abweichungen vom Mittelwert gebildet, dann quadriert und addiert:
+Fünf Bearbeitungszeiten lauten $100$, $110$, $120$, $130$ und $140$ Sekunden. Der Mittelwert ist $120\thinspace\mathrm{s}$. Für die Stichprobenstandardabweichung werden zuerst die Abweichungen vom Mittelwert gebildet, dann quadriert und addiert:
 
 $$
 \begin{aligned}
@@ -50,13 +50,13 @@ $$
 \end{aligned}
 $$
 
-Die Summe der Quadrate ist $1\,000$. Geteilt wird durch $n-1=4$. Die Wurzel bezieht sich auf diesen ganzen Bruch:
+Die Summe der Quadrate ist $1\thinspace000$. Geteilt wird durch $n-1=4$. Die Wurzel bezieht sich auf diesen ganzen Bruch:
 
 $$
-s=\sqrt{\frac{1\,000}{4}}=\sqrt{250}=15{,}811\ldots\approx 15{,}81\,\mathrm{s}.
+s=\sqrt{\frac{1\thinspace000}{4}}=\sqrt{250}=15{,}811\ldots\approx 15{,}81\thinspace\mathrm{s}.
 $$
 
-Die Quadratsumme $1\,000$ hat die Einheit $\mathrm{s}^2$. Erst die Wurzel bringt das Ergebnis auf Sekunden zurück. Ob durch $n$ oder durch $n-1$ geteilt wird, entscheidet der Kurs je nach Frage. Beide Divisionen setzen dieselbe Quadratsumme voraus.
+Die Quadratsumme $1\thinspace000$ hat die Einheit $\mathrm{s}^2$. Erst die Wurzel bringt das Ergebnis auf Sekunden zurück. Ob durch $n$ oder durch $n-1$ geteilt wird, entscheidet der Kurs je nach Frage. Beide Divisionen setzen dieselbe Quadratsumme voraus.
 
 Der Standardfehler eines Anteils wird von innen nach außen gerechnet. In der Probeklausur erfüllen $37$ von $52$ Fällen ein Kriterium:
 
@@ -122,7 +122,7 @@ $$
 Der Binomialkoeffizient wird über Fakultäten berechnet. Dabei gilt $0!=1$, und jede Fakultät einer positiven ganzen Zahl ist das Produkt der Zahlen von $1$ bis zu dieser Zahl:
 
 $$
-\binom{3}{2}=\frac{3!}{2!\,1!}=\frac{6}{2\cdot 1}=3.
+\binom{3}{2}=\frac{3!}{2!\thinspace1!}=\frac{6}{2\cdot 1}=3.
 $$
 
 Danach kommen die Potenzen und zum Schluss das Produkt:
@@ -132,13 +132,13 @@ $$
 \qquad
 (0{,}30)^1=0{,}30,
 \qquad
-3\cdot 0{,}49\cdot 0{,}30=0{,}441=44{,}1\,\%.
+3\cdot 0{,}49\cdot 0{,}30=0{,}441=44{,}1\thinspace\char37.
 $$
 
 Dieselbe Fakultätsregel gilt für den Fall ohne Erfolg. Wegen $0!=1$ und $(0{,}70)^0=1$ ist
 
 $$
-\binom{3}{0}=\frac{3!}{0!\,3!}=1,
+\binom{3}{0}=\frac{3!}{0!\thinspace3!}=1,
 \qquad
 P(X=0)=1\cdot 1\cdot(0{,}30)^3=0{,}027.
 $$
@@ -150,7 +150,7 @@ Das Summenzeichen führt der Kurs als Anweisung ein: »Führe die Rechnung für 
 $$
 \sum_{i=1}^{5}(x_i-120)^2
 =400+100+0+100+400
-=1\,000.
+=1\thinspace000.
 $$
 
 Der Index $i$ nummeriert die Beobachtungen. $x_1$ ist der erste Wert, $x_5$ der letzte. Sobald der Kurs einen griechischen Parameter definiert hat, wird er wie eine gegebene Zahl eingesetzt. Für eine Referenzverteilung mit Mittelwert $\mu=120$ und Standardabweichung $\sigma=16$ gehört zur Beobachtung $x=152$ der standardisierte Wert
@@ -159,7 +159,7 @@ $$
 z=\frac{x-\mu}{\sigma}=\frac{152-120}{16}=\frac{32}{16}=2.
 $$
 
-Zuerst wird subtrahiert, danach dividiert. Die Bedeutung von $\mu$, $\sigma$ und $z$ erklärt der Kurs. Die kritischen Vergleichswerte, etwa $1{,}960$ für ein zweiseitiges $95\,\%$-Niveau, werden vorgegeben und sind nicht aus einer Tabelle herzuleiten.
+Zuerst wird subtrahiert, danach dividiert. Die Bedeutung von $\mu$, $\sigma$ und $z$ erklärt der Kurs. Die kritischen Vergleichswerte, etwa $1{,}960$ für ein zweiseitiges $95\thinspace\char37$-Niveau, werden vorgegeben und sind nicht aus einer Tabelle herzuleiten.
 
 ## 6. Was der Kurs selbst einführt
 

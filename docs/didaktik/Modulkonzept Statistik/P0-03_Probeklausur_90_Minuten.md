@@ -94,9 +94,9 @@ $$
 
 Die ARSnova-Zusammenfassung zeigt:
 
-| $n$ |             Mittelwert | deskriptive Standardabweichung, Division durch $n$ |
-| --: | ---------------------: | -------------------------------------------------: |
-| $5$ | $120{,}00\,\mathrm{s}$ |                              $14{,}14\,\mathrm{s}$ |
+| $n$ |                     Mittelwert | deskriptive Standardabweichung, Division durch $n$ |
+| --: | -----------------------------: | -------------------------------------------------: |
+| $5$ | $120{,}00\thinspace\mathrm{s}$ |                      $14{,}14\thinspace\mathrm{s}$ |
 
 ### Teilaufgaben
 
@@ -189,7 +189,7 @@ Für das konstruierte Aufgabenaggregat gilt: Bei einer Konzeptfrage antworteten
 37 von 52 Personen korrekt. Für den zugrunde liegenden Anteil wurde aus diesen
 Daten folgendes Leseintervall bereitgestellt:
 
-> **$95\,\%$-Wilson-Konfidenzintervall:** $[0{,}577;\ 0{,}817]$
+> **$95\thinspace\char37$-Wilson-Konfidenzintervall:** $[0{,}577;\ 0{,}817]$
 
 ### Auszug B: JASP Descriptives (LEHRDATEN)
 
@@ -201,10 +201,10 @@ Die Variable `service_time_s` enthält unabhängige Servicezeiten in Sekunden.
 | ---------------- | --------: | ----------: | -----------------: |
 | `service_time_s` |      $12$ | $120{,}000$ |         $15{,}000$ |
 
-Für das $95\,\%$-$t$-Konfidenzintervall ist gegeben:
+Für das $95\thinspace\char37$-$t$-Konfidenzintervall ist gegeben:
 
 $$
-t_{0{,}975;\,11}=2{,}201
+t_{0{,}975;\thinspace11}=2{,}201
 $$
 
 ### Teilaufgaben
@@ -224,12 +224,12 @@ Kontext.
 
 Widerlegen Sie mit zwei fachlichen Gründen die Aussage:
 
-> „Das Intervall zeigt, dass $95\,\%$ aller BWL-Studierenden zwischen $57{,}7\,\%$ und
-> $81{,}7\,\%$ der Fragen richtig beantworten.“
+> „Das Intervall zeigt, dass $95\thinspace\char37$ aller BWL-Studierenden zwischen $57{,}7\thinspace\char37$ und
+> $81{,}7\thinspace\char37$ der Fragen richtig beantworten.“
 
 #### d) Positive Anwendung – 3 Punkte · 4 Minuten
 
-Berechnen Sie aus Auszug B das $95\,\%$-$t$-Konfidenzintervall für die mittlere
+Berechnen Sie aus Auszug B das $95\thinspace\char37$-$t$-Konfidenzintervall für die mittlere
 Servicezeit. Interpretieren Sie es in einem Satz.
 
 ---
@@ -254,12 +254,12 @@ Positive Differenzen bedeuten damit eine Verbesserung.
 
 ### JASP-Auszug: Paired Samples T-Test (LEHRDATEN)
 
-| Paar                  |  $n$ | Mean difference | SD difference | SE difference |       $t$ | $df$ | $p$, zweiseitig | $95\,\%$ CI mean difference |
-| --------------------- | ---: | --------------: | ------------: | ------------: | --------: | ---: | --------------: | --------------------------: |
-| Fehler R1 – Fehler R2 | $10$ |       $4{,}000$ |     $5{,}000$ |     $1{,}581$ | $2{,}530$ |  $9$ |       $0{,}032$ |       $[0{,}423;\ 7{,}577]$ |
+| Paar                  |  $n$ | Mean difference | SD difference | SE difference |       $t$ | $df$ | $p$, zweiseitig | $95\thinspace\char37$ CI mean difference |
+| --------------------- | ---: | --------------: | ------------: | ------------: | --------: | ---: | --------------: | ---------------------------------------: |
+| Fehler R1 – Fehler R2 | $10$ |       $4{,}000$ |     $5{,}000$ |     $1{,}581$ | $2{,}530$ |  $9$ |       $0{,}032$ |                    $[0{,}423;\ 7{,}577]$ |
 
 Es gelten $\alpha=0{,}05$ und
-$t_{0{,}975;\,9}=2{,}262$.
+$t_{0{,}975;\thinspace9}=2{,}262$.
 
 ### Teilaufgaben
 
@@ -321,7 +321,7 @@ beobachtete Bereich von $x$ reicht von 100 bis 500.
 | Intercept $b_0$               | $40{,}000$ |
 | gleichzeitige Nutzungen $b_1$ |  $0{,}180$ |
 
-Für einen der zwölf Läufe gilt $x=300$ und $y=100\,\mathrm{ms}$.
+Für einen der zwölf Läufe gilt $x=300$ und $y=100\thinspace\mathrm{ms}$.
 
 ### Teilaufgaben
 
@@ -376,7 +376,7 @@ Ein binäres Modell ordnet synthetische neue Testfälle der Zielklasse
 
 Der Train/Test-Auszug ist ein eigener konstruierter Lehrfall. Seine
 Test-Accuracy darf nicht aus der darüberstehenden 100-Fälle-Matrix hergeleitet
-oder mit dem W09-Beispiel $98\,\%/71\,\%$ gleichgesetzt werden.
+oder mit dem W09-Beispiel $98\thinspace\char37/71\thinspace\char37$ gleichgesetzt werden.
 
 ### Teilaufgaben
 

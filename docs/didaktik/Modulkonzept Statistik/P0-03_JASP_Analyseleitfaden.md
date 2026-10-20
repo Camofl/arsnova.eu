@@ -54,9 +54,9 @@ Datei: `P0-03_Lehrdaten_S1_Servicezeiten.csv`
 4. Unter `Plots` `Distribution plots`, `Boxplots`, `Q-Q plots` und `Dot plots` aktivieren.
 5. Achse und Befund mit der Einheit Sekunden beschriften.
 
-Importkontrolle: $n=20$, Mittelwert $120{,}000\,\mathrm{s}$, Median $120{,}000\,\mathrm{s}$, Stichprobenstandardabweichung $31{,}486\,\mathrm{s}$, Minimum $60\,\mathrm{s}$, Maximum $180\,\mathrm{s}$.
+Importkontrolle: $n=20$, Mittelwert $120{,}000\thinspace\mathrm{s}$, Median $120{,}000\thinspace\mathrm{s}$, Stichprobenstandardabweichung $31{,}486\thinspace\mathrm{s}$, Minimum $60\thinspace\mathrm{s}$, Maximum $180\thinspace\mathrm{s}$.
 
-Die JASP-Stichprobenstandardabweichung verwendet $n-1$. Falls ein arsnova.eu-Aggregat mit Division durch $n$ verglichen wird, muss die andere Konvention ausdrücklich benannt werden; für diese $20$ Werte beträgt die deskriptive Standardabweichung mit Division durch $n$ $30{,}689\,\mathrm{s}$.
+Die JASP-Stichprobenstandardabweichung verwendet $n-1$. Falls ein arsnova.eu-Aggregat mit Division durch $n$ verglichen wird, muss die andere Konvention ausdrücklich benannt werden; für diese $20$ Werte beträgt die deskriptive Standardabweichung mit Division durch $n$ $30{,}689\thinspace\mathrm{s}$.
 
 ### 4.2 S6-Modellläufe nach Lehrmodell
 
@@ -90,9 +90,9 @@ Datei: `P0-03_Lehrdaten_S2_Confidence.csv`
 
 Sollhäufigkeiten:
 
-- niedrig: 6 richtig, 16 falsch, insgesamt 22; korrekt $=27{,}273\,\%$;
-- mittel: 7 richtig, 5 falsch, insgesamt 12; korrekt $=58{,}333\,\%$;
-- hoch: 21 richtig, 5 falsch, insgesamt 26; korrekt $=80{,}769\,\%$.
+- niedrig: 6 richtig, 16 falsch, insgesamt 22; korrekt $=27{,}273\thinspace\char37$;
+- mittel: 7 richtig, 5 falsch, insgesamt 12; korrekt $=58{,}333\thinspace\char37$;
+- hoch: 21 richtig, 5 falsch, insgesamt 26; korrekt $=80{,}769\thinspace\char37$.
 
 Für eine 2 × 5-Tafel wird `confidence` statt `confidence_gruppe` in `Columns` gelegt. Confidence bleibt ordinal; der Abstand von 1 zu 2 wird nicht als ebenso großer psychologischer Abstand wie der von 4 zu 5 interpretiert.
 
@@ -140,11 +140,11 @@ Positive Werte bedeuten geringeren absoluten Fehler in Runde 2.
 1. `T-Tests > Paired Samples T-Test` öffnen.
 2. `abs_fehler_r1_s` als erste und `abs_fehler_r2_s` als zweite Variable zu einem Paar hinzufügen.
 3. Den klassischen Student-t-Test und die zweiseitige Alternative aktivieren.
-4. `Descriptives`, Mittelwertdifferenz, $95\,\%$-Konfidenzintervall und Effektgröße aktivieren.
+4. `Descriptives`, Mittelwertdifferenz, $95\thinspace\char37$-Konfidenzintervall und Effektgröße aktivieren.
 5. Unter `Assumption Checks` den Normalitätstest und Q-Q-Plot der Differenzen aktivieren, sofern diese Optionen angezeigt werden.
 6. Im Output kontrollieren, dass die Differenz als R1 minus R2 berechnet wird. Bei umgekehrter Variablenreihenfolge ändern sich Vorzeichen von Mittelwertdifferenz und t-Wert.
 
-Sollwerte bei R1 minus R2: $n=30$, mittlerer Fehler R1 $16{,}200\,\mathrm{s}$, mittlerer Fehler R2 $8{,}667\,\mathrm{s}$, mittlere Differenz $7{,}533\,\mathrm{s}$, Stichproben-SD der Differenzen $6{,}410\,\mathrm{s}$ und $t(29)=6{,}437$, zweiseitig $p<0{,}001$.
+Sollwerte bei R1 minus R2: $n=30$, mittlerer Fehler R1 $16{,}200\thinspace\mathrm{s}$, mittlerer Fehler R2 $8{,}667\thinspace\mathrm{s}$, mittlere Differenz $7{,}533\thinspace\mathrm{s}$, Stichproben-SD der Differenzen $6{,}410\thinspace\mathrm{s}$ und $t(29)=6{,}437$, zweiseitig $p<0{,}001$.
 
 Der Befund darf nur als Unterschied in diesen konstruierten Paaren formuliert werden. Wiederholung, Übung, Ausfälle und Abhängigkeit durch eine gedachte Diskussion sind durch diese Tabelle nicht als Ursachen getrennt.
 
@@ -186,7 +186,7 @@ $$
 \widehat{Latenz}_{Ausreisser}=74{,}570588+0{,}229176\cdot Last,\qquad R^2=0{,}631987
 $$
 
-Die Steigung der Basis bedeutet innerhalb dieser Lehrtabelle eine geschätzte Zunahme von rund $0{,}183\,\mathrm{ms}$ Medianlatenz je zusätzlichem VU. Sie ist kein Produktivbenchmark und keine kausale Hardwarewirkung. Vorhersagen werden nur im konstruierten Bereich $50$–$425$ VU betrachtet.
+Die Steigung der Basis bedeutet innerhalb dieser Lehrtabelle eine geschätzte Zunahme von rund $0{,}183\thinspace\mathrm{ms}$ Medianlatenz je zusätzlichem VU. Sie ist kein Produktivbenchmark und keine kausale Hardwarewirkung. Vorhersagen werden nur im konstruierten Bereich $50$–$425$ VU betrachtet.
 
 ## 8. S3-Rankingfelder reproduzierbar prüfen
 
