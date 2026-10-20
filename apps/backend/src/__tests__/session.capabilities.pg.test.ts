@@ -246,17 +246,11 @@ describe.skipIf(!RUN_PG)('host and participant capabilities (PostgreSQL + Redis)
       source: { kind: 'RECOVERY', recoveryCode: material.recoveryCard.recoveryCode },
     });
     expect(replay).toEqual(prepared);
-    const restartedExchangeId = createOpaqueCapability();
-    const restarted = await prepareHostCredentialExchange({
-      supportId: material.recoveryCard.supportId,
-      recoveryExchangeId: restartedExchangeId,
-      source: { kind: 'RECOVERY', recoveryCode: material.recoveryCard.recoveryCode },
-    });
-    expect(restarted.browserCapability).not.toBe(prepared.browserCapability);
     await expect(
-      activateHostCredential({
-        supportId: prepared.recoveryCard.supportId,
-        browserCapability: prepared.browserCapability,
+      prepareHostCredentialExchange({
+        supportId: material.recoveryCard.supportId,
+        recoveryExchangeId: createOpaqueCapability(),
+        source: { kind: 'RECOVERY', recoveryCode: material.recoveryCard.recoveryCode },
       }),
     ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
     expect(
@@ -267,8 +261,8 @@ describe.skipIf(!RUN_PG)('host and participant capabilities (PostgreSQL + Redis)
     ).toBeDefined();
 
     const activated = await activateHostCredential({
-      supportId: restarted.recoveryCard.supportId,
-      browserCapability: restarted.browserCapability,
+      supportId: prepared.recoveryCard.supportId,
+      browserCapability: prepared.browserCapability,
     });
     expect(activated.generation).toBe(2);
     await expect(
@@ -280,12 +274,12 @@ describe.skipIf(!RUN_PG)('host and participant capabilities (PostgreSQL + Redis)
 
     const issued = await issueHostTokenFromBrowserCapability({
       code: session.code,
-      browserCapability: restarted.browserCapability,
+      browserCapability: prepared.browserCapability,
     });
     await getRedis().del(`host:access:v2:${hashHostSessionToken(issued.hostToken)}`);
     const recoveredAfterRedisLoss = await issueHostTokenFromBrowserCapability({
       code: session.code,
-      browserCapability: restarted.browserCapability,
+      browserCapability: prepared.browserCapability,
     });
     expect(recoveredAfterRedisLoss.hostToken).not.toBe(issued.hostToken);
 
@@ -296,8 +290,8 @@ describe.skipIf(!RUN_PG)('host and participant capabilities (PostgreSQL + Redis)
     });
     expect(stored).toContainEqual(
       expect.objectContaining({
-        browserCapabilityHash: hashCapability(restarted.browserCapability),
-        recoveryCodeHash: hashCapability(restarted.recoveryCard.recoveryCode),
+        browserCapabilityHash: hashCapability(prepared.browserCapability),
+        recoveryCodeHash: hashCapability(prepared.recoveryCard.recoveryCode),
         status: 'ACTIVE',
       }),
     );
