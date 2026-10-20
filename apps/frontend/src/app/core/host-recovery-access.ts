@@ -176,6 +176,9 @@ function readPendingActivationMarker(
 
 export function getPendingHostCredentialActivation(supportId: string): PreparedHostRecovery | null {
   const resume = getHostRecoveryResume(supportId);
+  if (resume?.phase === 'activated') {
+    return null;
+  }
   const marker = readPendingActivationMarker(supportId);
   const pendingExpiresAt = marker?.pendingExpiresAt ?? resume?.pendingExpiresAt;
   const code = marker?.code ?? resume?.code;
@@ -543,6 +546,8 @@ export function markHostRecoveryActivated(supportId: string, capability?: string
       return;
     }
     promoteHostRecoveryCandidate(resume.code, capability);
+    clearPendingHostRecoveryCard(resume.code);
+    clearStagedHostRecoveryCard(resume.code);
     persistHostRecoveryResume({ ...resume, phase: 'activated' });
   }
   clearPendingHostCredentialActivation(supportId);

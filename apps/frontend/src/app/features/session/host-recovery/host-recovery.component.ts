@@ -313,9 +313,10 @@ export class HostRecoveryComponent implements AfterViewChecked, OnDestroy {
     if (resume && (resume.phase === 'activation_unconfirmed' || resume.phase === 'activated')) {
       await this.resumeRecovery(supportId);
       const view = this.view();
-      if (view !== 'pendingExpired' && view !== 'handoffExpired') {
+      if (view !== 'credentials' && view !== 'pendingExpired' && view !== 'handoffExpired') {
         return;
       }
+      this.view.set('credentials');
     }
 
     const seq = this.beginBusy('checking');
@@ -518,6 +519,13 @@ export class HostRecoveryComponent implements AfterViewChecked, OnDestroy {
         this.requestFocus();
         return;
       }
+      if (resume?.phase === 'activated') {
+        clearPreparedHostRecoverySecrets(supportId);
+        clearHostRecoveryResume(supportId);
+        this.view.set('credentials');
+        this.requestFocus();
+        return;
+      }
       if (resume?.sourceKind === 'ADMIN_HANDOFF') {
         abandonRejectedHostRecovery(supportId);
         this.view.set('handoffExpired');
@@ -560,13 +568,10 @@ export class HostRecoveryComponent implements AfterViewChecked, OnDestroy {
     this.invalidateInFlightUi();
     const supportId = this.supportId().trim().toUpperCase();
     if (supportId) {
-      const resume = getHostRecoveryResume(supportId);
-      if (resume?.phase !== 'activated') {
-        abandonRejectedHostRecovery(supportId);
-        discardExpiredPreparedRecovery(supportId);
-        clearPreparedHostRecoverySecrets(supportId);
-        clearHostRecoveryResume(supportId);
-      }
+      abandonRejectedHostRecovery(supportId);
+      discardExpiredPreparedRecovery(supportId);
+      clearPreparedHostRecoverySecrets(supportId);
+      clearHostRecoveryResume(supportId);
     }
     this.resetCredentialForm({ keepSupportId: true });
     this.view.set('credentials');

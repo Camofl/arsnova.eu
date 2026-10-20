@@ -298,7 +298,19 @@ async function prepareExchange(params: {
           exchangeAad(session.id, exchangeIdHash),
         );
       }
-      return null;
+      if (
+        current.expiresAt > now &&
+        current.sourceType === 'RECOVERY' &&
+        sourceIdentity.type === 'RECOVERY' &&
+        current.sourceSecretHash === sourceIdentity.secretHash
+      ) {
+        await tx.hostCredentialExchange.delete({ where: { id: current.id } });
+        await tx.hostCredential.deleteMany({
+          where: { id: current.targetCredentialId, status: 'PENDING' },
+        });
+      } else {
+        return null;
+      }
     }
     const source = await resolveExchangeSource({
       tx,
