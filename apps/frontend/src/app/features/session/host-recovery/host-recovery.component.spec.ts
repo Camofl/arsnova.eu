@@ -788,4 +788,110 @@ describe('HostRecoveryComponent', () => {
     expect(component.sessionCode()).toBeNull();
     expect(component.busy()).toBe(false);
   });
+
+  it('bleibt nach abgelaufenem Resume und abgelehntem Prepare im Formular statt in einer pendingExpired-Schleife', async () => {
+    persistPreparedState({
+      unconfirmed: true,
+      pendingExpiresAt: new Date(Date.now() - 16 * 60_000).toISOString(),
+    });
+    sessionStorage.clear();
+    issueMock.mockRejectedValue(trpcError('UNAUTHORIZED'));
+    activateMock.mockRejectedValue(trpcError('UNAUTHORIZED'));
+    prepareMock.mockRejectedValue(trpcError('UNAUTHORIZED'));
+
+    const current = render();
+    const component = current.componentInstance;
+    component.restartRecovery();
+    current.detectChanges();
+
+    expect(component.view()).toBe('credentials');
+    expect(getHostRecoveryResume(SUPPORT_ID)).toBeNull();
+
+    component.supportId.set(SUPPORT_ID);
+    component.secret.set(OLD_RECOVERY_CODE);
+    await component.continueRecovery();
+    current.detectChanges();
+
+    expect(prepareMock).toHaveBeenCalledTimes(1);
+    expect(component.view()).toBe('credentials');
+    expect(component.bannerError()).toBe(
+      'Der Zugang konnte nicht wiederhergestellt werden. Prüfe deine Angaben oder wende dich an den Support.',
+    );
+  });
+
+  it('bereinigt einen nicht mehr gültigen activated-Resume-Eintrag beim erneuten Submit ohne pendingExpired-Schleife', async () => {
+    const current = render();
+    const component = current.componentInstance;
+    await prepareFlow(component);
+    component.newCardSaved.set(true);
+    await component.activateAccess();
+    expect(component.view()).toBe('success');
+    expect(getHostRecoveryResume(SUPPORT_ID)?.phase).toBe('activated');
+
+    current.destroy();
+    TestBed.resetTestingModule();
+    await TestBed.configureTestingModule({
+      imports: [HostRecoveryComponent],
+      providers: [provideRouter([])],
+    }).compileComponents();
+
+    sessionStorage.clear();
+    issueMock.mockRejectedValue(trpcError('UNAUTHORIZED'));
+    prepareMock.mockRejectedValueOnce(trpcError('UNAUTHORIZED'));
+
+    const reopened = render();
+    const reopenedComponent = reopened.componentInstance;
+    expect(reopenedComponent.view()).toBe('credentials');
+
+    reopenedComponent.supportId.set(SUPPORT_ID);
+    reopenedComponent.secret.set(OLD_RECOVERY_CODE);
+    await reopenedComponent.continueRecovery();
+    reopened.detectChanges();
+
+    expect(reopenedComponent.view()).toBe('credentials');
+    expect(reopenedComponent.bannerError()).toBe(
+      'Der Zugang konnte nicht wiederhergestellt werden. Prüfe deine Angaben oder wende dich an den Support.',
+    );
+    expect(getHostRecoveryResume(SUPPORT_ID)).toBeNull();
+
+    const thirdBrowserCapability = 'third-browser-capability-abcdefghijklmnopqrstuvwxyz';
+    const thirdRecoveryCode = 'third-recovery-capability-abcdefghijklmnopqrstuvwxyz';
+    prepareMock.mockResolvedValueOnce({
+      code: 'ABC123',
+      browserCapability: thirdBrowserCapability,
+      recoveryCard: { supportId: SUPPORT_ID, recoveryCode: thirdRecoveryCode },
+      pendingExpiresAt: new Date(Date.now() + 60_000).toISOString(),
+    });
+
+    reopenedComponent.secret.set(NEW_RECOVERY_CODE);
+    await reopenedComponent.continueRecovery();
+    reopened.detectChanges();
+
+    expect(reopenedComponent.view()).toBe('newCard');
+    expect(reopenedComponent.prepared()?.browserCapability).toBe(thirdBrowserCapability);
+  });
+
+  it('behält Kartenmaterial bei fehlgeschlagenem Token-Schreiben nach erfolgreicher Aktivierung bis zum erfolgreichen Resume', async () => {
+    const current = render();
+    const component = current.componentInstance;
+    await prepareFlow(component);
+    component.newCardSaved.set(true);
+
+    setHostTokenMock.mockImplementationOnce(() => {
+      throw new Error('QuotaExceededError');
+    });
+
+    await component.activateAccess();
+
+    expect(component.view()).toBe('activationUnconfirmed');
+    expect(getHostRecoveryResume(SUPPORT_ID)?.phase).toBe('activation_unconfirmed');
+    expect(getPendingHostCredentialActivation(SUPPORT_ID)?.recoveryCard.recoveryCode).toBe(
+      NEW_RECOVERY_CODE,
+    );
+
+    await component.resumeRecovery();
+    expect(component.view()).toBe('success');
+    expect(getHostRecoveryResume(SUPPORT_ID)?.phase).toBe('activated');
+    expect(getPendingHostCredentialActivation(SUPPORT_ID)).toBeNull();
+  });
 });

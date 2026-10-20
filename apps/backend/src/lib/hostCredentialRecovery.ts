@@ -287,8 +287,12 @@ async function prepareExchange(params: {
       where: { sessionId: session.id },
     });
     if (current) {
-      if (
-        current.expiresAt > now &&
+      if (current.expiresAt <= now) {
+        await tx.hostCredentialExchange.delete({ where: { id: current.id } });
+        await tx.hostCredential.deleteMany({
+          where: { id: current.targetCredentialId, status: 'PENDING' },
+        });
+      } else if (
         current.sourceType === sourceIdentity.type &&
         current.sourceSecretHash === sourceIdentity.secretHash &&
         current.exchangeIdHash === exchangeIdHash
@@ -297,8 +301,9 @@ async function prepareExchange(params: {
           current.encryptedEnvelope,
           exchangeAad(session.id, exchangeIdHash),
         );
+      } else {
+        return null;
       }
-      return null;
     }
     const source = await resolveExchangeSource({
       tx,

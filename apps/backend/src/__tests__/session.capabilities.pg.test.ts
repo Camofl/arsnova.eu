@@ -246,6 +246,13 @@ describe.skipIf(!RUN_PG)('host and participant capabilities (PostgreSQL + Redis)
       source: { kind: 'RECOVERY', recoveryCode: material.recoveryCard.recoveryCode },
     });
     expect(replay).toEqual(prepared);
+    await expect(
+      prepareHostCredentialExchange({
+        supportId: material.recoveryCard.supportId,
+        recoveryExchangeId: createOpaqueCapability(),
+        source: { kind: 'RECOVERY', recoveryCode: material.recoveryCard.recoveryCode },
+      }),
+    ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
     expect(
       await issueHostTokenFromBrowserCapability({
         code: session.code,
