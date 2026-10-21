@@ -29,11 +29,12 @@ describe('resolveSeoForPath', () => {
 
   it('erhält in static-root-index.html sprachneutrale Pfade wie /host-recovery und /join beim Locale-Redirect', () => {
     const html = readFileSync(resolve(process.cwd(), 'static-root-index.html'), 'utf8');
-    const scriptMatch = html.match(/<script>([\s\S]*?)<\/script>/);
-    expect(scriptMatch).not.toBeNull();
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    const scriptBody = doc.querySelector('script')?.textContent ?? '';
+    expect(scriptBody.length).toBeGreaterThan(0);
     const runRedirect = (pathname: string, search = '', hash = '', languages = ['de-DE', 'en']) => {
       let replacedUrl = '';
-      const fn = new Function('location', 'navigator', scriptMatch?.[1] ?? '') as (
+      const fn = new Function('location', 'navigator', scriptBody) as (
         loc: { pathname: string; search: string; hash: string; replace: (url: string) => void },
         nav: { languages: string[]; language: string },
       ) => void;
