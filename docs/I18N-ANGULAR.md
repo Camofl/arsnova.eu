@@ -298,8 +298,8 @@ Die Sprachwahl priorisiert bewusst den **Normalfall**: Die App folgt der Sprache
 4. **Lokale Präferenzspeicherung im Browser**
    Die Toolbar speichert die gewählte Sprache zusätzlich in `localStorage` (`home-language`). Der serverseitige Root-Redirect wertet diese Präferenz derzeit **nicht** aus; ein frischer Aufruf von `/` bleibt also browser- bzw. `Accept-Language`-basiert.
 
-5. **Static-Fallback (ohne Node-Backend)**  
-   Die `static-root-index.html` nutzt `navigator.languages` und fällt sonst auf `en` zurück.
+5. **Static-Fallback für sprachneutrale SPA-Routen**
+   Die `static-root-index.html` nutzt `navigator.languages` (Fallback `en`) und übernimmt sprachneutrale Pfade wie `/host-recovery` oder `/join` in die lokalisierte Ziel-URL (`/<locale>/host-recovery`, `/<locale>/join`).
 
 6. **Cache-Verhalten beim Root-Redirect**  
    Der Redirect setzt `Vary: Accept-Language` und `Cache-Control: private, no-cache`, damit Caches keine falsche Sprache global wiederverwenden.
