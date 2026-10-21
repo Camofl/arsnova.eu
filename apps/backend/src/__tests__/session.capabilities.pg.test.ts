@@ -592,7 +592,7 @@ describe.skipIf(!RUN_PG)('host and participant capabilities (PostgreSQL + Redis)
         operationId: expiredOperationId,
       },
     });
-    await cleanupExpiredHostCredentialMaterial(new Date(Date.now() + 16 * 60 * 1000));
+    await cleanupExpiredHostCredentialMaterial(new Date(Date.now() + 24 * 60 * 60 * 1000 + 60_000));
     const afterCleanup = await prisma.session.findUniqueOrThrow({
       where: { id: expiredSession.id },
       select: { hostCredentialVersion: true },
@@ -670,6 +670,45 @@ describe.skipIf(!RUN_PG)('host and participant capabilities (PostgreSQL + Redis)
     });
     expect(replacement.handoffCapability).not.toBe(first.handoffCapability);
     expect(replacement.revokedCredentialVersion).toBe(first.revokedCredentialVersion + 1);
+  });
+
+  it('begrenzt die Ablaufzeit des Admin-Übergabecodes auf das Ende der Nachbereitungsfrist', async () => {
+    const material = createInitialHostCredentialMaterial();
+    const endedAt = new Date(Date.now() - (14 * 24 - 1) * 60 * 60 * 1000);
+    const createdAt = new Date(endedAt.getTime() - 60 * 60 * 1000);
+    const expectedCutoff = new Date(endedAt.getTime() + 14 * 24 * 60 * 60 * 1000);
+    const session = await prisma.session.create({
+      data: {
+        id: randomUUID(),
+        code: sessionCode('C'),
+        type: 'Q_AND_A',
+        status: 'FINISHED',
+        createdAt,
+        endedAt,
+        expiresAt: endedAt,
+        qaEnabled: true,
+        qaOpen: false,
+        hostCredentialVersion: 1,
+        hostSupportId: material.recoveryCard.supportId,
+        hostCredentials: material.credentialData.hostCredentials,
+      },
+    });
+    sessionIds.push(session.id);
+
+    const reset = await resetSessionHostAccess({
+      adminIdentifier: 'admin:test',
+      input: {
+        supportId: material.recoveryCard.supportId,
+        operationId: randomUUID(),
+        evidenceCategory: 'PREEXISTING_VERIFIED_SUPPORT_CASE',
+        requesterIdentityVerificationReference: 'verified-contact-4712',
+        sessionAuthorizationEvidenceReference: 'support-case-before-loss-4712',
+        supportCaseReference: 'support-case-before-loss-4712',
+        reason: 'Reset kurz vor Ablauf der Nachbereitungsfrist.',
+      },
+    });
+
+    expect(new Date(reset.expiresAt).getTime()).toBe(expectedCutoff.getTime());
   });
 
   it('hält nach Activate-Commit dieselbe Generation und lehnt den alten Recovery-Code ab', async () => {

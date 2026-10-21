@@ -193,7 +193,7 @@ describe('HostRecoveryComponent', () => {
     current.detectChanges();
     expect(host.textContent).toContain('Code vom Support');
     expect(host.textContent).toContain(
-      'Der Code vom Support ist ab seiner Ausstellung 15 Minuten gültig',
+      'Der Code vom Support ist ab seiner Ausstellung 24 Stunden gültig',
     );
     expect(host.textContent).toContain('Ich habe gespeicherte Zugangsdaten');
     expect(component.secret()).toBe('');
