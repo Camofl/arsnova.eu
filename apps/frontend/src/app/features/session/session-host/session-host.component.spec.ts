@@ -1348,13 +1348,13 @@ describe('SessionHostComponent', { timeout: 60_000 }, () => {
   it('wählt Moderations-Icons passend zu Pin/Unpin und Archiv/Zurück', () => {
     const fixture = setup();
     const component = fixture.componentInstance;
-    expect(component.qaActionIcon('PIN')).toBe('push_pin');
-    expect(component.qaActionIcon('UNPIN')).toBe('undo');
+    expect(component.qaActionIcon('PIN')).toBe('keep');
+    expect(component.qaActionIcon('UNPIN')).toBe('keep_off');
     expect(component.qaActionIcon('ARCHIVE')).toBe('archive');
     expect(component.qaActionIcon('APPROVE', 'PENDING')).toBe('check');
-    expect(component.qaActionIcon('APPROVE', 'ARCHIVED')).toBe('outbox');
-    expect(component.qaActionIcon('DELETE')).toBe('delete_outline');
-    expect(component.qaActionIcon('DELETE', 'DELETED')).toBe('delete');
+    expect(component.qaActionIcon('APPROVE', 'ARCHIVED')).toBe('unarchive');
+    expect(component.qaActionIcon('DELETE')).toBe('delete');
+    expect(component.qaActionIcon('DELETE', 'DELETED')).toBe('delete_forever');
     fixture.destroy();
   });
 
@@ -4506,7 +4506,7 @@ describe('SessionHostComponent', { timeout: 60_000 }, () => {
       '[data-testid="qa-summary-total"]',
     ) as HTMLElement | null;
     expect(totalChip).not.toBeNull();
-    expect(totalChip?.querySelector('mat-icon')?.textContent?.trim()).toBe('chat_bubble_outline');
+    expect(totalChip?.querySelector('mat-icon')?.textContent?.trim()).toBe('chat_bubble');
     expect(totalChip?.getAttribute('aria-label')).toMatch(/Gesamt:\s*4/);
     expect(totalChip?.textContent).toMatch(/4/);
     const pendingChip = statusStrip?.querySelector(

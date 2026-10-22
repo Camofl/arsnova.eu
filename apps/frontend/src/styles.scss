@@ -20,18 +20,19 @@ html:not(.light):not(.dark) {
 }
 
 // ---------------------------------------------------------------------------
-// 0) Material Icons selbst gehostet (kein Google-Request, kein Tracking)
+// 0) Material Symbols (MD3) selbst gehostet (kein Google-Request, kein Tracking)
 // ---------------------------------------------------------------------------
 @font-face {
-  font-family: 'Material Icons';
+  font-family: 'Material Symbols Outlined';
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url('assets/fonts/material-icons.woff2') format('woff2');
+  src: url('assets/fonts/material-symbols-outlined.woff2') format('woff2');
 }
 
+.material-symbols-outlined,
 .material-icons {
-  font-family: 'Material Icons';
+  font-family: 'Material Symbols Outlined';
   font-weight: normal;
   font-style: normal;
   font-size: 24px;
@@ -45,7 +46,8 @@ html:not(.light):not(.dark) {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
-  font-feature-settings: 'liga';
+  font-feature-settings: 'liga', 'rlig', 'rclt';
+  font-variation-settings: 'FILL' 0;
 }
 
 // ---------------------------------------------------------------------------

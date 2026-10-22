@@ -592,12 +592,12 @@
                           <div class="session-projection-quiz__bar-track">
                             <div
                               class="session-projection-quiz__bar-fill session-projection-quiz__bar-fill--r2"
-                              [style.width.%]="r2?.votePercentage ?? 0"
+                              [style.width.%]="r2.votePercentage"
                             ></div>
                           </div>
                           <span
                             class="session-projection-quiz__round-bar-pct session-projection-quiz__round-bar-pct--r2"
-                            >{{ r2?.votePercentage ?? 0 }}&nbsp;%</span
+                            >{{ r2.votePercentage }}&nbsp;%</span
                           >
                         </div>
                       </div>
@@ -810,7 +810,7 @@
       data-testid="presenter-emoji-reactions"
     >
       <span class="session-projection-quiz__emoji-reactions-label">
-        <mat-icon aria-hidden="true">emoji_emotions</mat-icon>
+        <mat-icon aria-hidden="true">sentiment_satisfied</mat-icon>
         <span i18n="@@sessionHost.emojiReactionsTitle">Reaktionen der Teilnehmenden</span>
       </span>
       <span class="session-projection-quiz__emoji-reactions-list" role="list">

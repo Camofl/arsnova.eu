@@ -895,7 +895,7 @@ describe('HomeComponent', () => {
             '.home-card__icon-wrap .home-card__icon',
           ),
         ).map((icon) => icon.textContent?.trim()),
-      ).toEqual(['meeting_room', 'quiz', 'chat_bubble_outline', 'bolt']);
+      ).toEqual(['meeting_room', 'quiz', 'chat_bubble', 'bolt']);
       expect(fixture.nativeElement.querySelector('.home-card mat-card-subtitle')).toBeNull();
     });
 
@@ -1953,7 +1953,7 @@ describe('HomeComponent', () => {
         '[data-testid="home-host-session-remove"][data-session-code="ABC123"]',
       ) as HTMLButtonElement;
       expect(remove.getAttribute('aria-label')).toBe('Q&A-Session ABC123 löschen');
-      expect(remove.querySelector('mat-icon')?.textContent?.trim()).toBe('delete_outline');
+      expect(remove.querySelector('mat-icon')?.textContent?.trim()).toBe('delete');
 
       const item = fixture.componentInstance.hostSessionCtas()[0];
       expect(item?.code).toBe('ABC123');
@@ -4332,7 +4332,7 @@ describe('HomeComponent', () => {
         fixture.nativeElement
           .querySelector('.home-card--create .info-landing-link__lead-icon')
           ?.textContent?.trim(),
-      ).toBe('help_outline');
+      ).toBe('help');
       expect(header?.querySelector('.home-card__icon')?.textContent?.trim()).toBe('quiz');
       expect(fixture.nativeElement.querySelector('.home-card__tertiary-link')).toBeNull();
 

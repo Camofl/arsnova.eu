@@ -2,7 +2,7 @@
 
 # UI Styleguide (Angular Material 3)
 
-**Stand:** 2026-09-21 — abgeglichen mit Angular 21.2, `apps/frontend/src/styles.scss`, `apps/frontend/src/styles/playful-inner-chrome.scss`, den Shared-Styles unter `apps/frontend/src/app/shared/styles/`, [TOKENS.md](TOKENS.md), [PR-CHECKLIST-UI.md](PR-CHECKLIST-UI.md) und `apps/landing/src/styles/landing-theme.css`.
+**Stand:** 2026-10-22 — abgeglichen mit Angular 22.2, `apps/frontend/src/styles.scss`, `apps/frontend/src/styles/playful-inner-chrome.scss`, den Shared-Styles unter `apps/frontend/src/app/shared/styles/`, [TOKENS.md](TOKENS.md), [PR-CHECKLIST-UI.md](PR-CHECKLIST-UI.md) und `apps/landing/src/styles/landing-theme.css`.
 
 ## Ziel und Geltungsbereich
 
@@ -25,7 +25,7 @@ Ergänzend zur ADR `docs/architecture/decisions/0005-use-angular-material-design
 - `color-scheme` steuert Light/Dark-Verhalten.
 - Bei Komponenten gilt: Farben nur aus Tokens, keine ad-hoc Hex-Werte.
 - Standard-Hintergrund/Farbe für die App orientiert sich an `--app-bg-root`, `--mat-sys-surface` und `--mat-sys-on-surface`.
-- Material Icons sind selbst gehostet und nutzen `font-display: swap`; keine externen Font-Requests einführen.
+- Material Symbols (`material-symbols-outlined.woff2`) sind selbst gehostet und nutzen `font-display: swap`; keine externen Font-Requests einführen.
 
 ## Komponentenrichtlinien
 
@@ -96,11 +96,11 @@ Regeln:
 - **`.content-page-layer`:** Für Help, Legal und News-Archiv die shared Content-Page-Struktur aus `content-page-backdrop.scss` nutzen, wenn seitliche Rails/Klickflächen und ein zentriertes Lesepanel gebraucht werden. Overlay-Semantik: Focus Trap im Panel, Escape/Zurück/Backdrop schließen die Seite (Escape nicht bei offenem MatDialog/Lightbox); App-Toolbar und Footer sind auf diesen Routen `inert`. Nach dem Schließen zur Startseite: Fokus zurück auf den auslösenden Footer-Trigger (Hilfe bzw. Mehr); MOTD-Overlay einmal unterdrückt. Dialogtitel bleiben auch im Lade-/Fehlerzustand benannt.
 - **News-Archiv gelesen:** Pro Eintrag ein **Toggle** außerhalb des Expansion-Headers:
   **Als gelesen markieren** (`matButton="text"`, Primary) bzw. **Als ungelesen markieren**
-  (`undo`-Icon aus dem selbst gehosteten Icon-Subset, Text/Icon `--mat-sys-on-surface-variant`).
+  (`mark_as_unread`-Icon aus dem selbst gehosteten Icon-Subset, Text/Icon `--mat-sys-on-surface-variant`).
   Kein paralleler Status-Text neben der Aktion. Neue Icon-Namen vorab gegen
-  `assets/fonts/material-icons.woff2` prüfen (`mark_as_unread` fehlt dort).
+  `assets/fonts/material-symbols-outlined.woff2` (bzw. `apps/frontend/scripts/subset-material-symbols.py`) prüfen.
   Produktfeedback („arsnova.eu verbessern“) nutzt `insights`; MOTD behält
-  `campaign`, Session-Bewertung (4.8) behält `feedback`.
+  `campaign`, Session-Bewertung (4.8) nutzt `rate_review`.
 - **Empfehlung:** Einheitlich `<div class="l-page l-section">` als Root der Feature-Komponente (oder `class="<feature>-page l-page"` wie Admin, wenn zusätzliche Feature-Styles nötig sind). So bleibt Abstand zur Toolbar (via `.app-main__content > * > .l-page:first-child`) und Innenabstand konsistent.
 - **Startseite:** Bleibt Sonderfall mit eigenem Hero und nutzt `.l-page` ohne `.l-section`. Bis 1199 px stehen die Inhalte in **einer zentrierten Lesespalte mit maximal 40 rem**: Hero, Teilnahme, Rollenwechsel und danach die Aufgaben **Quiz**, **Q&A** und **Blitzlicht**. Ab 1200 px folgen Hero, Host-Einstieg und Host-Raster der **56-rem-Achse der Toolbar**; die drei Host-Karten stehen gleich breit und gleich hoch in einer Zeile. Die zentrierte Teilnahme-Karte behaelt mit maximal 36 rem ihre kompakte Eingabebreite.
 
@@ -507,7 +507,7 @@ Die App richtet sich auch an Trainer:innen, Workshop- und Event-Moderation sowie
 
 ## Performance (Lighthouse)
 
-- **Fonts:** Material Icons nutzen `font-display: swap`, damit Lighthouse keine unsichtbare Textphase meldet und die Icons nach dem Font-Load regulär ersetzen. Kein Preload im Index, um Ladepfade nicht zu stören.
+- **Fonts:** Material Symbols (`material-symbols-outlined.woff2`) nutzen `font-display: swap`, damit Lighthouse keine unsichtbare Textphase meldet und die Icons nach dem Font-Load regulär ersetzen. Kein Preload im statischen Basis-Index, um Ladepfade nicht zu stören (Prerender-Seiten erhalten den gehashten Preload-Link über `patch-prerender-font-preload.mjs`).
 - **Aktueller Mobile-Nachweis:** Der CI-nahe lokale Lauf vom 2026-07-10
   erreichte fuer `/de/` und `/en/` reproduzierbar nur **55 % Performance** und
   rund **11,1 s LCP**. Damit sind die verbindlichen Gates von 60 % und 5 s

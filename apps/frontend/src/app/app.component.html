@@ -18,7 +18,7 @@
     <output class="app-update-banner" aria-live="polite" role="status">
       <div class="app-update-banner__inner">
         <span class="app-update-banner__icon-wrap" aria-hidden="true">
-          <mat-icon class="app-update-banner__icon">system_update</mat-icon>
+          <mat-icon class="app-update-banner__icon">system_update_alt</mat-icon>
         </span>
         <div class="app-update-banner__copy">
           <strong class="app-update-banner__title" i18n="@@app.updateBanner.title"
@@ -85,7 +85,7 @@
   @if (installSnackbarVisible()) {
     <output class="app-install-snackbar" aria-live="polite">
       <span class="app-install-snackbar__icon-wrap">
-        <mat-icon class="app-install-snackbar__icon">get_app</mat-icon>
+        <mat-icon class="app-install-snackbar__icon">download</mat-icon>
       </span>
       <span class="app-install-snackbar__text" i18n>App installieren und schneller starten</span>
       <button
@@ -310,7 +310,7 @@
               [class.app-footer__status-dot--unknown]="footerStatusColor() === 'gray'"
               [style.color]="footerStatusDotCssColor()"
               aria-hidden="true"
-              >lens</mat-icon
+              >circle</mat-icon
             >
             <span i18n="@@app.footer.serverHelpLabel">Betrieb &amp; Nutzung</span>
           </button>

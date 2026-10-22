@@ -202,7 +202,7 @@ Kanonisch: [moderation-compass.md](../features/moderation-compass.md), [word-clo
 
 ## 2. Frontend-Architektur (Komponenten)
 
-Angular 21.2.x · Standalone Components · Signals · Angular Material 3 + SCSS-Patterns
+Angular 22.2.x · Standalone Components · Signals · Angular Material 3 + SCSS-Patterns
 
 ### 2.1 App-Shell und globale Bausteine
 

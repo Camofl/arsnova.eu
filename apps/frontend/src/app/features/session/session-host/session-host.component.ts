@@ -1621,7 +1621,7 @@ export class SessionHostComponent implements OnInit, OnDestroy {
       case 'stale':
         return 'refresh';
       default:
-        return 'auto_fix_high';
+        return 'wand_stars';
     }
   });
   readonly displayedWordCloudInfo = computed(() =>
@@ -10761,13 +10761,13 @@ export class SessionHostComponent implements OnInit, OnDestroy {
   qaStatusIcon(status: QaQuestionDTO['status']): string {
     switch (status) {
       case 'PINNED':
-        return 'push_pin';
+        return 'keep';
       case 'PENDING':
         return 'hourglass_top';
       case 'ARCHIVED':
-        return 'check_circle_outline';
+        return 'check_circle';
       case 'DELETED':
-        return 'delete_outline';
+        return 'delete';
       default:
         return 'circle';
     }
@@ -10960,17 +10960,15 @@ export class SessionHostComponent implements OnInit, OnDestroy {
   ): string {
     switch (action) {
       case 'APPROVE':
-        // `unarchive` fehlt im selbst gehosteten Icon-Subset → `outbox`.
-        return status === 'ARCHIVED' ? 'outbox' : 'check';
+        return status === 'ARCHIVED' ? 'unarchive' : 'check';
       case 'PIN':
-        return 'push_pin';
+        return 'keep';
       case 'UNPIN':
-        // `keep_off` fehlt im Subset; `undo` = Hervorhebung zurücknehmen.
-        return 'undo';
+        return 'keep_off';
       case 'ARCHIVE':
         return 'archive';
       case 'DELETE':
-        return status === 'DELETED' ? 'delete' : 'delete_outline';
+        return status === 'DELETED' ? 'delete_forever' : 'delete';
     }
   }
 

@@ -16,12 +16,12 @@ Willkommen im Entwickler-Team von **arsnova.eu**. Dieses Dokument hilft dir als 
 
 | Tool                    | Version                                                                           | Prüfbefehl               |
 | ----------------------- | --------------------------------------------------------------------------------- | ------------------------ |
-| Node.js                 | **24.18.0 LTS** empfohlen (`.nvmrc`; `nvm use` / `fnm use`), 22.22.1+ unterstützt | `node -v`                |
+| Node.js                 | **24.18.0 LTS** empfohlen (`.nvmrc`; `nvm use` / `fnm use`), 22.22.3+ unterstützt | `node -v`                |
 | npm                     | ≥ 10 (nach `npm ci` zur Lockfile-Passung)                                         | `npm -v`                 |
 | Docker & Docker Compose | aktuell                                                                           | `docker compose version` |
 | Git                     | aktuell                                                                           | `git -v`                 |
 
-**Node-Version:** Nimm für den Einstieg die per `.nvmrc` gepinnte **24.18.0 LTS**. Node **22.22.1+ LTS** bleibt als Kompatibilitätspfad unterstützt (Untergrenze durch `lint-staged`). EOL- und ungerade Majors sind nicht unterstützt; `.npmrc` setzt `engine-strict=true`, daher bricht `npm ci` mit einer nicht passenden Node-Version sofort mit `EBADENGINE` ab. Die vollständige Regel steht in der Root-[`package.json`](../package.json) (`engines`); die CI baut mit **Node 22 und 24** (GitHub Actions).
+**Node-Version:** Nimm für den Einstieg die per `.nvmrc` gepinnte **24.18.0 LTS**. Node **22.22.3+ LTS** bleibt als Kompatibilitätspfad unterstützt (Untergrenze durch Angular 22). EOL- und ungerade Majors sind nicht unterstützt; `.npmrc` setzt `engine-strict=true`, daher bricht `npm ci` mit einer nicht passenden Node-Version sofort mit `EBADENGINE` ab. Die vollständige Regel steht in der Root-[`package.json`](../package.json) (`engines`); die CI baut mit **Node 22 und 24** (GitHub Actions).
 
 ### Windows? Bitte direkt WSL2 nutzen
 
@@ -341,7 +341,7 @@ arsnova.eu/
 │   │           ├── health.ts # health.check, health.footerBundle, health.stats, health.ping
 │   │           ├── session.ts# session.create, getInfo, join, getExportData
 │   │           └── vote.ts   # vote.submit (mit Rate-Limit)
-│   └── frontend/             # Angular 21 Single-Page-App (Angular-Style: core/shared/features)
+│   └── frontend/             # Angular 22 Single-Page-App (Angular-Style: core/shared/features)
 │       └── src/app/
 │           ├── app.component.ts   # Root-Komponente
 │           ├── app.routes.ts     # Routing-Konfiguration
@@ -401,7 +401,7 @@ Das System ist nach dem **Local-First**-Prinzip entworfen:
 | Komponente                                                                                | Beschreibung                                                                                                                                                                        |
 | ----------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Express + tRPC-Server                                                                     | Backend auf Port 3000 mit `health.check`, `health.footerBundle`, `health.stats`, `health.ping` (Subscription)                                                                       |
-| Angular 21.2.x Frontend                                                                   | Standalone Components, Signals, Angular Material 3, tokenbasiertes Theming, Startseite mit Server-Status-Widget                                                                     |
+| Angular 22.2.x Frontend                                                                   | Standalone Components, Signals, Angular Material 3, tokenbasiertes Theming, Startseite mit Server-Status-Widget                                                                     |
 | tRPC-Client                                                                               | `httpBatchLink` (Queries/Mutations) + `wsLink` (Subscriptions)                                                                                                                      |
 | Redis-Anbindung                                                                           | `ioredis`-Client, Health-Check, Rate-Limiting, NAT-tauglicher Session-Code-Soft-Cap                                                                                                 |
 | tRPC WebSocket                                                                            | Separater WebSocket-Server (Port 3001) für Subscriptions                                                                                                                            |
@@ -518,7 +518,7 @@ graph TB
 
 > ✅ = im Projektstand 2026-09-10 umgesetzt
 
-### A. Frontend (Angular 21.2.x)
+### A. Frontend (Angular 22.2.x)
 
 Das Frontend nutzt modernste Angular-Features:
 
