@@ -605,6 +605,17 @@ type SharedQaParticipantCountCacheEntry = {
   promise: Promise<number>;
 };
 const sharedQaParticipantCountLoads = new Map<string, SharedQaParticipantCountCacheEntry>();
+type QaOwnQuestionQuotaSnapshot = {
+  participantQuestionCount: number;
+  ownQuestionCounts: { visible: number; pending: number; archived: number };
+};
+type SharedQaOwnQuestionQuotaCacheEntry = {
+  expiresAt: number;
+  promise: Promise<QaOwnQuestionQuotaSnapshot>;
+};
+const sharedQaOwnQuestionQuotaLoads = new Map<string, SharedQaOwnQuestionQuotaCacheEntry>();
+const QA_OWN_QUESTION_QUOTA_CACHE_TTL_MS = 10_000;
+const QA_OWN_QUESTION_QUOTA_CACHE_MAX_ENTRIES = 2_048;
 type QaSubscriptionSessionSnapshot = {
   id: string;
   status: string;
@@ -628,13 +639,14 @@ const sharedQaSubscriptionSessionLoads = new Map<string, SharedQaSubscriptionSes
 function pruneSharedMapByExpiry<T extends { expiresAt: number }>(
   map: Map<string, T>,
   nowMs: number,
+  maxEntries: number = QA_PAGE_CACHE_MAX_ENTRIES,
 ): void {
   for (const [key, entry] of map) {
     if (entry.expiresAt <= nowMs) {
       map.delete(key);
     }
   }
-  while (map.size >= QA_PAGE_CACHE_MAX_ENTRIES) {
+  while (map.size >= maxEntries) {
     const oldestKey = map.keys().next().value as string | undefined;
     if (!oldestKey) {
       break;
@@ -650,6 +662,11 @@ function pruneSharedQaRankingCache(nowMs: number): void {
   pruneSharedMapByExpiry(sharedQaHostOverviewLoads, nowMs);
   pruneSharedMapByExpiry(sharedQaParticipantCountLoads, nowMs);
   pruneSharedMapByExpiry(sharedQaSubscriptionSessionLoads, nowMs);
+  pruneSharedMapByExpiry(
+    sharedQaOwnQuestionQuotaLoads,
+    nowMs,
+    QA_OWN_QUESTION_QUOTA_CACHE_MAX_ENTRIES,
+  );
 }
 
 export function resetSharedQaRankingCacheForTests(): void {
@@ -659,6 +676,16 @@ export function resetSharedQaRankingCacheForTests(): void {
   sharedQaHostOverviewLoads.clear();
   sharedQaParticipantCountLoads.clear();
   sharedQaSubscriptionSessionLoads.clear();
+  sharedQaOwnQuestionQuotaLoads.clear();
+}
+
+function invalidateQaOwnQuestionQuotaCache(sessionId: string, participantId?: string): void {
+  const prefix = participantId ? `${sessionId}:${participantId}:` : `${sessionId}:`;
+  for (const key of sharedQaOwnQuestionQuotaLoads.keys()) {
+    if (key.startsWith(prefix)) {
+      sharedQaOwnQuestionQuotaLoads.delete(key);
+    }
+  }
 }
 
 function rememberSharedPromise<T>(
@@ -704,6 +731,33 @@ async function loadQaParticipantCount(
     sharedQaParticipantCountLoads,
     `${sessionId}:${rankingRevision}:${participantRevision}`,
     () => prisma.participant.count({ where: { sessionId } }),
+  );
+}
+
+async function loadQaOwnQuestionQuota(
+  sessionId: string,
+  participantId: string,
+  sessionQuestionCount: number,
+  moderatorView: boolean,
+): Promise<QaOwnQuestionQuotaSnapshot> {
+  return rememberSharedPromise(
+    sharedQaOwnQuestionQuotaLoads,
+    `${sessionId}:${participantId}:${sessionQuestionCount}:${moderatorView ? 1 : 0}`,
+    async () => {
+      const participantQuestionCount = await prisma.qaQuestion.count({
+        where: { sessionId, participantId },
+      });
+      const ownQuestionCounts =
+        !moderatorView && participantQuestionCount > 0
+          ? await countOwnQaQuestionsByStatus(sessionId, participantId).catch(() => ({
+              visible: 0,
+              pending: 0,
+              archived: 0,
+            }))
+          : { visible: 0, pending: 0, archived: 0 };
+      return { participantQuestionCount, ownQuestionCounts };
+    },
+    QA_OWN_QUESTION_QUOTA_CACHE_TTL_MS,
   );
 }
 
@@ -1328,7 +1382,7 @@ export const qaRouter = router({
           : Promise.resolve<number | undefined>(undefined);
       const [
         page,
-        participantQuestionCount,
+        ownQuestionQuota,
         filteredSessionPendingCount,
         forumVisibleCount,
         hostOverview,
@@ -1359,10 +1413,13 @@ export const qaRouter = router({
               : undefined,
         }),
         input.participantId
-          ? prisma.qaQuestion.count({
-              where: { sessionId: session.id, participantId: input.participantId },
-            })
-          : Promise.resolve(0),
+          ? loadQaOwnQuestionQuota(
+              session.id,
+              input.participantId,
+              session.qaQuestionCount ?? 0,
+              input.moderatorView === true,
+            )
+          : Promise.resolve(undefined),
         filteredSessionPendingCountPromise,
         loadQaForumVisibleCount(session.id, session.qaRankingRevision),
         input.moderatorView
@@ -1370,15 +1427,10 @@ export const qaRouter = router({
           : Promise.resolve(undefined),
         getSessionForumAssignments(session.id).catch(() => [] as string[]),
       ]);
+      const participantQuestionCount = ownQuestionQuota?.participantQuestionCount ?? 0;
       const ownQuestionCounts =
         input.participantId && !input.moderatorView
-          ? participantQuestionCount > 0
-            ? await countOwnQaQuestionsByStatus(session.id, input.participantId).catch(() => ({
-                visible: 0,
-                pending: 0,
-                archived: 0,
-              }))
-            : { visible: 0, pending: 0, archived: 0 }
+          ? ownQuestionQuota?.ownQuestionCounts
           : undefined;
       const [currentRevision, currentParticipantCount] = await Promise.all([
         prisma.session.findUnique({
@@ -1765,6 +1817,7 @@ export const qaRouter = router({
           });
           return mapQaQuestion(updated);
         });
+        invalidateQaOwnQuestionQuotaCache(session.id);
         emitQaQuestionsSignal(session.id, { immediate: true });
         return moderated;
       } catch (error) {
@@ -1993,6 +2046,7 @@ export const qaRouter = router({
           sessionId: input.sessionId,
           idempotencyKey: `qa-question:${created.id}`,
         });
+        invalidateQaOwnQuestionQuotaCache(input.sessionId, input.participantId);
         emitQaQuestionsSignal(input.sessionId);
       }
       return {
@@ -2068,6 +2122,7 @@ export const qaRouter = router({
         }
         throw error;
       }
+      invalidateQaOwnQuestionQuotaCache(question.sessionId, input.participantId);
       emitQaQuestionsSignal(question.sessionId, { immediate: true });
       return { deleted: true };
     }),
@@ -2267,6 +2322,7 @@ export const qaRouter = router({
         .catch(rethrowQaContributionError);
 
       if (releasedCount > 0) {
+        invalidateQaOwnQuestionQuotaCache(session.id);
         emitQaQuestionsSignal(session.id, { immediate: true });
       }
       return { releasedCount };

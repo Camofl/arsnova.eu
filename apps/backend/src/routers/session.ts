@@ -435,6 +435,8 @@ const participantNicknameCache = new Map<string, CacheEntry<ParticipantNicknames
 const currentQuestionCache = new Map<string, CacheEntry<unknown>>();
 const studentQuestionSessionCache = new Map<string, CacheEntry<unknown>>();
 const hostVoteProgressSessionCache = new Map<string, CacheEntry<unknown>>();
+const personalScorecardSessionCache = new Map<string, CacheEntry<unknown>>();
+const personalResultSessionCache = new Map<string, CacheEntry<unknown>>();
 const participantMembershipCache = new Map<string, CacheEntry<boolean>>();
 const participantTimerAccommodationCache = new Map<string, CacheEntry<CachedTimerAccommodation>>();
 const voteCountCache = new Map<string, CacheEntry<number>>();
@@ -491,6 +493,8 @@ const participantNicknameInFlight = new Map<string, Promise<ParticipantNicknames
 const currentQuestionInFlight = new Map<string, Promise<unknown>>();
 const studentQuestionSessionInFlight = new Map<string, Promise<unknown>>();
 const hostVoteProgressSessionInFlight = new Map<string, Promise<unknown>>();
+const personalScorecardSessionInFlight = new Map<string, Promise<unknown>>();
+const personalResultSessionInFlight = new Map<string, Promise<unknown>>();
 const participantMembershipInFlight = new Map<string, Promise<boolean>>();
 const participantTimerAccommodationInFlight = new Map<string, Promise<CachedTimerAccommodation>>();
 const voteCountInFlight = new Map<string, Promise<number>>();
@@ -572,6 +576,8 @@ function clearSessionReadCaches(code?: string): void {
     currentQuestionCache.clear();
     studentQuestionSessionCache.clear();
     hostVoteProgressSessionCache.clear();
+    personalScorecardSessionCache.clear();
+    personalResultSessionCache.clear();
     participantNicknameCache.clear();
     participantMembershipCache.clear();
     participantTimerAccommodationCache.clear();
@@ -585,6 +591,8 @@ function clearSessionReadCaches(code?: string): void {
     currentQuestionInFlight.clear();
     studentQuestionSessionInFlight.clear();
     hostVoteProgressSessionInFlight.clear();
+    personalScorecardSessionInFlight.clear();
+    personalResultSessionInFlight.clear();
     participantMembershipInFlight.clear();
     participantTimerAccommodationInFlight.clear();
     voteCountInFlight.clear();
@@ -661,6 +669,10 @@ function clearCurrentQuestionCache(code: string): void {
   currentQuestionInFlight.delete(code);
   studentQuestionSessionCache.delete(code);
   studentQuestionSessionInFlight.delete(code);
+  personalScorecardSessionCache.delete(code);
+  personalScorecardSessionInFlight.delete(code);
+  personalResultSessionCache.delete(code);
+  personalResultSessionInFlight.delete(code);
   for (const key of currentQuestionCache.keys()) {
     if (key.startsWith(`${code}:`)) {
       currentQuestionCache.delete(key);
@@ -1161,6 +1173,10 @@ export function resetVoteAggregationCachesForTests(): void {
   studentQuestionSessionInFlight.clear();
   hostVoteProgressSessionCache.clear();
   hostVoteProgressSessionInFlight.clear();
+  personalScorecardSessionCache.clear();
+  personalScorecardSessionInFlight.clear();
+  personalResultSessionCache.clear();
+  personalResultSessionInFlight.clear();
 }
 
 function voteCacheKey(code: string, questionId: string, round: number): string {
@@ -9802,19 +9818,33 @@ const sessionCoreRouter = router({
           `${code}:results:${session.currentQuestion}:${session.currentRound}`,
           CURRENT_QUESTION_CACHE_TTL_MS,
           async () => {
-            const voteSummary = await getVoteSummaryCached(
-              code,
-              session.id,
-              question.id,
-              session.currentRound,
-              question.type as QuestionType,
-              question.type === 'SHORT_TEXT'
-                ? {
-                    answers: authoredAnswers,
-                    ...resolveShortTextQuestionConfig(question),
-                  }
-                : undefined,
-            );
+            const isStructuredType =
+              question.type === 'MATCHING' ||
+              question.type === 'ORDERING' ||
+              question.type === 'CATEGORIZATION';
+            const voteSummary = isStructuredType
+              ? {
+                  totalVotes: 0,
+                  answerVoteCounts: {} as Record<string, number>,
+                  freeTextResponses: [] as string[],
+                  incorrectFreeTextResponses: [] as string[],
+                  correctVoteCount: 0,
+                  incorrectVoteCount: 0,
+                  numericValues: [] as number[],
+                }
+              : await getVoteSummaryCached(
+                  code,
+                  session.id,
+                  question.id,
+                  session.currentRound,
+                  question.type as QuestionType,
+                  question.type === 'SHORT_TEXT'
+                    ? {
+                        answers: authoredAnswers,
+                        ...resolveShortTextQuestionConfig(question),
+                      }
+                    : undefined,
+                );
             const estimateToleranceMode =
               question.type === 'NUMERIC_ESTIMATE'
                 ? resolveNumericEstimateToleranceMode(question.numericToleranceMode)
@@ -9845,10 +9875,6 @@ const sessionCoreRouter = router({
                 ? buildNumericHistogram(voteSummary.numericValues, numericBand)
                 : undefined;
 
-            const isStructuredType =
-              question.type === 'MATCHING' ||
-              question.type === 'ORDERING' ||
-              question.type === 'CATEGORIZATION';
             const structuredVotes = isStructuredType
               ? await prisma.vote.findMany({
                   where: {
@@ -10974,22 +11000,65 @@ const sessionCoreRouter = router({
     )
     .output(PersonalScorecardDTOSchema)
     .query(async ({ input, ctx }) => {
-      const session = await prisma.session.findUnique({
-        where: { code: input.code.toUpperCase() },
-        include: {
-          quiz: {
-            include: {
-              questions: {
-                orderBy: { order: 'asc' },
-                include: { answers: { select: { id: true, isCorrect: true } } },
+      const code = input.code.toUpperCase();
+      const loadScorecardSession = () =>
+        prisma.session.findUnique({
+          where: { code },
+          include: {
+            quiz: {
+              include: {
+                questions: {
+                  orderBy: { order: 'asc' },
+                  include: { answers: { select: { id: true, isCorrect: true } } },
+                },
               },
             },
+            participants: { select: { id: true } },
           },
-          participants: { select: { id: true } },
-        },
-      });
+        });
+      type ScorecardSession = Awaited<ReturnType<typeof loadScorecardSession>>;
+      const cachedSession = getCachedValue(
+        personalScorecardSessionCache as Map<string, CacheEntry<NonNullable<ScorecardSession>>>,
+        code,
+      );
+      let session: ScorecardSession;
+      if (cachedSession !== null) {
+        session = cachedSession;
+      } else {
+        const existingInFlight = personalScorecardSessionInFlight.get(code) as
+          Promise<ScorecardSession> | undefined;
+        if (existingInFlight) {
+          session = await existingInFlight;
+        } else {
+          const inFlightPromise = loadScorecardSession()
+            .then((loaded) => {
+              if (
+                personalScorecardSessionInFlight.get(code) === inFlightPromise &&
+                loaded &&
+                (loaded.status === 'RESULTS' ||
+                  loaded.status === 'FINISHED' ||
+                  loaded.status === 'DISCUSSION')
+              ) {
+                setCachedValue(
+                  personalScorecardSessionCache,
+                  code,
+                  loaded,
+                  CURRENT_QUESTION_CACHE_TTL_MS,
+                );
+              }
+              return loaded;
+            })
+            .finally(() => {
+              if (personalScorecardSessionInFlight.get(code) === inFlightPromise) {
+                personalScorecardSessionInFlight.delete(code);
+              }
+            });
+          personalScorecardSessionInFlight.set(code, inFlightPromise);
+          session = await inFlightPromise;
+        }
+      }
       if (!session) {
-        return rejectInvalidSessionCode(undefined, input.code.toUpperCase(), 'pollReconnect');
+        return rejectInvalidSessionCode(undefined, code, 'pollReconnect');
       }
       await assertParticipantCapability({
         ctx,
@@ -11168,24 +11237,65 @@ const sessionCoreRouter = router({
       }),
     )
     .query(async ({ input, ctx }) => {
-      const session = await prisma.session.findUnique({
-        where: { code: input.code.toUpperCase() },
-        select: {
-          id: true,
-          status: true,
-          participantRevision: true,
-          questionProgress: true,
-          questionProgressComplete: true,
-          quiz: {
-            select: {
-              questions: { orderBy: { order: 'asc' }, select: { id: true, order: true } },
+      const code = input.code.toUpperCase();
+      const loadPersonalResultSession = () =>
+        prisma.session.findUnique({
+          where: { code },
+          select: {
+            id: true,
+            status: true,
+            participantRevision: true,
+            questionProgress: true,
+            questionProgressComplete: true,
+            quiz: {
+              select: {
+                questions: { orderBy: { order: 'asc' }, select: { id: true, order: true } },
+              },
             },
+            participants: { select: { id: true } },
           },
-          participants: { select: { id: true } },
-        },
-      });
+        });
+      type PersonalResultSession = Awaited<ReturnType<typeof loadPersonalResultSession>>;
+      const cachedSession = getCachedValue(
+        personalResultSessionCache as Map<string, CacheEntry<NonNullable<PersonalResultSession>>>,
+        code,
+      );
+      let session: PersonalResultSession;
+      if (cachedSession !== null) {
+        session = cachedSession;
+      } else {
+        const existingInFlight = personalResultSessionInFlight.get(code) as
+          Promise<PersonalResultSession> | undefined;
+        if (existingInFlight) {
+          session = await existingInFlight;
+        } else {
+          const inFlightPromise = loadPersonalResultSession()
+            .then((loaded) => {
+              if (
+                personalResultSessionInFlight.get(code) === inFlightPromise &&
+                loaded &&
+                loaded.status === 'FINISHED'
+              ) {
+                setCachedValue(
+                  personalResultSessionCache,
+                  code,
+                  loaded,
+                  CURRENT_QUESTION_CACHE_TTL_MS,
+                );
+              }
+              return loaded;
+            })
+            .finally(() => {
+              if (personalResultSessionInFlight.get(code) === inFlightPromise) {
+                personalResultSessionInFlight.delete(code);
+              }
+            });
+          personalResultSessionInFlight.set(code, inFlightPromise);
+          session = await inFlightPromise;
+        }
+      }
       if (!session) {
-        return rejectInvalidSessionCode(undefined, input.code.toUpperCase(), 'pollReconnect');
+        return rejectInvalidSessionCode(undefined, code, 'pollReconnect');
       }
       await assertParticipantCapability({
         ctx,
