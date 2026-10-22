@@ -294,7 +294,7 @@
     },
     "qa.list": {
       "kind": "query",
-      "fingerprint": "sha256:13fb1c79607d8c4c00ca6b8d20b026d073ba5515750dc82ef679517709153064",
+      "fingerprint": "sha256:832196bd43e2897f2e45bbc0e67c1bfd7aac7c8775ad95148c6ad46d997e6a67",
       "missing": []
     },
     "qa.moderate": {
@@ -309,7 +309,7 @@
     },
     "qa.onQuestionsUpdated": {
       "kind": "subscription",
-      "fingerprint": "sha256:12f03f9a622ef9836ee312317e3b7aa012b6d9aaf244248c66506d3d0d2d6236",
+      "fingerprint": "sha256:0f36496337c1e599ce0ca79b0ccc8fd1fc2018f0a381ee6f79bb65391dba7cc3",
       "missing": []
     },
     "qa.pendingReleaseSnapshot": {
@@ -599,7 +599,7 @@
     },
     "session.getCurrentQuestionForStudent": {
       "kind": "query",
-      "fingerprint": "sha256:b18fd56f1b8f4b4c71fda8f940d88e717570d6653fd9159d96063567cce9641a",
+      "fingerprint": "sha256:5c7b65558ea1d8dc3123f9bba2ad4095117923d43f5ecced3acd0f3b9cee65c3",
       "missing": []
     },
     "session.getExportData": {
@@ -764,7 +764,7 @@
     },
     "session.join": {
       "kind": "mutation",
-      "fingerprint": "sha256:d4039d29d5bc8c4c239d5dafa352a8d9448ed0681928e45a235ac1f46db9ae89",
+      "fingerprint": "sha256:e5f3be8da4280e4a516c15fa71a6a195ffe94b305c1d3d2a6df8f7ee2c7cc582",
       "missing": []
     },
     "session.listPairedHosts": {
@@ -909,7 +909,7 @@
     },
     "session.setTimerAccommodation": {
       "kind": "mutation",
-      "fingerprint": "sha256:8bb0ba8e2956a30cbedc9137427e473389a1adae146ae957cf0af14b21a729dd",
+      "fingerprint": "sha256:6755019597856c58f1e3aec04a82006db7cf40c94a83ef993ab9a15480fdd362",
       "missing": []
     },
     "session.showQuestionResult": {

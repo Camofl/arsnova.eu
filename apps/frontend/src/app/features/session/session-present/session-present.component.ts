@@ -257,6 +257,9 @@ export class SessionPresentComponent implements OnInit, OnDestroy {
   private currentQuestionSub: Unsubscribable | null = null;
   private voteProgressSub: Unsubscribable | null = null;
   private statusSub: Unsubscribable | null = null;
+  private presentSessionMetaRefreshEpoch = 0;
+  private presentHostQuestionRefreshEpoch = 0;
+  private presentQuickFeedbackRefreshEpoch = 0;
   private countdownTimer: ReturnType<typeof setInterval> | null = null;
   private countdownDeadlineMs: number | null = null;
   private countdownKey: string | null = null;
@@ -1337,6 +1340,7 @@ export class SessionPresentComponent implements OnInit, OnDestroy {
   }
 
   private async refreshSessionMeta(): Promise<void> {
+    const refreshEpoch = ++this.presentSessionMetaRefreshEpoch;
     try {
       const requestedAt = Date.now();
       const session = await trpc.session.getInfoForReconnect.query({
@@ -1344,7 +1348,7 @@ export class SessionPresentComponent implements OnInit, OnDestroy {
         anonymousClientId: getAnonymousClientId(),
       });
       // Eine späte Antwort nach ngOnDestroy darf keine Subscriptions oder Timer mehr starten.
-      if (this.destroyRef.destroyed) return;
+      if (this.destroyRef.destroyed || refreshEpoch !== this.presentSessionMetaRefreshEpoch) return;
       recordServerTimeSample(session.serverTime, requestedAt);
       this.snapshotRefreshFailed.set(false);
       this.showHomeCta.set(false);
@@ -1359,6 +1363,8 @@ export class SessionPresentComponent implements OnInit, OnDestroy {
             currentQuestion: null,
             finishProjection: 'idle',
           });
+        } else if (!this.presentDeadlineClosed) {
+          this.ensurePresenterSubscriptions();
         }
         return;
       }
@@ -1688,18 +1694,25 @@ export class SessionPresentComponent implements OnInit, OnDestroy {
   private async refreshQuickFeedbackResult(): Promise<void> {
     const quickFeedbackEnabled = this.session()?.channels?.quickFeedback.enabled ?? false;
     if (!quickFeedbackEnabled || this.showFinishProjection() || this.presentDeadlineClosed) {
+      this.presentQuickFeedbackRefreshEpoch += 1;
       this.quickFeedbackResult.set(null);
       return;
     }
 
+    const refreshEpoch = ++this.presentQuickFeedbackRefreshEpoch;
     try {
       const result = await trpc.quickFeedback.results.query({
         sessionCode: this.code.toUpperCase(),
       });
-      if (this.presentDeadlineClosed) return;
+      if (this.presentDeadlineClosed || refreshEpoch !== this.presentQuickFeedbackRefreshEpoch) {
+        return;
+      }
       this.quickFeedbackResult.set(result);
     } catch (error: unknown) {
-      if (this.errorCode(error) === 'NOT_FOUND') {
+      if (
+        refreshEpoch === this.presentQuickFeedbackRefreshEpoch &&
+        this.errorCode(error) === 'NOT_FOUND'
+      ) {
         this.quickFeedbackResult.set(null);
       }
     }
@@ -1712,15 +1725,19 @@ export class SessionPresentComponent implements OnInit, OnDestroy {
       this.presentDeadlineClosed ||
       this.session()?.presenterSurface === 'qaWordCloud'
     ) {
+      this.presentHostQuestionRefreshEpoch += 1;
       this.hostQuestion.set(null);
       this.stopCountdown();
       return;
     }
+    const refreshEpoch = ++this.presentHostQuestionRefreshEpoch;
     try {
       const question = await trpc.session.getCurrentQuestionForHost.query({
         code: this.code.toUpperCase(),
       });
-      if (this.presentDeadlineClosed) return;
+      if (this.presentDeadlineClosed || refreshEpoch !== this.presentHostQuestionRefreshEpoch) {
+        return;
+      }
       this.hostQuestion.set(question);
       if (this.session()?.status === 'ACTIVE') {
         this.startCountdown(question?.timer ?? null);
@@ -1796,6 +1813,7 @@ export class SessionPresentComponent implements OnInit, OnDestroy {
         {
           onData: (data) => {
             if (!this.presentDeadlineClosed) {
+              this.presentHostQuestionRefreshEpoch += 1;
               this.hostQuestion.set(data);
             }
           },
@@ -1833,6 +1851,7 @@ export class SessionPresentComponent implements OnInit, OnDestroy {
           if (!this.applySessionDeadlineSnapshot(data)) {
             return;
           }
+          this.presentSessionMetaRefreshEpoch += 1;
           this.session.update((current) =>
             current
               ? {

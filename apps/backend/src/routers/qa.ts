@@ -578,6 +578,7 @@ type RankedQaPage = {
 };
 
 const QA_PAGE_CACHE_TTL_MS = 2_000;
+const QA_SUBSCRIPTION_SESSION_CACHE_TTL_MS = 250;
 const QA_PAGE_CACHE_MAX_ENTRIES = 256;
 type SharedQaRankingCacheEntry = {
   expiresAt: number;
@@ -599,6 +600,30 @@ type SharedQaHostOverviewCacheEntry = {
   promise: Promise<HostQaStatusOverview>;
 };
 const sharedQaHostOverviewLoads = new Map<string, SharedQaHostOverviewCacheEntry>();
+type SharedQaParticipantCountCacheEntry = {
+  expiresAt: number;
+  promise: Promise<number>;
+};
+const sharedQaParticipantCountLoads = new Map<string, SharedQaParticipantCountCacheEntry>();
+type QaSubscriptionSessionSnapshot = {
+  id: string;
+  status: string;
+  endedAt: Date | null;
+  expiresAt: Date | null;
+  type: 'QUIZ' | 'Q_AND_A';
+  qaEnabled: boolean;
+  qaOpen: boolean;
+  qaClosesAt: Date | null;
+  sessionLifecycleRevision: number;
+  qaRankingRevision: number;
+  participantRevision: number;
+  qaModerationMode: boolean;
+} | null;
+type SharedQaSubscriptionSessionCacheEntry = {
+  expiresAt: number;
+  promise: Promise<QaSubscriptionSessionSnapshot>;
+};
+const sharedQaSubscriptionSessionLoads = new Map<string, SharedQaSubscriptionSessionCacheEntry>();
 
 function pruneSharedMapByExpiry<T extends { expiresAt: number }>(
   map: Map<string, T>,
@@ -623,6 +648,8 @@ function pruneSharedQaRankingCache(nowMs: number): void {
   pruneSharedMapByExpiry(sharedQaPendingCountLoads, nowMs);
   pruneSharedMapByExpiry(sharedQaForumVisibleCountLoads, nowMs);
   pruneSharedMapByExpiry(sharedQaHostOverviewLoads, nowMs);
+  pruneSharedMapByExpiry(sharedQaParticipantCountLoads, nowMs);
+  pruneSharedMapByExpiry(sharedQaSubscriptionSessionLoads, nowMs);
 }
 
 export function resetSharedQaRankingCacheForTests(): void {
@@ -630,12 +657,15 @@ export function resetSharedQaRankingCacheForTests(): void {
   sharedQaPendingCountLoads.clear();
   sharedQaForumVisibleCountLoads.clear();
   sharedQaHostOverviewLoads.clear();
+  sharedQaParticipantCountLoads.clear();
+  sharedQaSubscriptionSessionLoads.clear();
 }
 
 function rememberSharedPromise<T>(
   map: Map<string, { expiresAt: number; promise: Promise<T> }>,
   key: string,
   load: () => Promise<T>,
+  ttlMs: number = QA_PAGE_CACHE_TTL_MS,
 ): Promise<T> {
   const nowMs = Date.now();
   pruneSharedQaRankingCache(nowMs);
@@ -645,12 +675,12 @@ function rememberSharedPromise<T>(
   }
   const entry: { expiresAt: number; promise: Promise<T> } = {
     expiresAt: Number.POSITIVE_INFINITY,
-    promise: load(),
+    promise: Promise.resolve().then(load),
   };
   entry.promise = entry.promise.then(
     (value) => {
       if (map.get(key) === entry) {
-        entry.expiresAt = Date.now() + QA_PAGE_CACHE_TTL_MS;
+        entry.expiresAt = Date.now() + ttlMs;
       }
       return value;
     },
@@ -663,6 +693,47 @@ function rememberSharedPromise<T>(
   );
   map.set(key, entry);
   return entry.promise;
+}
+
+async function loadQaParticipantCount(
+  sessionId: string,
+  rankingRevision: number,
+  participantRevision: number,
+): Promise<number> {
+  return rememberSharedPromise(
+    sharedQaParticipantCountLoads,
+    `${sessionId}:${rankingRevision}:${participantRevision}`,
+    () => prisma.participant.count({ where: { sessionId } }),
+  );
+}
+
+async function loadQaSubscriptionSessionSnapshot(
+  sessionId: string,
+  signalVersion: number,
+): Promise<QaSubscriptionSessionSnapshot> {
+  return rememberSharedPromise(
+    sharedQaSubscriptionSessionLoads,
+    `${sessionId}:${signalVersion}`,
+    () =>
+      prisma.session.findUnique({
+        where: { id: sessionId },
+        select: {
+          id: true,
+          status: true,
+          endedAt: true,
+          expiresAt: true,
+          type: true,
+          qaEnabled: true,
+          qaOpen: true,
+          qaClosesAt: true,
+          sessionLifecycleRevision: true,
+          qaRankingRevision: true,
+          participantRevision: true,
+          qaModerationMode: true,
+        },
+      }),
+    QA_SUBSCRIPTION_SESSION_CACHE_TTL_MS,
+  );
 }
 
 async function loadQaPendingCount(sessionId: string, rankingRevision: number): Promise<number> {
@@ -1157,6 +1228,7 @@ export const qaRouter = router({
           qaClosesAt: true,
           sessionLifecycleRevision: true,
           qaRankingRevision: true,
+          participantRevision: true,
           qaQuestionCount: true,
           qaModerationMode: true,
           onboardingAnonymousMode: true,
@@ -1232,9 +1304,11 @@ export const qaRouter = router({
         });
       }
 
-      const participantCountForControversy = await prisma.participant.count({
-        where: { sessionId: session.id },
-      });
+      const participantCountForControversy = await loadQaParticipantCount(
+        session.id,
+        session.qaRankingRevision,
+        session.participantRevision ?? 0,
+      );
       const includeAuthorNickname = session.onboardingAnonymousMode !== true;
       const authorNickname = input.moderatorView
         ? input.authorNickname?.trim() || undefined
@@ -2345,23 +2419,11 @@ export const qaRouter = router({
             participantId: input.participantId!,
           });
         }
-        const session = await prisma.session.findUnique({
-          where: { id: input.sessionId },
-          select: {
-            id: true,
-            status: true,
-            endedAt: true,
-            expiresAt: true,
-            type: true,
-            qaEnabled: true,
-            qaOpen: true,
-            qaClosesAt: true,
-            sessionLifecycleRevision: true,
-            qaRankingRevision: true,
-            participantRevision: true,
-            qaModerationMode: true,
-          },
-        });
+        const signalVersionBeforeRead = getQaQuestionsSignalVersion(input.sessionId);
+        const session = await loadQaSubscriptionSessionSnapshot(
+          input.sessionId,
+          signalVersionBeforeRead,
+        );
         if (!session) {
           return;
         }
