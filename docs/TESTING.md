@@ -203,7 +203,7 @@ Der [gezielte QA-Nachlauf vom 2026-07-11](implementation/LOCAL-QA-RECHECK-2026-0
 belegt die Korrekturen: Yjs-Reconnect, beide 600er Vote-p95-Pfade, alle sechs
 Browser-Flows und alle sechs Lighthouse-Läufe sind grün. Der anschließende
 [30-Minuten-Langlauf mit Baseline-Freigabe vom 2026-07-12](implementation/LOCAL-BASELINE-FREIGABE-2026-07-12.md)
-ist ebenfalls abgeschlossen.
+ist ebenfalls abgeschlossen. Die jüngsten Hotpath-Optimierungen (Coalescing in `getCurrentQuestionForStudent`, `fetchHostVoteProgress` und `qa.onQuestionsUpdated`/`qa.list`, `SHORT_TEXT`-Toleranz-Stripping sowie Frontend-Request-Epochs) und die Timing-Gegenüberstellung gegen die Story-0.7-Baseline sind in [HOTPATH-AUDIT-UND-TIMING-2026-10-22.md](implementation/HOTPATH-AUDIT-UND-TIMING-2026-10-22.md) dokumentiert.
 
 ---
 

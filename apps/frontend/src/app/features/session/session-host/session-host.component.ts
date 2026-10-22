@@ -883,6 +883,8 @@ export class SessionHostComponent implements OnInit, OnDestroy {
   private currentQuestionRefreshRunId = 0;
   private hostVoteProgressRefreshRunId = 0;
   private sessionLifecycleRefreshRunId = 0;
+  private sessionInfoRefreshRunId = 0;
+  private quickFeedbackRefreshRunId = 0;
   private participantBaselineReady = false;
   private knownParticipantIds = new Set<string>();
   private foyerArrivalSequence = 0;
@@ -5393,12 +5395,13 @@ export class SessionHostComponent implements OnInit, OnDestroy {
   private async reloadSessionInfo(
     options: { isCurrent?: () => boolean } = {},
   ): Promise<SessionInfoDTO> {
+    const runId = ++this.sessionInfoRefreshRunId;
     const requestedAt = Date.now();
     const session = await trpc.session.getInfoForReconnect.query({
       code: this.code.toUpperCase(),
       anonymousClientId: getAnonymousClientId(),
     });
-    if (options.isCurrent && !options.isCurrent()) {
+    if (runId !== this.sessionInfoRefreshRunId || (options.isCurrent && !options.isCurrent())) {
       return session;
     }
     recordServerTimeSample(session.serverTime, requestedAt);
@@ -5886,6 +5889,7 @@ export class SessionHostComponent implements OnInit, OnDestroy {
             data.presenterPage ||
             data.presenterSurface
           ) {
+            this.sessionInfoRefreshRunId += 1;
             this.session.update((current) =>
               current
                 ? {
@@ -14244,16 +14248,20 @@ export class SessionHostComponent implements OnInit, OnDestroy {
     options: { isCurrent?: () => boolean } = {},
   ): Promise<void> {
     if (!this.channels().quickFeedback || this.code.length !== 6) {
+      this.quickFeedbackRefreshRunId += 1;
       this.quickFeedbackResult.set(null);
       this.quickFeedbackSeenVoteCount.set(0);
       return;
     }
 
+    const runId = ++this.quickFeedbackRefreshRunId;
     try {
       const result = await trpc.quickFeedback.hostResults.query({
         sessionCode: this.code.toUpperCase(),
       });
-      if (options.isCurrent && !options.isCurrent()) return;
+      if (runId !== this.quickFeedbackRefreshRunId || (options.isCurrent && !options.isCurrent())) {
+        return;
+      }
       this.quickFeedbackResult.set(result);
     } catch {
       // Keep the last snapshot visible during transient polling failures.
