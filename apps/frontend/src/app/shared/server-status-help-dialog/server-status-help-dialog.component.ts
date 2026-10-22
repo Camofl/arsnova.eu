@@ -449,7 +449,7 @@ export interface ServerStatusHelpDialogData {
                     </article>
                     <article class="status-help-dialog__metric">
                       <div class="status-help-dialog__metric-head">
-                        <mat-icon aria-hidden="true">error_outline</mat-icon>
+                        <mat-icon aria-hidden="true">error</mat-icon>
                         <span i18n="@@app.footer.statusMetricErrorRate">Fehlerrate</span>
                       </div>
                       <strong
@@ -678,7 +678,7 @@ export interface ServerStatusHelpDialogData {
                     </article>
                     <article class="status-help-dialog__metric">
                       <div class="status-help-dialog__metric-head">
-                        <mat-icon aria-hidden="true">question_answer</mat-icon>
+                        <mat-icon aria-hidden="true">forum</mat-icon>
                         <span i18n="@@app.footer.statusMetricQualityQaSubmit">Q&A einreichen</span>
                       </div>
                       <strong
@@ -738,7 +738,7 @@ export interface ServerStatusHelpDialogData {
                     </article>
                     <article class="status-help-dialog__metric status-help-dialog__metric--key">
                       <div class="status-help-dialog__metric-head">
-                        <mat-icon aria-hidden="true">chat_bubble_outline</mat-icon>
+                        <mat-icon aria-hidden="true">chat_bubble</mat-icon>
                         <span i18n="@@app.footer.statusMetricActiveQaSessions"
                           >Aktive Q&A-Sessions</span
                         >
@@ -821,7 +821,7 @@ export interface ServerStatusHelpDialogData {
                   <div class="status-help-dialog__metrics">
                     <article class="status-help-dialog__metric">
                       <div class="status-help-dialog__metric-head">
-                        <mat-icon aria-hidden="true">poll</mat-icon>
+                        <mat-icon aria-hidden="true">ballot</mat-icon>
                         <span i18n="@@app.footer.statusMetricVotes">Abstimmungen / Minute</span>
                       </div>
                       <strong>{{ formatCount(s.votesLastMinute) }}</strong>
@@ -834,7 +834,7 @@ export interface ServerStatusHelpDialogData {
                     </article>
                     <article class="status-help-dialog__metric">
                       <div class="status-help-dialog__metric-head">
-                        <mat-icon aria-hidden="true">question_answer</mat-icon>
+                        <mat-icon aria-hidden="true">forum</mat-icon>
                         <span i18n="@@app.footer.statusMetricQaQuestions">Q&A-Fragen / Minute</span>
                       </div>
                       <strong>{{
@@ -1129,7 +1129,7 @@ export interface ServerStatusHelpDialogData {
                       </article>
                       <article class="status-help-dialog__metric">
                         <div class="status-help-dialog__metric-head">
-                          <mat-icon aria-hidden="true">question_answer</mat-icon>
+                          <mat-icon aria-hidden="true">forum</mat-icon>
                           <span i18n="@@app.footer.statusMetricQaAccepted">Q&A-Fragen</span>
                         </div>
                         <strong
@@ -1155,7 +1155,7 @@ export interface ServerStatusHelpDialogData {
                       </article>
                       <article class="status-help-dialog__metric status-help-dialog__metric--wide">
                         <div class="status-help-dialog__metric-head">
-                          <mat-icon aria-hidden="true">chat_bubble_outline</mat-icon>
+                          <mat-icon aria-hidden="true">chat_bubble</mat-icon>
                           <span i18n="@@app.footer.statusMetricQaQuestionsTotal"
                             >Q&A-Fragen gesamt</span
                           >
@@ -1170,7 +1170,7 @@ export interface ServerStatusHelpDialogData {
                       </article>
                       <article class="status-help-dialog__metric status-help-dialog__metric--wide">
                         <div class="status-help-dialog__metric-head">
-                          <mat-icon aria-hidden="true">emoji_events</mat-icon>
+                          <mat-icon aria-hidden="true">trophy</mat-icon>
                           <span i18n="@@app.footer.statusMetricLargestQaCollection"
                             >Größte Q&A-Sammlung</span
                           >
@@ -1529,7 +1529,7 @@ export interface ServerStatusHelpDialogData {
                           id="server-status-record-heading"
                           class="status-help-dialog__section-title status-help-dialog__section-title--with-icon"
                         >
-                          <mat-icon aria-hidden="true">emoji_events</mat-icon>
+                          <mat-icon aria-hidden="true">trophy</mat-icon>
                           <span i18n="@@help.statsTitle">Höchste Join-Teilnahme einer Session</span>
                         </h4>
                         <p class="status-help-dialog__record-hint" i18n="@@help.statsHint">

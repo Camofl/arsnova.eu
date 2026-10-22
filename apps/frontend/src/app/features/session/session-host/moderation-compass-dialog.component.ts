@@ -515,7 +515,7 @@ export class ModerationCompassDialogComponent {
       case 'topics':
         return 'label';
       case 'clarification':
-        return 'help_outline';
+        return 'help';
       case 'survey':
         return 'bar_chart';
       case 'friction':

@@ -130,7 +130,7 @@ describe('QaChannelConfigurationDialogComponent', () => {
 
     expect(host.querySelector('.dialog-title-header')).not.toBeNull();
     expect(host.querySelector('.dialog-title-header__icon mat-icon')?.textContent?.trim()).toBe(
-      'chat_bubble_outline',
+      'chat_bubble',
     );
     expect(host.textContent).toContain('Fragerunde einrichten');
     expect(host.textContent).toContain('Fragerunde öffnen');

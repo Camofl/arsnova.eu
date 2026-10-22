@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Preloadet den selbst gehosteten Material-Icons-Font in allen prerendered Seiten.
+ * Preloadet den selbst gehosteten Material-Symbols-Font in allen prerendered Seiten.
  * Der Angular-Build hasht den Font-Dateinamen; deshalb wird der Link nach dem
  * Browser-Build anhand des tatsächlich erzeugten Assets ergänzt.
  */
@@ -28,9 +28,9 @@ for (const locale of locales) {
   const localeDir = path.join(browserRoot, locale);
   const fontFile = fs
     .readdirSync(localeDir)
-    .find((name) => /^material-icons\.[a-f0-9]+\.woff2$/.test(name));
+    .find((name) => /^material-symbols-outlined\.[a-f0-9]+\.woff2$/.test(name));
   if (!fontFile) {
-    throw new Error(`Material-Icons-Font für ${locale} nicht gefunden.`);
+    throw new Error(`Material-Symbols-Font für ${locale} nicht gefunden.`);
   }
 
   const preload = `<link rel="preload" href="${fontFile}" as="font" type="font/woff2" crossorigin>`;

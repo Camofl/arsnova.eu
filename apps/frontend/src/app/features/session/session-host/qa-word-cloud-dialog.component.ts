@@ -118,7 +118,7 @@ export class QaWordCloudDialogComponent {
       case 'stale':
         return 'refresh';
       default:
-        return 'auto_fix_high';
+        return 'wand_stars';
     }
   });
   readonly focusedTermLabel = computed(() => this.data.focusedTermLabel?.() ?? null);

@@ -3336,7 +3336,7 @@ export class SessionVoteComponent implements OnInit, OnDestroy {
     if (!this.personalResultLoaded()) {
       return 'hourglass_top';
     }
-    return this.finishedHeroIsCelebration() ? 'emoji_events' : 'task_alt';
+    return this.finishedHeroIsCelebration() ? 'trophy' : 'task_alt';
   }
 
   /** Sichtbarer Team-Rang (#n) oder Gedankenstrich, solange die Wertung noch ohne Punkte ist. */

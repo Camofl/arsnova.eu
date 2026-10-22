@@ -52,8 +52,8 @@ Schritte, rechte Spalte später/Meta; mobil einspaltig).
 
 **Icon:** Einstiege und Kacheln nutzen das MD3-Icon `insights` aus dem
 selbst gehosteten Subset. MOTD behält `campaign`; die Session-Bewertung (4.8)
-behält `feedback`. Neue Icon-Namen vorab gegen
-`apps/frontend/src/assets/fonts/material-icons.woff2` prüfen.
+nutzt `rate_review`. Neue Icon-Namen vorab gegen
+`apps/frontend/src/assets/fonts/material-symbols-outlined.woff2` (bzw. `apps/frontend/scripts/subset-material-symbols.py`) prüfen.
 
 Fehlerzustände: Pending („Wird gesendet …“), Erfolg, Outbox-Hinweis bei
 Netzwerk/Timeout und typisierte Ablehnungen für Ablauf, Einmaligkeit,
