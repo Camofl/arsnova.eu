@@ -1301,7 +1301,7 @@ describe('AppComponent', () => {
     expect(statusIcon?.classList.contains('app-footer__status-dot--healthy')).toBe(true);
     expect(statusIcon?.style.color).toBe('var(--app-status-healthy)');
     expect(component.footerStatusDotCssColor()).toBe('var(--app-status-healthy)');
-    expect(statusIcon?.textContent?.trim()).toBe('lens');
+    expect(statusIcon?.textContent?.trim()).toBe('circle');
 
     component.footerStatus.set({ serviceStatus: 'limited', loadStatus: 'busy' });
     fixture.detectChanges();

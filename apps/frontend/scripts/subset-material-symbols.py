@@ -45,30 +45,34 @@ BASELINE_ICONS = {
     "keyboard_arrow_right", "keyboard_arrow_up", "label", "lan", "language",
     "last_page", "leaderboard", "library_books", "library_music", "light_mode",
     "lightbulb", "linear_scale", "link", "link_off", "local_fire_department", "lock",
-    "login", "logout", "manage_search", "mark_email_Read", "mark_email_unread",
-    "meeting_room", "memory", "menu", "menu_book", "military_tech", "monitor",
-    "monitoring", "more_horiz", "more_vert", "neurology", "newspaper", "note_add",
-    "notes", "open_in_full", "open_in_new", "outbox", "pause", "pause_circle",
-    "percent", "person", "person_off", "play_arrow", "play_circle", "playlist_add",
-    "podium", "present_to_all", "priority_high", "privacy_tip", "psychology",
-    "psychology_alt", "push_pin", "qr_code_2", "quiz", "radio_button_checked",
-    "radio_button_unchecked", "rate_review", "refresh", "remove", "replay",
-    "restart_alt", "router", "rule", "save", "schedule", "school", "science",
-    "search", "search_off", "sentiment_satisfied", "settings", "share", "shuffle",
-    "skip_next", "social_leaderboard", "speed", "star", "star_half", "stop",
-    "stop_screen_share", "storage", "straighten", "stream", "summarize", "swap_horiz",
-    "swap_vert", "sync", "sync_alt", "sync_problem", "system_update_alt", "table_view",
-    "task_alt", "theater_comedy", "thumb_down", "thumb_up", "thumbs_up_down", "timer",
-    "timer_off", "title", "touch_app", "traffic", "trending_up", "trophy", "tune",
-    "unarchive", "undo", "update", "upload", "upload_file", "verified", "visibility",
-    "visibility_off", "volume_off", "volume_up", "wand_stars", "warning", "web_asset",
-    "wifi_off", "work",
+    "login", "logout", "manage_search", "mark_as_unread", "mark_email_read",
+    "mark_email_unread", "meeting_room", "memory", "menu", "menu_book",
+    "military_tech", "monitor", "monitoring", "more_horiz", "more_vert",
+    "neurology", "newspaper", "note_add", "notes", "open_in_full", "open_in_new",
+    "outbox", "pause", "pause_circle", "percent", "person", "person_off",
+    "play_arrow", "play_circle", "playlist_add", "podium", "present_to_all",
+    "priority_high", "privacy_tip", "psychology", "psychology_alt", "push_pin",
+    "qr_code_2", "quiz", "radio_button_checked", "radio_button_unchecked",
+    "rate_review", "refresh", "remove", "replay", "restart_alt", "router",
+    "rule", "save", "schedule", "school", "science", "search", "search_off",
+    "sentiment_satisfied", "settings", "share", "shuffle", "skip_next",
+    "social_leaderboard", "speed", "star", "star_half", "stop",
+    "stop_screen_share", "storage", "straighten", "stream", "summarize",
+    "swap_horiz", "swap_vert", "sync", "sync_alt", "sync_problem",
+    "system_update_alt", "table_view", "task_alt", "theater_comedy",
+    "thumb_down", "thumb_up", "thumbs_up_down", "timer", "timer_off", "title",
+    "touch_app", "traffic", "trending_up", "trophy", "tune", "unarchive",
+    "undo", "update", "upload", "upload_file", "verified", "visibility",
+    "visibility_off", "volume_off", "volume_up", "wand_stars", "warning",
+    "web_asset", "wifi_off", "work",
 }
 
 
 def scan_app_icons() -> set[str]:
     found = set(BASELINE_ICONS)
-    mat_icon_re = re.compile(r"<mat-icon[^>]*>([\s\S]*?)</mat-icon>")
+    mat_icon_re = re.compile(
+        r'<mat-icon\b(?:"[^"]*"|\'[^\']*\'|[^>])*>([\s\S]*?)</mat-icon\s*>'
+    )
     token_re = re.compile(r"\b([a-z][a-z0-9_]{1,40})\b")
     for path in APP_SRC.rglob("*"):
         if path.suffix not in (".html", ".ts") or path.name.endswith(".spec.ts"):

@@ -96,7 +96,7 @@ Regeln:
 - **`.content-page-layer`:** Für Help, Legal und News-Archiv die shared Content-Page-Struktur aus `content-page-backdrop.scss` nutzen, wenn seitliche Rails/Klickflächen und ein zentriertes Lesepanel gebraucht werden. Overlay-Semantik: Focus Trap im Panel, Escape/Zurück/Backdrop schließen die Seite (Escape nicht bei offenem MatDialog/Lightbox); App-Toolbar und Footer sind auf diesen Routen `inert`. Nach dem Schließen zur Startseite: Fokus zurück auf den auslösenden Footer-Trigger (Hilfe bzw. Mehr); MOTD-Overlay einmal unterdrückt. Dialogtitel bleiben auch im Lade-/Fehlerzustand benannt.
 - **News-Archiv gelesen:** Pro Eintrag ein **Toggle** außerhalb des Expansion-Headers:
   **Als gelesen markieren** (`matButton="text"`, Primary) bzw. **Als ungelesen markieren**
-  (`undo`-Icon aus dem selbst gehosteten Icon-Subset, Text/Icon `--mat-sys-on-surface-variant`).
+  (`mark_as_unread`-Icon aus dem selbst gehosteten Icon-Subset, Text/Icon `--mat-sys-on-surface-variant`).
   Kein paralleler Status-Text neben der Aktion. Neue Icon-Namen vorab gegen
   `assets/fonts/material-symbols-outlined.woff2` (bzw. `apps/frontend/scripts/subset-material-symbols.py`) prüfen.
   Produktfeedback („arsnova.eu verbessern“) nutzt `insights`; MOTD behält
