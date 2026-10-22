@@ -2,7 +2,6 @@ import type { IncomingMessage } from 'node:http';
 import { TRPCError } from '@trpc/server';
 import { prisma } from '../db';
 import { hashCapability } from './capabilityCrypto';
-import { registerSessionPurgeInvalidator } from './sessionPurgeInvalidation';
 
 export type ParticipantTokenContext = {
   req?: IncomingMessage;
@@ -57,10 +56,6 @@ export function invalidateParticipantCapabilitiesForSession(sessionId: string): 
 export function resetParticipantCapabilityCacheForTests(): void {
   participantCapabilityCache.clear();
 }
-
-registerSessionPurgeInvalidator(({ sessionId }) => {
-  invalidateParticipantCapabilitiesForSession(sessionId);
-});
 
 function readConnectionParam(connectionParams: unknown, key: string): string | null {
   if (!connectionParams || typeof connectionParams !== 'object') {

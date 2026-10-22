@@ -223,7 +223,10 @@ import {
 } from '../lib/quizHistoryLegacyProofPolicy';
 import { awaitJoinAdmissionSlot } from '../lib/joinAdmission';
 import { prepareParticipantJoin } from '../lib/participantJoin';
-import { assertParticipantCapability } from '../lib/participantAuth';
+import {
+  assertParticipantCapability,
+  invalidateParticipantCapabilitiesForSession,
+} from '../lib/participantAuth';
 import type { SessionCodeFailureSource } from '../lib/abuseTelemetry';
 import { rejectInvalidSessionCode } from '../lib/invalidSessionCode';
 import {
@@ -1087,6 +1090,7 @@ export async function purgeSessionRuntimeArtifacts(params: {
 }): Promise<void> {
   const code = params.sessionCode.toUpperCase();
   clearSessionReadCaches(code);
+  invalidateParticipantCapabilitiesForSession(params.sessionId);
   presenterSurfaceBySessionId.delete(params.sessionId);
   presenterPageBySessionId.delete(params.sessionId);
   presenterPageIdentityBySessionId.delete(params.sessionId);
