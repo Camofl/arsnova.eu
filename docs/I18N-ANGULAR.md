@@ -1,6 +1,6 @@
 # i18n in Angular (offizieller Weg) — Umsetzungshinweise für Story 6.2
 
-Recherche basierend auf der **offiziellen Angular-Dokumentation** (angular.dev) und auf dem **aktuellen Repo-Stand** von `arsnova.eu`. Der beschriebene Ansatz gilt allgemein ab **Angular 17+**; im Repo läuft derzeit **Angular 21.2.x**.
+Recherche basierend auf der **offiziellen Angular-Dokumentation** (angular.dev) und auf dem **aktuellen Repo-Stand** von `arsnova.eu`. Der beschriebene Ansatz gilt allgemein ab **Angular 17+**; im Repo läuft derzeit **Angular 22.2.x**.
 
 ---
 
@@ -392,6 +392,6 @@ Für **Locale `en`** (XLIFF-Targets in `apps/frontend/src/locale/messages.en.xlf
 
 ---
 
-_Stand: 2026-07-19. Repo-Abgleich mit Angular 21.2.x, fünf Locale-Dateien mit
+_Stand: 2026-10-22. Repo-Abgleich mit Angular 22.2.x, fünf Locale-Dateien mit
 je 2351 trans-units und Dokumentation unter
 https://angular.dev/guide/i18n._

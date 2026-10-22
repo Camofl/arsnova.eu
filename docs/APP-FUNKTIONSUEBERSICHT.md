@@ -1009,7 +1009,7 @@ Die technische Architektur ist selbst Teil des Funktionsumfangs, weil viele Feat
 
 ### 12.1 Frontend
 
-- Angular 21.2.x
+- Angular 22.2.x
 - Standalone Components
 - Angular Material 3
 - Signals

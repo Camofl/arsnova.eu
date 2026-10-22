@@ -2,7 +2,7 @@
 
 # UI Styleguide (Angular Material 3)
 
-**Stand:** 2026-09-21 — abgeglichen mit Angular 21.2, `apps/frontend/src/styles.scss`, `apps/frontend/src/styles/playful-inner-chrome.scss`, den Shared-Styles unter `apps/frontend/src/app/shared/styles/`, [TOKENS.md](TOKENS.md), [PR-CHECKLIST-UI.md](PR-CHECKLIST-UI.md) und `apps/landing/src/styles/landing-theme.css`.
+**Stand:** 2026-10-22 — abgeglichen mit Angular 22.2, `apps/frontend/src/styles.scss`, `apps/frontend/src/styles/playful-inner-chrome.scss`, den Shared-Styles unter `apps/frontend/src/app/shared/styles/`, [TOKENS.md](TOKENS.md), [PR-CHECKLIST-UI.md](PR-CHECKLIST-UI.md) und `apps/landing/src/styles/landing-theme.css`.
 
 ## Ziel und Geltungsbereich
 
