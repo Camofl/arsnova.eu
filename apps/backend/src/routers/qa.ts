@@ -1432,18 +1432,17 @@ export const qaRouter = router({
         input.participantId && !input.moderatorView
           ? ownQuestionQuota?.ownQuestionCounts
           : undefined;
-      const [currentRevision, currentParticipantCount] = await Promise.all([
-        prisma.session.findUnique({
-          where: { id: session.id },
-          select: { qaRankingRevision: true },
-        }),
-        sortMode === 'CONTROVERSIAL'
-          ? prisma.participant.count({ where: { sessionId: session.id } })
-          : Promise.resolve(participantCountForControversy),
-      ]);
+      const currentRevision = await prisma.session.findUnique({
+        where: { id: session.id },
+        select: {
+          qaRankingRevision: true,
+          participantRevision: true,
+        },
+      });
       if (
         currentRevision?.qaRankingRevision !== session.qaRankingRevision ||
-        currentParticipantCount !== participantCountForControversy
+        (sortMode === 'CONTROVERSIAL' &&
+          (currentRevision?.participantRevision ?? 0) !== (session.participantRevision ?? 0))
       ) {
         throw new TRPCError({
           code: 'CONFLICT',

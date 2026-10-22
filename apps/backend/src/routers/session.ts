@@ -609,12 +609,8 @@ function clearSessionReadCaches(code?: string): void {
   clearCurrentQuestionCache(code);
   clearHostVoteProgressSessionCache(code);
   clearParticipantNicknameCache(code);
+  clearParticipantMembershipCache(code);
   clearVoteCaches(code);
-  for (const key of participantMembershipCache.keys()) {
-    if (key.startsWith(`${code}:`)) {
-      participantMembershipCache.delete(key);
-    }
-  }
   sessionInfoInFlight.delete(code);
   statusSnapshotInFlight.delete(code);
   participantsSnapshotInFlight.delete(code);
@@ -622,11 +618,6 @@ function clearSessionReadCaches(code?: string): void {
   if (voteProgressTimer) {
     clearTimeout(voteProgressTimer);
     sessionVoteProgressTimers.delete(code);
-  }
-  for (const key of participantMembershipInFlight.keys()) {
-    if (key.startsWith(`${code}:`)) {
-      participantMembershipInFlight.delete(key);
-    }
   }
 }
 

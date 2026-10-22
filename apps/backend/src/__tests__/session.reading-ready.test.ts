@@ -66,6 +66,7 @@ vi.mock('../lib/participantAuth', () => ({
 
 import {
   invalidateCurrentQuestionCachesForCode,
+  invalidateSessionCachesForCode,
   resetSessionReadCachesForTests,
   resetVoteAggregationCachesForTests,
   sessionRouter,
@@ -359,6 +360,16 @@ describe('session reading-ready flow', () => {
     );
     expect(membershipLookups).toHaveLength(1);
     expect(timerAccommodationLookups).toHaveLength(1);
+
+    invalidateSessionCachesForCode('ABC123');
+    await caller.getCurrentQuestionForStudent({
+      code: 'ABC123',
+      participantId: PARTICIPANT_ID,
+    });
+    const timerLookupsAfterPurge = prismaMock.participant.findFirst.mock.calls.filter(
+      ([query]) => query?.select?.timerAccommodation === true,
+    );
+    expect(timerLookupsAfterPurge).toHaveLength(2);
   });
 
   it('liefert bei ACTIVE fuer SHORT_TEXT keine Musterloesungen an Teilnehmende', async () => {

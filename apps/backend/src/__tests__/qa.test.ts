@@ -637,7 +637,13 @@ describe('qa router (Epic 8)', () => {
       controversyScore: 5 / 6,
       isControversial: true,
     });
-    expect(prismaMock.participant.count).toHaveBeenCalled();
+    expect(prismaMock.participant.count).toHaveBeenCalledTimes(1);
+    await caller.list({
+      sessionId: SESSION_ID,
+      participantId: OTHER_PARTICIPANT_ID,
+      sort: 'CONTROVERSIAL',
+    });
+    expect(prismaMock.participant.count).toHaveBeenCalledTimes(1);
     expect(rawSqlText(prismaMock.$queryRaw.mock.calls[0] ?? [])).toContain(
       'ranked."controversyScore" DESC',
     );
