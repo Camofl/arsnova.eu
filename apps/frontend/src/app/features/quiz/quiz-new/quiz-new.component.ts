@@ -156,7 +156,7 @@ export class QuizNewComponent implements OnInit, OnDestroy {
       validators: [Validators.min(5), Validators.max(300)],
     }),
     timerScaleByDifficulty: [true],
-    enableTimerAccommodation: [true],
+    enableTimerAccommodation: [false],
     enableSoundEffects: [true],
     enableRewardEffects: [true],
     enableMotivationMessages: [true],

@@ -322,7 +322,7 @@ export const quizRouter = router({
             allowCustomNicknames: input.allowCustomNicknames,
             defaultTimer: input.defaultTimer ?? null,
             timerScaleByDifficulty: input.timerScaleByDifficulty ?? true,
-            enableTimerAccommodation: input.enableTimerAccommodation ?? true,
+            enableTimerAccommodation: input.enableTimerAccommodation ?? false,
             enableSoundEffects: input.enableSoundEffects,
             enableRewardEffects: input.enableRewardEffects,
             enableMotivationMessages: input.enableMotivationMessages,

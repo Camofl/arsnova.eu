@@ -853,7 +853,9 @@ describe('QaChannelConfigurationDialogComponent', () => {
   });
 
   it('behält die Datepicker-Obergrenze, wenn die Vorschau scheitert', async () => {
-    previewMock.mockRejectedValue(new Error('closesAt nach maxExpiresAt'));
+    previewMock.mockRejectedValue(
+      new Error('Der Ablaufzeitpunkt überschreitet die maximal erlaubte Sessiondauer.'),
+    );
     const { fixture, component } = configureTestBed();
     component.deadlineKind = 'ABSOLUTE';
     component.absoluteLocal = '2027-06-24T06:43';
@@ -863,6 +865,64 @@ describe('QaChannelConfigurationDialogComponent', () => {
     expect(component.absoluteMinLocal()).toBe('2026-09-15T09:01');
     expect(component.absoluteMaxLocal()).toBe('2026-09-29T08:00');
     expect(component.preview()).toBeNull();
+    expect(component.error()).toContain('maximalen Sessiondauer');
+    expect(fixture.nativeElement.textContent).toContain('maximalen Sessiondauer');
+  });
+
+  it('zeigt den Servergrund sofort, statt die Vorschau still zu verwerfen', async () => {
+    previewMock.mockRejectedValue(new Error('Die Session ist bereits beendet.'));
+    const { fixture, component } = configureTestBed();
+    await component.onDeadlineChange();
+    fixture.detectChanges();
+
+    expect(component.preview()).toBeNull();
+    expect(component.error()).toContain('bereits beendet');
+    expect(fixture.nativeElement.textContent).toContain('bereits beendet');
+  });
+
+  it('nutzt denselben konkreten Hinweis, wenn Bestätigen die Vorschau nicht holen kann', async () => {
+    previewMock.mockRejectedValue(new Error('Der Ablaufzeitpunkt muss in der Zukunft liegen.'));
+    const { component } = configureTestBed();
+    await component.confirm();
+
+    expect(configureMock).not.toHaveBeenCalled();
+    expect(component.error()).toContain('Zukunft');
+    expect(component.confirmLabel()).toBe('Erneut prüfen');
+    expect(component.confirmLabel()).not.toContain('wieder öffnen');
+  });
+
+  it('verspricht kein Wiederöffnen, solange die Prüfung fehlgeschlagen ist', async () => {
+    const closedSession = {
+      ...session,
+      qaClosesAt: '2026-09-16T04:00:00.000Z',
+      channels: {
+        ...session.channels,
+        qa: {
+          enabled: true,
+          open: false,
+          closesAt: '2026-09-16T04:00:00.000Z',
+          state: 'MANUALLY_CLOSED' as const,
+          title: 'Alte Fragenwand',
+          moderationMode: false,
+        },
+      },
+    };
+    previewMock.mockRejectedValue(
+      new Error('Der Ablaufzeitpunkt überschreitet die maximal erlaubte Sessiondauer.'),
+    );
+    const { fixture, component } = configureTestBed(false, undefined, true, closedSession);
+    component.reopenQa = true;
+    await component.onDeadlineChange();
+    fixture.detectChanges();
+
+    expect(component.error()).toBeTruthy();
+    expect(component.preview()).toBeNull();
+    expect(component.confirmLabel()).toBe('Erneut prüfen');
+    const confirmButton = [...fixture.nativeElement.querySelectorAll('button')].find((button) =>
+      button.className.includes('mat-mdc-unelevated-button'),
+    );
+    expect(confirmButton?.textContent).toContain('Erneut prüfen');
+    expect(confirmButton?.textContent).not.toContain('wieder öffnen');
   });
 
   it('begrenzt den Datepicker auf Serverjetzt bis maxExpiresAt', async () => {

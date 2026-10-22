@@ -236,7 +236,7 @@ describe('QuizEditComponent', { timeout: 30_000 }, () => {
     );
   });
 
-  it('zeigt den Hinweis zur persönlichen Zeit, sobald ein Zeitlimit aktiv ist', () => {
+  it('hält den Hinweis zur persönlichen Zeit standardmäßig zugeklappt', () => {
     quiz.settings = { ...quiz.settings, defaultTimer: 60 };
     const fixture = TestBed.createComponent(QuizEditComponent);
     const component = fixture.componentInstance;
@@ -245,24 +245,45 @@ describe('QuizEditComponent', { timeout: 30_000 }, () => {
 
     const hint = fixture.nativeElement.querySelector(
       '[data-testid="quiz-edit-timer-accommodation-hint"]',
-    ) as HTMLElement | null;
-    expect(hint?.textContent).toContain('Persönliche Zeit');
-    expect(hint?.textContent).toContain('Faire Teilnahme ermöglichen');
+    ) as HTMLDetailsElement | null;
+    expect(hint?.open).toBe(false);
+    expect(hint?.querySelector('summary')?.textContent).toContain('Persönliche Zeit');
+    expect(hint?.querySelector('summary')?.textContent).toContain('Faire Teilnahme ermöglichen');
     expect(hint?.textContent).toContain('»10× Zeit«');
     expect(hint?.textContent).toContain('»Ohne Frist«');
     expect(hint?.textContent).toContain('Nachteilsausgleich');
     expect(hint?.textContent).toContain('Du entscheidest weiterhin');
     expect(hint?.querySelector('mat-checkbox')?.textContent).toContain('Persönliche Zeit');
     expect(component.settingsForm.controls.enableTimerAccommodation.value).toBe(true);
-    expect(hint?.querySelectorAll('p').length).toBe(4);
+    expect(hint?.querySelectorAll('.quiz-edit-form__timer-accommodation-body p').length).toBe(3);
 
     component.settingsForm.controls.enableTimerAccommodation.setValue(false);
     fixture.detectChanges();
 
+    expect(hint?.open).toBe(false);
+    expect(hint?.querySelector('summary')?.textContent).toContain('Faire Teilnahme ermöglichen');
     expect(hint?.querySelector('mat-checkbox')?.textContent).toContain('Persönliche Zeit');
-    expect(hint?.querySelectorAll('p').length).toBe(0);
-    expect(hint?.textContent).not.toContain('Faire Teilnahme ermöglichen');
-    expect(hint?.textContent).not.toContain('Nachteilsausgleich');
+    expect(hint?.querySelectorAll('.quiz-edit-form__timer-accommodation-body p').length).toBe(3);
+  });
+
+  it('öffnet die Erklärung zur persönlichen Zeit über das Summary', () => {
+    quiz.settings = { ...quiz.settings, defaultTimer: 60 };
+    const fixture = TestBed.createComponent(QuizEditComponent);
+    const component = fixture.componentInstance;
+    component.showSettings.set(true);
+    fixture.detectChanges();
+
+    const hint = fixture.nativeElement.querySelector(
+      '[data-testid="quiz-edit-timer-accommodation-hint"]',
+    ) as HTMLDetailsElement;
+    expect(hint.open).toBe(false);
+
+    hint.open = true;
+    fixture.detectChanges();
+
+    expect(hint.open).toBe(true);
+    expect(hint.querySelector('.quiz-edit-form__timer-accommodation-body')).toBeTruthy();
+    expect(hint.querySelector('mat-checkbox')?.textContent).toContain('Persönliche Zeit');
   });
 
   it('zeigt die Checkbox für persönliche Zeit auch ohne quizweites Zeitlimit', () => {
