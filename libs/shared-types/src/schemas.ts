@@ -1299,7 +1299,7 @@ export function normalizeTimerAccommodation(value: unknown): TimerAccommodation 
   return 'DEFAULT';
 }
 
-/** Host-Schalter im Quiz; fehlend oder nicht `false` bleibt an (Default). */
+/** Host-Schalter im Quiz. Neue Quizzes speichern `false`; fehlender Legacy-Wert bleibt an. */
 export function isTimerAccommodationEnabled(value: boolean | null | undefined): boolean {
   return value !== false;
 }
@@ -1386,7 +1386,7 @@ export const CreateQuizInputSchema = z.object({
   allowCustomNicknames: z.boolean().optional().default(false),
   defaultTimer: z.number().int().min(5).max(300).nullable().optional(),
   timerScaleByDifficulty: z.boolean().optional().default(true),
-  enableTimerAccommodation: z.boolean().optional().default(true),
+  enableTimerAccommodation: z.boolean().optional().default(false),
   enableSoundEffects: z.boolean().optional().default(true),
   enableRewardEffects: z.boolean().optional().default(true),
   enableMotivationMessages: z.boolean().optional().default(true),

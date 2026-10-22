@@ -283,10 +283,14 @@ html.preset-playful {
 
   .mat-mdc-form-field .mat-mdc-input-element::placeholder,
   .mat-mdc-form-field textarea.mat-mdc-input-element::placeholder,
-  input::placeholder,
-  textarea::placeholder {
+  input:not(.mat-mdc-input-element)::placeholder,
+  textarea:not(.mat-mdc-input-element)::placeholder {
     color: var(--mat-sys-on-surface-variant);
     -webkit-text-fill-color: var(--mat-sys-on-surface-variant);
+  }
+
+  input:not(.mat-mdc-input-element)::placeholder,
+  textarea:not(.mat-mdc-input-element)::placeholder {
     opacity: 1;
   }
 
