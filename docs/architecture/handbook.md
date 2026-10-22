@@ -27,7 +27,7 @@ Das Hauptziel dieses Systems ist es, ein hochperformantes Audience-Response-Syst
 
 Wir setzen auf einen modernen, stark typisierten TypeScript-Stack (Full-Stack), der auf Typsicherheit, Entwicklererfahrung (DX) und Echtzeit-Performance optimiert ist.
 
-- **Frontend:** Angular **21.2.x** mit **Signals** (Zustandsverwaltung), **Standalone Components** und **Angular Material 3** (tokenbasiert, im Angular-Frontend ohne Tailwind).
+- **Frontend:** Angular **22.2.x** mit **Signals** (Zustandsverwaltung), **Standalone Components** und **Angular Material 3** (tokenbasiert, im Angular-Frontend ohne Tailwind).
 - **Backend:** Node.js API mit **tRPC v11** (für typsichere Aufrufe und WebSocket-Subscriptions).
 - **Schemas:** **Zod v4** in `@arsnova/shared-types` und Backend-Routern; DTOs werden ueber `.input()` / `.output()` an tRPC-Prozeduren gebunden.
 - **Datenbank (Persistenz):** **PostgreSQL** angebunden über **Prisma ORM 7.4.x**.

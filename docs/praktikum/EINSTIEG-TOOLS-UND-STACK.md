@@ -69,7 +69,7 @@ Welche **weiteren** Dokumente für deine Veranstaltung Pflicht sind, sagt dir di
 ### Node.js und npm
 
 - **Was:** Node.js führt JavaScript/TypeScript-Werkzeuge aus; npm installiert Abhängigkeiten und startet Skripte.
-- **Im Projekt:** Für den Einstieg **Node 24.18.0 LTS** aus `.nvmrc` nutzen; **Node 22.22.1+ LTS** bleibt unterstützt. Die CI baut mit Node 22 und 24; `package.json` beschreibt die vollständige Engine-Regel.
+- **Im Projekt:** Für den Einstieg **Node 24.18.0 LTS** aus `.nvmrc` nutzen; **Node 22.22.3+ LTS** bleibt unterstützt. Die CI baut mit Node 22 und 24; `package.json` beschreibt die vollständige Engine-Regel.
 - **Merksatz:** Wenn `npm run dev` sofort scheitert, zuerst `node -v` prüfen.
 
 ---
@@ -81,7 +81,7 @@ Welche **weiteren** Dokumente für deine Veranstaltung Pflicht sind, sagt dir di
 | **TypeScript**                | Hauptsprache für Backend und Frontend; **Typen** helfen, Fehler früh zu finden.                                                     | [TypeScript Handbook](https://www.typescriptlang.org/docs/handbook/intro.html) (Englisch), Kapitel „The Basics“.                                              |
 | **Node.js / npm**             | Laufzeit und Werkzeugkette; **npm** installiert Bibliotheken und startet Scripts (`npm run dev`).                                   | Im Repo: `.nvmrc`, Root-`package.json`, [`docs/onboarding.md`](../onboarding.md) Abschnitt „Voraussetzungen“.                                                 |
 | **npm Workspaces / Monorepo** | Mehrere Pakete (**backend**, **frontend**, **shared-types**) in **einem** Repo.                                                     | [`docs/onboarding.md`](../onboarding.md) Abschnitt „Projektstruktur“.                                                                                         |
-| **Angular 21.2.x**            | **Frontend**-Framework: Standalone Components, Routing, Signals und UI mit **Angular Material 3**.                                  | [angular.dev — Tutorials](https://angular.dev/tutorials) (Englisch); im Kurs reicht zuerst: Dateien unter `apps/frontend/src/app/features/` finden und lesen. |
+| **Angular 22.2.x**            | **Frontend**-Framework: Standalone Components, Routing, Signals und UI mit **Angular Material 3**.                                  | [angular.dev — Tutorials](https://angular.dev/tutorials) (Englisch); im Kurs reicht zuerst: Dateien unter `apps/frontend/src/app/features/` finden und lesen. |
 | **tRPC v11**                  | **API** zwischen Browser und Server: typisierte Prozeduren und WebSocket-Subscriptions statt klassischer REST-Endpunkte.            | [tRPC — Einführung](https://trpc.io/docs) (Englisch); im Repo: `apps/backend/src/routers/`, Client in `trpc.client.ts`.                                       |
 | **Zod v4**                    | **Validierung** und Typen für API-Eingaben/-Ausgaben in `libs/shared-types`; Schemas werden an tRPC-Inputs/-Outputs gebunden.       | [Zod](https://zod.dev) (Englisch); Regel im Projekt: Schemas **zuerst** in shared-types.                                                                      |
 | **Prisma 7.4.x**              | **Datenbankzugriff** und Schema in `prisma/schema.prisma` (Tabellen, Beziehungen).                                                  | [Prisma — Getting Started](https://www.prisma.io/docs/getting-started) (Englisch); lokal: `npm run prisma:migrate`, `npm run prisma:generate`.                |
