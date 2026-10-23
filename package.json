@@ -134,6 +134,8 @@
     "audit:trpc-dod": "node scripts/audit-trpc-dod.mjs --real",
     "audit:trpc-dod:poc": "node scripts/audit-trpc-dod.mjs --poc",
     "audit:trpc-dod:test": "node --test scripts/audit/trpc-dod.test.mjs",
+    "test:related": "node scripts/run-related-tests.mjs",
+    "test:related:test": "node --test scripts/run-related-tests.test.mjs",
     "start:prod": "node scripts/start-backend-prod.mjs",
     "verify:production-serving": "node scripts/verify-production-serving.mjs",
     "verify:csp-report-only": "node scripts/verify-csp-report-only.mjs",
@@ -187,20 +189,17 @@
     "qrcode-generator": "^2.0.4",
     "yjs": "13.6.31"
   },
-  "lint-staged": {
-    "*.{ts,js}": "eslint --no-warn-ignored --fix",
-    "apps/frontend/src/**/*.html": "eslint --no-warn-ignored --fix",
-    "*.{ts,js,mjs,cjs,json,html,css,scss,md}": "prettier --write"
-  },
   "overrides": {
     "@hono/node-server": "2.0.11",
     "compression": "^1.8.2",
+    "dompurify": "3.4.17",
     "deepmerge-ts": "^8.0.1",
     "fast-uri": "^3.1.8",
     "find-my-way": "^9.7.0",
     "hono": "^4.12.5",
     "ip-address": "$ip-address",
     "js-yaml": "$js-yaml",
+    "katex": "0.19.0",
     "minimatch": "^10.2.1",
     "mysql2": "^3.22.0",
     "nanoid": "3.3.18",
