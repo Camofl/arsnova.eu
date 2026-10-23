@@ -85,8 +85,9 @@ Run the checks appropriate to the change:
 - Localized frontend build:
   `npm run build:localize -w @arsnova/frontend`
 
-Local Git hooks do not replace these gates. Pre-commit runs `lint-staged`
-and `npm run test:related`. Pre-push runs `npm run typecheck`. Full `npm test`
+Local Git hooks do not replace these gates. Pre-commit runs
+`lint-staged --concurrent false` (eslint, prettier, then related tests).
+Pre-push runs `npm run typecheck`. Full `npm test`
 remains a pull-request and CI requirement.
 
 If frontend templates, styles, translations, build configuration, or

@@ -4,14 +4,18 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
+import { fileURLToPath } from 'node:url';
+import { buildLintStagedCommands, RELATED_TESTS_COMMAND } from '../lint-staged.config.mjs';
 import {
   companionCandidates,
   expandWithCompanions,
   isTestablePath,
   main,
   planRelatedRuns,
+  shouldIsolateRelatedTests,
   withKeepIndexIsolation,
   workingTreeHasUnstagedContent,
+  workingTreeNeedsKeepIndexIsolation,
 } from './run-related-tests.mjs';
 
 test('treats source, template and script files as testable', () => {
@@ -118,6 +122,80 @@ test('detects unstaged or untracked porcelain rows', () => {
   assert.equal(workingTreeHasUnstagedContent('?? new-file.ts\n'), true);
 });
 
+test('keep-index isolation ignores untracked files', () => {
+  assert.equal(workingTreeNeedsKeepIndexIsolation('M  staged-only.ts\n'), false);
+  assert.equal(workingTreeNeedsKeepIndexIsolation('MM both.ts\n'), true);
+  assert.equal(workingTreeNeedsKeepIndexIsolation(' M unstaged.ts\n'), true);
+  assert.equal(workingTreeNeedsKeepIndexIsolation('?? new-file.ts\n'), false);
+});
+
+test('lint-staged runs related tests after the writing tasks', () => {
+  const commands = buildLintStagedCommands([
+    'apps/backend/src/lib/rateLimit.ts',
+    'apps/frontend/src/app/home.component.html',
+    'docs/TESTING.md',
+  ]);
+  assert.ok(commands[0].startsWith('eslint --no-warn-ignored --fix -- '));
+  assert.ok(commands[1].startsWith('prettier --write -- '));
+  assert.equal(commands.at(-1), RELATED_TESTS_COMMAND);
+  assert.equal(commands.indexOf(RELATED_TESTS_COMMAND), commands.length - 1);
+});
+
+test('pre-commit serializes lint-staged so overlapping globs cannot race', () => {
+  const hook = readFileSync(
+    fileURLToPath(new URL('../.husky/pre-commit', import.meta.url)),
+    'utf8',
+  );
+  assert.match(hook, /lint-staged --concurrent false/);
+});
+
+test('explicit --no-isolate skips keep-index stash even with unstaged tracked files', () => {
+  assert.equal(shouldIsolateRelatedTests(['--no-isolate']), false);
+  const calls = [];
+  const status = main(['--no-isolate'], {
+    git: (args) => {
+      calls.push(args);
+      if (args[0] === 'diff') return 'apps/backend/src/lib/rateLimit.ts\0';
+      if (args[0] === 'status') return ' M apps/backend/src/lib/rateLimit.ts\n';
+      return '';
+    },
+    exists: () => false,
+    execute: () => 0,
+    log() {},
+  });
+  assert.equal(status, 0);
+  assert.equal(
+    calls.some((args) => args[0] === 'stash'),
+    false,
+  );
+});
+
+test('keep-index isolation does not pop an existing stash when only untracked files exist', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'related-keep-index-untracked-'));
+  const git = (args) => execFileSync('git', args, { cwd: dir, encoding: 'utf8' });
+  try {
+    git(['init', '-b', 'main']);
+    git(['config', 'user.email', 'related-tests@example.test']);
+    git(['config', 'user.name', 'Related Tests']);
+    writeFileSync(join(dir, 'tracked.mjs'), 'export const value = 1;\n');
+    git(['add', 'tracked.mjs']);
+    git(['commit', '-m', 'init']);
+    writeFileSync(join(dir, 'tracked.mjs'), 'export const value = 9;\n');
+    git(['stash', 'push', '--message', 'user-wip']);
+    writeFileSync(join(dir, 'scratch.tmp'), 'untracked\n');
+
+    const stashBefore = git(['rev-parse', '--verify', 'refs/stash']).trim();
+    withKeepIndexIsolation(() => 0, git);
+    const stashAfter = git(['rev-parse', '--verify', 'refs/stash']).trim();
+
+    assert.equal(stashAfter, stashBefore);
+    assert.match(git(['stash', 'list']), /user-wip/);
+    assert.match(readFileSync(join(dir, 'scratch.tmp'), 'utf8'), /untracked/);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test('keep-index isolation reads staged content instead of an unstaged fix', () => {
   const dir = mkdtempSync(join(tmpdir(), 'related-keep-index-'));
   const git = (args) => execFileSync('git', args, { cwd: dir, encoding: 'utf8' });
@@ -139,6 +217,39 @@ test('keep-index isolation reads staged content instead of an unstaged fix', () 
     }, git);
 
     assert.match(isolated, /value = 2/);
+    assert.match(readFileSync(join(dir, 'value.mjs'), 'utf8'), /value = 1/);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('keep-index isolation pops only the stash it created', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'related-keep-index-own-stash-'));
+  const git = (args) => execFileSync('git', args, { cwd: dir, encoding: 'utf8' });
+  try {
+    git(['init', '-b', 'main']);
+    git(['config', 'user.email', 'related-tests@example.test']);
+    git(['config', 'user.name', 'Related Tests']);
+    writeFileSync(join(dir, 'value.mjs'), 'export const value = 1;\n');
+    git(['add', 'value.mjs']);
+    git(['commit', '-m', 'init']);
+    writeFileSync(join(dir, 'value.mjs'), 'export const value = 9;\n');
+    git(['stash', 'push', '--message', 'user-wip']);
+    writeFileSync(join(dir, 'value.mjs'), 'export const value = 2;\n');
+    git(['add', 'value.mjs']);
+    writeFileSync(join(dir, 'value.mjs'), 'export const value = 1;\n');
+
+    const userStash = git(['rev-parse', '--verify', 'refs/stash']).trim();
+    let isolated = '';
+    withKeepIndexIsolation(() => {
+      isolated = readFileSync(join(dir, 'value.mjs'), 'utf8');
+      return 0;
+    }, git);
+
+    assert.match(isolated, /value = 2/);
+    assert.match(readFileSync(join(dir, 'value.mjs'), 'utf8'), /value = 1/);
+    assert.equal(git(['rev-parse', '--verify', 'refs/stash']).trim(), userStash);
+    assert.match(git(['stash', 'list']), /user-wip/);
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }

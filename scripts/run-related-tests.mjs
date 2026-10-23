@@ -127,16 +127,48 @@ export function workingTreeHasUnstagedContent(statusPorcelain) {
   });
 }
 
+/** `stash --keep-index` cannot hide untracked/ignored files, so `??`/`!!` do not isolate. */
+export function workingTreeNeedsKeepIndexIsolation(statusPorcelain) {
+  return statusPorcelain.split('\n').some((line) => {
+    if (!line || line.startsWith('??') || line.startsWith('!!')) return false;
+    const worktree = line[1];
+    return Boolean(worktree && worktree !== ' ');
+  });
+}
+
+export function readStashTip(git) {
+  const tip = String(git(['stash', 'list', '-n', '1', '--format=%H']) ?? '').trim();
+  return tip || null;
+}
+
+export function createKeepIndexStash(git, message = 'related-tests-keep-index') {
+  const before = readStashTip(git);
+  git(['stash', 'push', '--keep-index', '--message', message]);
+  const after = readStashTip(git);
+  if (!after || after === before) return null;
+  return after;
+}
+
+export function restoreCreatedStash(git, createdTip) {
+  if (!createdTip) return;
+  const current = readStashTip(git);
+  if (current !== createdTip) return;
+  // `stash pop` after `--keep-index` reports "Already up to date" and drops
+  // unstaged edits. Restore the stash worktree, then drop only that stash.
+  git(['restore', '--source', createdTip, '--worktree', '.']);
+  git(['stash', 'drop', '--quiet']);
+}
+
 export function withKeepIndexIsolation(run, git = defaultGit) {
   const status = git(['status', '--porcelain', '-u']);
-  if (!workingTreeHasUnstagedContent(status)) {
+  if (!workingTreeNeedsKeepIndexIsolation(status)) {
     return run();
   }
-  git(['stash', 'push', '--keep-index', '--message', 'related-tests-keep-index']);
+  const createdTip = createKeepIndexStash(git);
   try {
     return run();
   } finally {
-    git(['stash', 'pop']);
+    restoreCreatedStash(git, createdTip);
   }
 }
 
@@ -176,6 +208,13 @@ function parseFilesFromArgv(argv) {
   return argv.slice(marker + 1).filter((value) => value && !value.startsWith('--'));
 }
 
+export function shouldIsolateRelatedTests(argv = [], options = {}) {
+  if (options.isolate === false) return false;
+  if (argv.includes('--no-isolate')) return false;
+  if ((options.files ?? parseFilesFromArgv(argv)) != null) return false;
+  return true;
+}
+
 export function main(argv = process.argv.slice(2), options = {}) {
   const log = options.log ?? ((message) => process.stdout.write(`${message}\n`));
   const explicitFiles = options.files ?? parseFilesFromArgv(argv);
@@ -203,8 +242,7 @@ export function main(argv = process.argv.slice(2), options = {}) {
     return failed ? 1 : 0;
   };
 
-  const hookIsolation = Boolean(process.env['HUSKY']);
-  if (explicitFiles || options.isolate === false || hookIsolation) {
+  if (!shouldIsolateRelatedTests(argv, options)) {
     return executePlannedRuns();
   }
   return withKeepIndexIsolation(executePlannedRuns, options.git);
