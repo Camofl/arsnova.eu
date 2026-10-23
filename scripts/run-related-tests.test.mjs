@@ -1,4 +1,8 @@
 import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import test from 'node:test';
 import {
   companionCandidates,
@@ -6,6 +10,8 @@ import {
   isTestablePath,
   main,
   planRelatedRuns,
+  withKeepIndexIsolation,
+  workingTreeHasUnstagedContent,
 } from './run-related-tests.mjs';
 
 test('treats source, template and script files as testable', () => {
@@ -90,4 +96,50 @@ test('fails when any planned run fails', () => {
     log() {},
   });
   assert.equal(status, 1);
+});
+
+test('plans full dependent workspace runs when a shared library changes', () => {
+  const runs = planRelatedRuns(['libs/shared-types/src/schemas.ts'], () => false);
+  assert.deepEqual(
+    runs.map((run) => ({ kind: run.kind, id: run.id })),
+    [
+      { kind: 'vitest', id: 'shared-types' },
+      { kind: 'vitest-full', id: 'session-export-report' },
+      { kind: 'vitest-full', id: 'backend' },
+      { kind: 'vitest-full', id: 'frontend' },
+    ],
+  );
+});
+
+test('detects unstaged or untracked porcelain rows', () => {
+  assert.equal(workingTreeHasUnstagedContent('M  staged-only.ts\n'), false);
+  assert.equal(workingTreeHasUnstagedContent('MM both.ts\n'), true);
+  assert.equal(workingTreeHasUnstagedContent(' M unstaged.ts\n'), true);
+  assert.equal(workingTreeHasUnstagedContent('?? new-file.ts\n'), true);
+});
+
+test('keep-index isolation reads staged content instead of an unstaged fix', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'related-keep-index-'));
+  const git = (args) => execFileSync('git', args, { cwd: dir, encoding: 'utf8' });
+  try {
+    git(['init', '-b', 'main']);
+    git(['config', 'user.email', 'related-tests@example.test']);
+    git(['config', 'user.name', 'Related Tests']);
+    writeFileSync(join(dir, 'value.mjs'), 'export const value = 1;\n');
+    git(['add', 'value.mjs']);
+    git(['commit', '-m', 'init']);
+    writeFileSync(join(dir, 'value.mjs'), 'export const value = 2;\n');
+    git(['add', 'value.mjs']);
+    writeFileSync(join(dir, 'value.mjs'), 'export const value = 1;\n');
+
+    let isolated = '';
+    withKeepIndexIsolation(() => {
+      isolated = readFileSync(join(dir, 'value.mjs'), 'utf8');
+      return 0;
+    }, git);
+
+    assert.match(isolated, /value = 2/);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 });

@@ -41,13 +41,17 @@ Trennregeln:
 
 Serverseitig zu sperren, sobald das Secret gesetzt ist:
 
-| Procedure                           | Warum                                                      |
-| ----------------------------------- | ---------------------------------------------------------- |
-| `quiz.upload`                       | persistiert Quizinhalt in PostgreSQL                       |
-| `session.create`                    | startet Live-Raum, Q&A-only, leeren Raum oder Quiz-Session |
-| `quickFeedback.create` (Standalone) | eigener Publikationskanal ohne Quiz                        |
+| Procedure        | Warum                                                      |
+| ---------------- | ---------------------------------------------------------- |
+| `quiz.upload`    | persistiert Quizinhalt in PostgreSQL                       |
+| `session.create` | startet Live-Raum, Q&A-only, leeren Raum oder Quiz-Session |
 
-Session-gebundenes `quickFeedback.create` bleibt hinter `hostProcedure`. Wer bereits ein Host-Token hat, hat die Instanz bereits entsperrt.
+`quickFeedback.create` ist **eine** `publicProcedure` mit zwei Eingangspfaden, nicht zwei Procedures und nicht `hostProcedure`:
+
+- **Standalone** (kein `sessionCode`): Public Create. Hier greift das Instanz-Gate, sobald das Secret gesetzt ist.
+- **Sessiongebunden** (`sessionCode` gesetzt): zuerst die bestehende Host-Prüfung (`assertHostSessionAccessFromContext`). Wer die Session schon als Host steuert, braucht keinen zweiten Freigabecode.
+
+Ein pauschaler `instanceCreateProcedure`-Wrapper um die ganze Mutation ist falsch: Er würde sessiongebundene Starts sperren oder Standalone-Starts offen lassen. Die Gate-Prüfung ist deshalb **inputabhängig** in derselben Procedure, nicht durch Aufteilen oder durch ein Host-Procedure-Rewrite.
 
 Bewusst **nicht** im ersten Schnitt:
 

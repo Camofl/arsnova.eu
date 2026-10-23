@@ -13,6 +13,11 @@ export const WORKSPACES = [
   { id: 'frontend', root: 'apps/frontend' },
 ];
 
+export const WORKSPACE_DEPENDENTS = {
+  'libs/shared-types': ['libs/session-export-report', 'apps/backend', 'apps/frontend'],
+  'libs/session-export-report': ['apps/backend', 'apps/frontend'],
+};
+
 const TESTABLE = /\.(?:[cm]?[jt]sx?|html|scss)$/;
 const TEST_FILE = /\.(?:spec|test)\.[cm]?[jt]sx?$/;
 
@@ -52,11 +57,33 @@ function workspaceRelative(filePath, workspaceRoot) {
   return filePath.slice(workspaceRoot.length + 1);
 }
 
+export function dependentWorkspaces(files) {
+  const dependents = new Set();
+  for (const file of files) {
+    for (const [libraryRoot, workspaceRoots] of Object.entries(WORKSPACE_DEPENDENTS)) {
+      if (file === libraryRoot || file.startsWith(`${libraryRoot}/`)) {
+        for (const workspaceRoot of workspaceRoots) dependents.add(workspaceRoot);
+      }
+    }
+  }
+  return dependents;
+}
+
 export function planRelatedRuns(files, exists = existsSync) {
   const expanded = expandWithCompanions(files, exists);
+  const fullWorkspaces = dependentWorkspaces(expanded);
   const runs = [];
 
   for (const workspace of WORKSPACES) {
+    if (fullWorkspaces.has(workspace.root)) {
+      runs.push({
+        kind: 'vitest-full',
+        id: workspace.id,
+        cwd: workspace.root,
+        files: [],
+      });
+      continue;
+    }
     const workspaceFiles = expanded.filter(
       (file) => file === workspace.root || file.startsWith(`${workspace.root}/`),
     );
@@ -91,6 +118,28 @@ export function planRelatedRuns(files, exists = existsSync) {
   return runs;
 }
 
+export function workingTreeHasUnstagedContent(statusPorcelain) {
+  return statusPorcelain.split('\n').some((line) => {
+    if (!line) return false;
+    if (line.startsWith('??') || line.startsWith('!!')) return true;
+    const worktree = line[1];
+    return Boolean(worktree && worktree !== ' ');
+  });
+}
+
+export function withKeepIndexIsolation(run, git = defaultGit) {
+  const status = git(['status', '--porcelain', '-u']);
+  if (!workingTreeHasUnstagedContent(status)) {
+    return run();
+  }
+  git(['stash', 'push', '--keep-index', '--message', 'related-tests-keep-index']);
+  try {
+    return run();
+  } finally {
+    git(['stash', 'pop']);
+  }
+}
+
 function defaultGit(args) {
   const run = spawnSync('git', args, {
     cwd: repoRoot,
@@ -112,6 +161,9 @@ function runCommand(command, args, cwd) {
 }
 
 export function executeRun(run, spawn = runCommand) {
+  if (run.kind === 'vitest-full') {
+    return spawn('npx', ['vitest', 'run'], run.cwd);
+  }
   if (run.kind === 'vitest') {
     return spawn('npx', ['vitest', 'related', '--run', '--passWithNoTests', ...run.files], run.cwd);
   }
@@ -126,26 +178,36 @@ function parseFilesFromArgv(argv) {
 
 export function main(argv = process.argv.slice(2), options = {}) {
   const log = options.log ?? ((message) => process.stdout.write(`${message}\n`));
-  const files = options.files ?? parseFilesFromArgv(argv) ?? readStagedFiles(options.git);
-  const testable = files.filter((file) => isTestablePath(file));
-  if (testable.length === 0) {
-    log('No staged testable files — skipping related tests.');
-    return 0;
-  }
+  const explicitFiles = options.files ?? parseFilesFromArgv(argv);
+  const executePlannedRuns = () => {
+    const files = explicitFiles ?? readStagedFiles(options.git);
+    const testable = files.filter((file) => isTestablePath(file));
+    if (testable.length === 0) {
+      log('No staged testable files — skipping related tests.');
+      return 0;
+    }
 
-  const runs = planRelatedRuns(testable, options.exists ?? existsSync);
-  if (runs.length === 0) {
-    log('No related test targets — skipping.');
-    return 0;
-  }
+    const runs = planRelatedRuns(testable, options.exists ?? existsSync);
+    if (runs.length === 0) {
+      log('No related test targets — skipping.');
+      return 0;
+    }
 
-  let failed = false;
-  for (const run of runs) {
-    log(`Related tests (${run.id}): ${run.files.join(' ')}`);
-    const status = (options.execute ?? executeRun)(run);
-    if (status !== 0) failed = true;
+    let failed = false;
+    for (const run of runs) {
+      const detail = run.files.length > 0 ? `: ${run.files.join(' ')}` : '';
+      log(`Related tests (${run.id})${detail}`);
+      const status = (options.execute ?? executeRun)(run);
+      if (status !== 0) failed = true;
+    }
+    return failed ? 1 : 0;
+  };
+
+  const hookIsolation = Boolean(process.env['HUSKY']);
+  if (explicitFiles || options.isolate === false || hookIsolation) {
+    return executePlannedRuns();
   }
-  return failed ? 1 : 0;
+  return withKeepIndexIsolation(executePlannedRuns, options.git);
 }
 
 const invokedDirectly = process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1];

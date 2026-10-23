@@ -189,11 +189,6 @@
     "qrcode-generator": "^2.0.4",
     "yjs": "13.6.31"
   },
-  "lint-staged": {
-    "*.{ts,js}": "eslint --no-warn-ignored --fix",
-    "apps/frontend/src/**/*.html": "eslint --no-warn-ignored --fix",
-    "*.{ts,js,mjs,cjs,json,html,css,scss,md}": "prettier --write"
-  },
   "overrides": {
     "@hono/node-server": "2.0.11",
     "compression": "^1.8.2",
