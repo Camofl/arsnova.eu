@@ -1,0 +1,107 @@
+name: arsnova-exp1a
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: experiment
+      POSTGRES_PASSWORD: experiment-local-only
+      POSTGRES_DB: arsnova_experiment
+    volumes:
+      - experiment_postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U experiment -d arsnova_experiment"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  redis:
+    image: redis:7.4-alpine
+    command: redis-server --appendonly yes --appendfsync everysec --save 60 1 --loglevel warning
+    volumes:
+      - experiment_redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  app:
+    env_file:
+      - ./experiments/1a/.env.runtime
+    image: arsnova-exp1a-app:baseline
+    build:
+      context: .
+      dockerfile: Dockerfile
+    group_add:
+      - "65532"
+    ports:
+      - "127.0.0.1:3000:3000"
+      - "127.0.0.1:3001:3001"
+      - "127.0.0.1:3002:3002"
+    environment:
+      DATABASE_URL: postgresql://experiment:experiment-local-only@postgres:5432/arsnova_experiment?schema=public
+      REDIS_URL: redis://redis:6379
+      PORT: "3000"
+      HOST: "0.0.0.0"
+      WS_PORT: "3001"
+      YJS_WS_PORT: "3002"
+      NODE_ENV: production
+      PUBLIC_FRONTEND_URL: http://127.0.0.1:3000
+      PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH: /usr/bin/chromium
+      NLP_ENABLED: "${EXP_NLP_ENABLED:-false}"
+      NLP_SOCKET_PATH: /run/spacy/nlp.sock
+      NLP_TIMEOUT_MS: "5000"
+      NLP_CACHE_TTL_SECONDS: "1800"
+      WORD_CLOUD_SEMANTIC_ENABLED: "false"
+      QA_NLP_ENABLED: "false"
+      QA_SUMMARY_ENABLED: "false"
+      OPEN_WEIGHT_LLM_ENABLED: "false"
+    volumes:
+      - experiment_spacy_socket:/run/spacy:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/trpc/health.check"]
+      interval: 10s
+      timeout: 5s
+      start_period: 60s
+      retries: 12
+
+  spacy:
+    profiles: ["nlp"]
+    image: arsnova-exp1a-spacy:baseline
+    build:
+      context: ./docker/spacy
+      dockerfile: Dockerfile
+    init: true
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    network_mode: none
+    pids_limit: 64
+    mem_limit: 1g
+    cpus: "${EXP_SPACY_CPUS:-1.0}"
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,size=128m,mode=1777
+    volumes:
+      - experiment_spacy_socket:/run/spacy
+    environment:
+      HOME: /tmp
+      NLP_SOCKET_PATH: /run/spacy/nlp.sock
+    healthcheck:
+      test: ["CMD", "python", "/app/healthcheck.py"]
+      interval: 15s
+      timeout: 3s
+      start_period: 90s
+      retries: 8
+
+volumes:
+  experiment_postgres:
+  experiment_redis:
+  experiment_spacy_socket:
