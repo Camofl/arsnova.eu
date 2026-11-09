@@ -1,0 +1,7 @@
+5000 Teilnehmende, HTTP-Einzelsession, 10 Runden, Join-Parallelität 25, Vote-Parallelität 100.
+50 Analysen je Lauf; Input erste 100 synthetische Antworten, 12 Basistextvorlagen.
+A: spaCy aus; B: 1 CPU/1 GiB; C: 0,25 CPU/1 GiB.
+Reihenfolge: 1-A, 1-B, 1-C, 2-B, 2-C, 2-A, 3-C, 3-A, 3-B
+Kein separater Warm-up, kein Browser-/WebSocket-Test; keine LLM-/Encoder-Last.
+App-Neustart und Redis-Leerung je Lauf; PostgreSQL bleibt erhalten.
+600 s Zeitlimit je Lastlauf; Setup-Befehle separat zeitbegrenzt.

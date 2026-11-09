@@ -1,0 +1,20 @@
+cpu.stat:
+usage_usec 5667536
+user_usec 5270957
+system_usec 396579
+core_sched.force_idle_usec 0
+nr_periods 232
+nr_throttled 224
+throttled_usec 19268115
+nr_bursts 0
+burst_usec 0
+
+cpu.max:
+25000 100000
+
+memory.current:
+557162496
+
+memory.peak:
+558047232
+

@@ -1,0 +1,7 @@
+{
+  "NLP_ENABLED": "true",
+  "WORD_CLOUD_SEMANTIC_ENABLED": "false",
+  "QA_NLP_ENABLED": "false",
+  "QA_SUMMARY_ENABLED": "false",
+  "OPEN_WEIGHT_LLM_ENABLED": "false"
+}

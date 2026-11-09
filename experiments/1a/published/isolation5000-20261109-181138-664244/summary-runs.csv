@@ -1,0 +1,10 @@
+run,variant,vote_p95_ms,visibility_p95_ms,analysis_p95_ms,analyses,lemma,lemma_pct,normalization_fallback_reasons,assertions_passed,elapsed_s,spacy_cpu_s,throttled_periods_delta,throttled_s_delta,spacy_cgroup_lifetime_peak_mib
+1-A,A,194.94,21.74,184.16,50,0,0.0,"{""NLP_DISABLED"": 50}",True,135.127,,,,
+1-B,B,194.83,21.6,262.23,50,48,96.0,"{""SIDECAR_UNAVAILABLE"": 2}",True,134.973,1.070186,0,0.0,541.62
+1-C,C,194.48,32.34,208.68,50,47,94.0,"{""SIDECAR_UNAVAILABLE"": 3}",True,135.533,1.097352,20,0.807386,515.58
+2-A,A,196.54,17.6,193.28,50,0,0.0,"{""NLP_DISABLED"": 50}",True,136.598,,,,
+2-B,B,214.81,21.14,231.5,50,47,94.0,"{""SIDECAR_UNAVAILABLE"": 3}",True,143.21,1.098776,0,0.0,528.14
+2-C,C,196.31,29.93,284.47,50,50,100.0,{},True,136.54,1.112673,25,1.09283,532.2
+3-A,A,200.59,17.84,193.67,50,0,0.0,"{""NLP_DISABLED"": 50}",True,138.509,,,,
+3-B,B,198,22.82,218.23,50,49,98.0,"{""SIDECAR_UNAVAILABLE"": 1}",True,136.826,1.096895,0,0.0,558.89
+3-C,C,210.69,34.5,246.12,50,47,94.0,"{""SIDECAR_UNAVAILABLE"": 3}",True,144.623,1.245841,30,1.492999,529.93

@@ -1,0 +1,2 @@
+sha256:d25fc1fc784de5fcab8221edb98cfeca03c45918755aa99079dac7a2c0bc4ecf ["arsnova-exp1a-app:baseline"]
+sha256:5aac5121134067cfbb8f96ccc4adc312161564fae372f34f7be1d216ddbc7a14 ["arsnova-exp1a-spacy:baseline"]

@@ -1,0 +1,4 @@
+variant,runs,analyses,lemma,lemma_pct,vote_p95_ms_median,vote_p95_ms_min,vote_p95_ms_max,visibility_p95_ms_median,visibility_p95_ms_min,visibility_p95_ms_max,analysis_p95_ms_median,analysis_p95_ms_min,analysis_p95_ms_max,spacy_cpu_s_median,spacy_cpu_s_min,spacy_cpu_s_max,throttled_s_delta_median,throttled_s_delta_min,throttled_s_delta_max
+A,3,150,0,0.0,196.54,194.94,200.59,17.84,17.6,21.74,193.28,184.16,193.67,,,,,,
+B,3,150,144,96.0,198,194.83,214.81,21.6,21.14,22.82,231.5,218.23,262.23,1.096895,1.070186,1.098776,0.0,0.0,0.0
+C,3,150,144,96.0,196.31,194.48,210.69,32.34,29.93,34.5,246.12,208.68,284.47,1.112673,1.097352,1.245841,1.09283,0.807386,1.492999
